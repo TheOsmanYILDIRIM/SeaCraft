@@ -8,7 +8,7 @@ const LOCAL := "local"
 const HOST := "host"
 
 static func capture(sector: SectorRuntime, entity_id: String, ship: ShipMotor, streams: SeedStreams,
-		owner_kind: String = LOCAL, session_id: String = "") -> Dictionary:
+		owner_kind: String = LOCAL, session_id: String = "", loot_state: Dictionary = {}) -> Dictionary:
 	if sector == null or ship == null or streams == null or not ship.authority_enabled:
 		return {}
 	if not sector.entity_position(entity_id).is_finite():
@@ -24,6 +24,7 @@ static func capture(sector: SectorRuntime, entity_id: String, ship: ShipMotor, s
 	dto["player"] = {"entity_id": entity_id, "motion": ship.capture_save_motion()}
 	dto["rng"] = rng
 	dto["ownership"] = {"kind": owner_kind, "session_id": session_id}
+	dto["loot"] = loot_state.duplicate(true) if not loot_state.is_empty() else empty_loot_state()
 	return dto
 
 
@@ -51,8 +52,10 @@ static func _validate_current(dto: Dictionary) -> String:
 		return "invalid_rng"
 	if dto["rng_stream_version"] != DataContractVersions.RNG_STREAM_VERSION:
 		return "unsupported_rng_version"
-	if dto.size() != 8 or not _stable(dto.get("sector_id")):
+	if dto.size() not in [8, 9] or not _stable(dto.get("sector_id")):
 		return "invalid_sector"
+	if dto.has("loot") and not _validate_loot(dto["loot"]):
+		return "invalid_loot"
 	var player: Variant = dto.get("player")
 	if not player is Dictionary or player.size() != 2 or not _stable(player.get("entity_id")):
 		return "invalid_player"
@@ -85,6 +88,52 @@ static func restore(dto: Dictionary, world: SectorWorld, authority: RefCounted, 
 	ship.restore_save_motion(motion)
 	streams.restore_state(_decoded_rng(dto["rng"]))
 	return ""
+
+
+static func empty_loot_state() -> Dictionary:
+	return {"drops": [], "claimed_ids": [], "inventory": {}, "processed_events": {}}
+
+
+static func loot_state(dto: Dictionary) -> Dictionary:
+	return (dto.get("loot", empty_loot_state()) as Dictionary).duplicate(true)
+
+
+static func _validate_loot(value: Variant) -> bool:
+	if not value is Dictionary or value.size() != 4:
+		return false
+	var loot: Dictionary = value
+	if not loot.get("drops") is Array or not loot.get("claimed_ids") is Array or not loot.get("inventory") is Dictionary or not loot.get("processed_events") is Dictionary:
+		return false
+	if loot["drops"].size() > 256 or loot["claimed_ids"].size() > 512 or loot["inventory"].size() > 128 or loot["processed_events"].size() > 512:
+		return false
+	var seen: Dictionary = {}
+	for raw in loot["drops"]:
+		if not raw is Dictionary or raw.size() != 6:
+			return false
+		var drop: Dictionary = raw
+		var drop_id: Variant = drop.get("drop_id")
+		if not drop_id is String or not _stable(drop_id) or seen.has(drop_id) or loot["claimed_ids"].has(drop_id):
+			return false
+		if not _stable(drop.get("sector_id")) or not _stable(drop.get("item_id")):
+			return false
+		if not drop.get("quantity") is int or drop["quantity"] <= 0 or drop["quantity"] > 2147483647:
+			return false
+		if typeof(drop.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(drop.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		if not is_finite(float(drop["x"])) or not is_finite(float(drop["y"])):
+			return false
+		seen[drop_id] = true
+	for drop_id in loot["claimed_ids"]:
+		if not drop_id is String or not _stable(drop_id):
+			return false
+	for item_id in loot["inventory"]:
+		if not item_id is String or not _stable(item_id) or not loot["inventory"][item_id] is int or loot["inventory"][item_id] < 0 or loot["inventory"][item_id] > 2147483647:
+			return false
+	for event_id in loot["processed_events"]:
+		var drop_id: Variant = loot["processed_events"][event_id]
+		if not event_id is String or not _stable(event_id) or not drop_id is String or (not drop_id.is_empty() and not _stable(drop_id)):
+			return false
+	return true
 
 
 static func _decoded_rng(value: Variant) -> Dictionary:
@@ -140,6 +189,13 @@ static func _safe(value: Variant, depth: int) -> bool:
 			return true
 		TYPE_FLOAT:
 			return is_finite(value)
+		TYPE_ARRAY:
+			if value.size() > 512:
+				return false
+			for item in value:
+				if not _safe(item, depth + 1):
+					return false
+			return true
 		TYPE_DICTIONARY:
 			if value.size() > 16:
 				return false
