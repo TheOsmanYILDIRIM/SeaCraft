@@ -55,10 +55,6 @@ jobs:
           godot --version | tee "$RUNNER_TEMP/godot-version.txt"
           grep -Eq '^4\.7\.2\.stable\.official\.' "$RUNNER_TEMP/godot-version.txt"
 
-      - name: Validate project and export presets
-        shell: bash
-        run: godot --headless --path . --script res://tools/ci/validate_fnd01.gd
-
       - name: Install pinned GUT from official upstream
         shell: bash
         run: |
@@ -69,7 +65,16 @@ jobs:
 
       - name: Import and parse project resources
         shell: bash
-        run: godot --headless --editor --path . --quit
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path . --quit 2>&1 | tee "$RUNNER_TEMP/project-parse.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' "$RUNNER_TEMP/project-parse.log"; then
+            exit 1
+          fi
+
+      - name: Validate project and export presets
+        shell: bash
+        run: godot --headless --path . --script res://tools/ci/validate_fnd01.gd
 
       - name: Headless project boot
         shell: bash
@@ -156,6 +161,7 @@ jobs:
           mkdir -p build/linux
           godot --headless --path . --export-debug "Linux Desktop" build/linux/SeaCraft.x86_64
           test -x build/linux/SeaCraft.x86_64
+          test -s build/linux/SeaCraft.pck
           timeout 10s build/linux/SeaCraft.x86_64 --headless --quit-after 1 2>&1 | tee "$RUNNER_TEMP/exported-linux-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/exported-linux-boot.log"
 
@@ -179,7 +185,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s\n' "${GITHUB_SHA}" > build/COMMIT_SHA.txt
-          sha256sum build/android/SeaCraft-debug.apk build/linux/SeaCraft.x86_64 > build/SHA256SUMS.txt
+          (cd build && sha256sum android/SeaCraft-debug.apk linux/SeaCraft.x86_64 linux/SeaCraft.pck > SHA256SUMS.txt)
           cat build/COMMIT_SHA.txt
           cat build/SHA256SUMS.txt
 
@@ -192,5 +198,6 @@ jobs:
           path: |
             build/android/SeaCraft-debug.apk
             build/linux/SeaCraft.x86_64
+            build/linux/SeaCraft.pck
             build/COMMIT_SHA.txt
             build/SHA256SUMS.txt
