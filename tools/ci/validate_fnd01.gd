@@ -7,6 +7,7 @@ func _initialize() -> void:
 	_check_setting("application/run/main_scene", "res://src/presentation/bootstrap.tscn")
 	_check_setting("rendering/renderer/rendering_method", "gl_compatibility")
 	_check_setting("rendering/renderer/rendering_method.mobile", "gl_compatibility")
+	_check_setting("rendering/textures/vram_compression/import_etc2_astc", true)
 	_check_setting("display/window/handheld/orientation", 0)
 	_check_setting("display/window/size/viewport_width", 1280)
 	_check_setting("display/window/size/viewport_height", 720)
