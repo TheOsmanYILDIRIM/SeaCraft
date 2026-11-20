@@ -3,6 +3,13 @@ extends Node2D
 const BOOT_MARKER := "SeaCraft bootstrap ready"
 
 const CHECKPOINT_INTERVAL_MS := 20000
+const PRACTICE_TARGET := "entity.vs01_practice_ship"
+const PRACTICE_POSITION := Vector2(-240, 150)
+
+var _combat: CombatAuthority
+var _practice_marker: Polygon2D
+var _target_ring: Line2D
+var _fire_control: CombatFireButton
 
 var _authority := RefCounted.new()
 var _world: SectorWorld
@@ -56,6 +63,7 @@ func _ready() -> void:
 	_ship_motor.collision_mask = FoundationSector.COAST_LAYER
 	_ship_motor.process_physics_priority = -1
 	_build_sector_geometry(_world.active())
+	_setup_combat(_world.active())
 	print(BOOT_MARKER)
 
 
@@ -64,6 +72,8 @@ func active_sector() -> SectorRuntime:
 
 
 func _physics_process(_delta: float) -> void:
+	if _combat != null:
+		_combat.advance_tick()
 	var position_now := _ship_motor.global_position
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
 	if position_now != _last_position or _ship_motor.velocity != _last_velocity or _ship_motor.rotation != _last_heading or _ship_motor.has_target() != _observed_target:
@@ -75,8 +85,111 @@ func _physics_process(_delta: float) -> void:
 
 
 func _on_gameplay_command(command: Dictionary) -> void:
-	if active_sector() != null and _ship_motor.apply_authoritative_command(command):
+	if active_sector() == null or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY:
+		return
+	if _combat != null:
+		match command.get("type"):
+			CombatAuthority.SELECT:
+				var target_id: String = command["target_id"]
+				if target_id.is_empty():
+					_combat.clear_target(FoundationSector.PLAYER)
+				else:
+					_combat.select(FoundationSector.PLAYER, target_id)
+				_refresh_combat_indicator()
+				return
+			CombatAuthority.FIRE:
+				var result := _combat.fire(FoundationSector.PLAYER, _ship_motor.current_heading(), command)
+				if result["accepted"]:
+					# The encounter stream belongs to the existing FND-06 checkpoint.
+					_save_service.mark_dirty()
+				_refresh_combat_indicator()
+				return
+			GameplayCommand.CANCEL:
+				_combat.clear_target(FoundationSector.PLAYER)
+				_refresh_combat_indicator()
+	if _ship_motor.apply_authoritative_command(command):
 		_save_service.mark_dirty()
+
+
+func _setup_combat(sector: SectorRuntime) -> void:
+	_combat = CombatAuthority.new(sector, _streams, Engine.physics_ticks_per_second)
+	var cannon := WeaponDefinition.new()
+	cannon.stable_id = "weapon.vs01_practice_cannon"
+	cannon.base_damage = 25.0
+	cannon.min_range_meters = 35.0
+	cannon.range_meters = 360.0
+	cannon.reload_seconds = 1.25
+	cannon.accuracy = 0.92
+	cannon.crit_chance = 0.15
+	if not sector.navigation.accessible(PRACTICE_POSITION) or not sector.register_entity(PRACTICE_TARGET, PRACTICE_POSITION):
+		push_error("VS-01 practice target placement failed")
+		return
+	if not _combat.register(FoundationSector.PLAYER, "faction.player", 100.0, cannon) or not _combat.register(PRACTICE_TARGET, "faction.practice_hostile", 75.0, null, 4.0, 0.05):
+		push_error("VS-01 combat roster setup failed")
+		return
+	_practice_marker = Polygon2D.new()
+	_practice_marker.position = PRACTICE_POSITION
+	_practice_marker.polygon = PackedVector2Array([Vector2(-18, 12), Vector2(20, 0), Vector2(-18, -12)])
+	_practice_marker.color = Color(0.9, 0.48, 0.33)
+	add_child(_practice_marker)
+	_target_ring = Line2D.new()
+	_target_ring.width = 3.5
+	_target_ring.default_color = Color(1.0, 0.9, 0.2)
+	for i in range(25):
+		_target_ring.add_point(Vector2.from_angle(TAU * float(i) / 24.0) * 27.0)
+	_target_ring.hide()
+	_practice_marker.add_child(_target_ring)
+
+	var input: GameplayInputController = $InputController
+	input.combat_target_at = _target_at
+	_fire_control = CombatFireButton.new()
+	_fire_control.text = "ATEŞ"
+	_fire_control.add_theme_font_size_override("font_size", 42)
+	_fire_control.size = Vector2(224.0, 132.0)
+	_fire_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	_fire_control.focus_mode = Control.FOCUS_NONE
+	_fire_control.touch_captured.connect(input.reset_touch)
+	_fire_control.pressed.connect(_on_fire_pressed)
+	$UI.add_child(_fire_control)
+	get_viewport().size_changed.connect(_layout_fire_control)
+	_layout_fire_control()
+	_combat.ship_sunk.connect(_on_ship_sunk)
+	_refresh_combat_indicator()
+
+
+func _target_at(world_position: Vector2) -> String:
+	var zoom: float = $GameplayCamera.zoom.x
+	var radius := clampf(36.0 / maxf(zoom, 0.01), 24.0, 96.0)
+	return _combat.acquire(FoundationSector.PLAYER, world_position, radius)
+
+
+func _layout_fire_control() -> void:
+	var safe := get_viewport_rect()
+	if OS.has_feature("android"):
+		var window := Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
+		var pixels := window.intersection(DisplayServer.get_display_safe_area())
+		if pixels.has_area():
+			pixels.position -= window.position
+			safe = safe.intersection(SafeAreaMath.display_safe_area_to_logical(Rect2(pixels), Vector2(1280, 720), Vector2(window.size)))
+	_fire_control.position = safe.end - _fire_control.size - Vector2(36.0, 36.0)
+
+
+func _on_fire_pressed() -> void:
+	var input: GameplayInputController = $InputController
+	input.emit_fire_intent(_combat.locked_target(FoundationSector.PLAYER))
+
+
+func _on_ship_sunk(id: String, _sequence: int) -> void:
+	if id == PRACTICE_TARGET:
+		_practice_marker.hide()
+
+
+func _refresh_combat_indicator() -> void:
+	if _target_ring == null:
+		return
+	var locked := _combat.locked_target(FoundationSector.PLAYER) == PRACTICE_TARGET
+	_target_ring.visible = locked
+	_fire_control.disabled = not locked
 
 
 func _block_boot(reason: Dictionary) -> void:

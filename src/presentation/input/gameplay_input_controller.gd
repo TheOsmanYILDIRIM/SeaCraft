@@ -11,6 +11,7 @@ const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 @export var camera_path: NodePath
 @export var keyboard_pan_speed := 600.0
 
+var combat_target_at: Callable
 var _camera: Node
 var _touch = TOUCH.new()
 var _mouse_pan_active := false
@@ -73,6 +74,15 @@ func process_device_event(event: InputEvent, ui_consumed: bool = false) -> void:
 		_dispatch(MAPPER.map_camera_recenter())
 
 
+func reset_touch() -> void:
+	_touch.reset()
+
+
+func emit_fire_intent(target_id: String) -> void:
+	if not target_id.is_empty():
+		_dispatch(CombatAuthority.fire_intent(target_id))
+
+
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	if event.button_index == MOUSE_BUTTON_MIDDLE:
 		_mouse_pan_active = event.pressed
@@ -101,6 +111,9 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 
 
 func _handle_screen_touch(event: InputEventScreenTouch) -> void:
+	if event.canceled:
+		reset_touch()
+		return
 	var gestures: Array[Dictionary]
 	if event.pressed:
 		gestures = _touch.press(event.index, event.position)
@@ -148,6 +161,12 @@ func _emit_pointer_command(
 		"screen_to_world_position",
 		screen_position
 	)
+	# Combat hit-testing precedes world movement. Empty primary taps still sail.
+	if combat_target_at.is_valid():
+		var target_id: String = combat_target_at.call(world_position)
+		if selection or not target_id.is_empty():
+			_dispatch({"domain": COMMANDS.DOMAIN_GAMEPLAY, "type": CombatAuthority.SELECT, "target_id": target_id})
+			return
 	_dispatch(
 		MAPPER.map_world_pointer(
 			pointer_source,

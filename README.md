@@ -99,3 +99,13 @@ GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-2
 - Corrupt primary on an isolated test install and verify explicit backup recovery.
 - Confirm app-private `user://` needs no storage permission.
 - Measure save-related frame spikes on a lower-end phone and test controlled failure/retry with low free storage.
+
+## VS-01 mobile combat slice
+
+Tap/click the orange practice ship to lock it (yellow ring); empty primary taps/clicks still move. Right click selects/clears without movement, and cancel clears the lock. Use the large safe-area-aware **ATEŞ** button when the target is on a broadside, within 35–360 units. One shared battery reloads on simulation ticks; hits resolve instantly without projectile physics, AI or loot.
+
+The offline root passes its authoritative ship heading and target intent into `CombatAuthority.fire`. Rejected commands do not consume cooldown, RNG or a transaction sequence. Accepted volleys draw hit and crit rolls from the existing `encounter` stream, including misses. The fixed formula uses base × crit where applicable, the ordered FND-02 attack modifier pipeline, then subtracts flat defense net of penetration. The applied amount is capped at remaining hull; only the first lethal volley emits `ship_sunk`.
+
+No schema or RNG version change: the existing checkpoint persists encounter RNG progress. The practice NPC, hull, target locks, cooldown and combat sequence are **session-only**; they reset on reload. The saved player motion and active sector are not overwritten by initializing the practice encounter.
+
+**Android device checks not performed by CI:** ship tap/target lock with no accidental move, one-handed fire reach and perceived input latency, small-screen ring readability, salvo frame pacing, rapid tap/fire spam, target lock while the camera moves, and CPU/frame spikes on low- and mid-tier phones.
