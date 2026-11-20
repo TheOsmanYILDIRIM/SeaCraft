@@ -116,7 +116,7 @@ static func _validate_loot(value: Variant) -> bool:
 			return false
 		if not _stable(drop.get("sector_id")) or not _stable(drop.get("item_id")):
 			return false
-		if not drop.get("quantity") is int or drop["quantity"] <= 0 or drop["quantity"] > 2147483647:
+		if not _integer_number(drop.get("quantity")) or int(drop["quantity"]) <= 0:
 			return false
 		if typeof(drop.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(drop.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
@@ -127,7 +127,7 @@ static func _validate_loot(value: Variant) -> bool:
 		if not drop_id is String or not _stable(drop_id):
 			return false
 	for item_id in loot["inventory"]:
-		if not item_id is String or not _stable(item_id) or not loot["inventory"][item_id] is int or loot["inventory"][item_id] < 0 or loot["inventory"][item_id] > 2147483647:
+		if not item_id is String or not _stable(item_id) or not _integer_number(loot["inventory"][item_id]) or int(loot["inventory"][item_id]) < 0:
 			return false
 	for event_id in loot["processed_events"]:
 		var drop_id: Variant = loot["processed_events"][event_id]
