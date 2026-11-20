@@ -28,7 +28,7 @@ func _initialize() -> void:
 
 
 func _check_setting(key: String, expected: Variant) -> void:
-	var actual := ProjectSettings.get_setting(key, null)
+	var actual: Variant = ProjectSettings.get_setting(key, null)
 	if actual != expected:
 		_failures.append("%s expected %s, got %s" % [key, expected, actual])
 
