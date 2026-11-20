@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/data/loot/loot_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://src/data/loot/loot_table_entry.gd" id="2_entry"]
+
+[sub_resource type="Resource" id="LootTableEntry_vs03"]
+script = ExtResource("2_entry")
+item_id = "item.vs03_salvage_scrap"
+min_quantity = 2
+max_quantity = 5
+weight = 100
+
+[resource]
+script = ExtResource("1_table")
+stable_id = "loot_table.vs03_sc03"
+entries = Array[ExtResource("2_entry")]([SubResource("LootTableEntry_vs03")])
