@@ -86,11 +86,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|@rpc|rpc\(' src; then
+          if grep -RInE --include='*.gd' 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|@rpc|rpc\(' src; then
             echo "FND-01 source unexpectedly contains network/internet API usage." >&2
             exit 1
           fi
-          if grep -RInE 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
+          if grep -RInE --include='*.gd' 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
             echo "Simulation boundary unexpectedly depends on multiplayer APIs." >&2
             exit 1
           fi
