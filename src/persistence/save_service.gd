@@ -53,7 +53,7 @@ func load() -> Dictionary:
 # Read-only recovery. The next validated save can restore primary without rotating
 # the corrupt file into backup. A good or incompatible primary is never bypassed.
 func recover_backup() -> Dictionary:
-	return load()
+	return self.load()
 
 
 func save_if_dirty(dto: Dictionary) -> Dictionary:
