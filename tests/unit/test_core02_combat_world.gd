@@ -214,7 +214,6 @@ func test_core02_harpoon_damage_range_cooldown_and_elements() -> void:
 	_setup()
 	assert_true(sector.move_entity(PLAYER, Vector2(-300, 0)))
 	_select(MONSTER)
-	before_each()
 	var before := _state()
 	result = _harpoon(MONSTER)
 	assert_false(result["accepted"])
