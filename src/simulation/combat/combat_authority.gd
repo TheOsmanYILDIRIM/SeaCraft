@@ -139,6 +139,22 @@ func target_class(id: String) -> String:
 	return actor.target_class if actor != null else ""
 
 
+func target_snapshot(id: String) -> Dictionary:
+	var actor: CombatantState = _roster.get(id)
+	if actor == null or _sector == null:
+		return {}
+	var position := _sector.entity_position(id)
+	return {
+		"entity_id": id,
+		"target_class": actor.target_class,
+		"hull": actor.hull,
+		"max_hull": actor.max_hull,
+		"x": position.x,
+		"y": position.y,
+		"selectable": actor.selectable,
+	}
+
+
 func sequence_id() -> int:
 	return _sequence
 
