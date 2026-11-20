@@ -6,6 +6,8 @@ const CHECKPOINT_INTERVAL_MS := 20000
 const PRACTICE_TARGET := "entity.vs02_sc03"
 const PRACTICE_POSITION := Vector2(-520, 260)
 const NPC_TUNING := preload("res://src/data/ai/vs02_sc03_tuning.tres")
+const VS03_LOOT_TABLE := preload("res://src/data/loot/vs03_sc03_loot_table.tres")
+const VS03_LOOT_ITEM := preload("res://src/data/items/vs03_salvage_scrap.tres")
 
 var _combat: CombatAuthority
 var _practice_marker: Polygon2D
@@ -16,6 +18,11 @@ var _npc_brain: NpcBrain
 var _npc_presenter: NpcStatePresenter
 var _ai_scheduler := AiDecisionScheduler.new(8)
 var _last_npc_sequence := -1
+var _loot: LootAuthority
+var _loot_marker: Polygon2D
+var _pickup_control: LootPickupButton
+var _nearby_drop_id := ""
+var _pending_loot_state: Dictionary = {}
 
 var _authority := RefCounted.new()
 var _world: SectorWorld
@@ -54,6 +61,7 @@ func _ready() -> void:
 				_block_boot({"status": error})
 				return
 			_session_id = dto["ownership"]["session_id"]
+			_pending_loot_state = SaveSnapshot.loot_state(dto)
 			if save_status["status"] == SaveService.RECOVERED:
 				_save_service.mark_dirty()
 				push_warning("SeaCraft restored a backup checkpoint")
@@ -87,6 +95,8 @@ func _physics_process(_delta: float) -> void:
 	if _npc_brain != null:
 		_ai_scheduler.advance_physics_tick()
 		_refresh_npc_state()
+	if _loot != null:
+		_refresh_loot_control()
 	if position_now != _last_position or _ship_motor.velocity != _last_velocity or _ship_motor.rotation != _last_heading or _ship_motor.has_target() != _observed_target:
 		_save_service.mark_dirty()
 	_last_position = position_now
@@ -171,6 +181,20 @@ func _setup_combat(sector: SectorRuntime) -> void:
 
 	var input: GameplayInputController = $InputController
 	input.combat_target_at = _target_at
+	_loot = LootAuthority.new(sector, _streams, VS03_LOOT_TABLE as LootTable, VS03_LOOT_ITEM as ItemDefinition, true)
+	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
+		push_error("VS-03 loot restore failed")
+		return
+	_loot.drop_created.connect(_on_loot_drop_created)
+	_loot.drop_claimed.connect(_on_loot_drop_claimed)
+
+	_loot_marker = Polygon2D.new()
+	_loot_marker.polygon = PackedVector2Array([Vector2(0, -14), Vector2(14, 0), Vector2(0, 14), Vector2(-14, 0)])
+	_loot_marker.color = Color(0.86, 0.72, 0.26)
+	_loot_marker.hide()
+	add_child(_loot_marker)
+	_sync_loot_marker_from_state()
+
 	_fire_control = CombatFireButton.new()
 	_fire_control.text = "ATEŞ"
 	_fire_control.add_theme_font_size_override("font_size", 42)
@@ -180,6 +204,16 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_fire_control.touch_captured.connect(input.reset_touch)
 	_fire_control.pressed.connect(_on_fire_pressed)
 	$UI.add_child(_fire_control)
+	_pickup_control = LootPickupButton.new()
+	_pickup_control.text = "TOPLA"
+	_pickup_control.add_theme_font_size_override("font_size", 38)
+	_pickup_control.size = Vector2(224.0, 132.0)
+	_pickup_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pickup_control.focus_mode = Control.FOCUS_NONE
+	_pickup_control.touch_captured.connect(input.reset_touch)
+	_pickup_control.pressed.connect(_on_pickup_pressed)
+	_pickup_control.hide()
+	$UI.add_child(_pickup_control)
 	get_viewport().size_changed.connect(_layout_fire_control)
 	_layout_fire_control()
 	_combat.hull_damaged.connect(_on_hull_damaged)
@@ -203,6 +237,8 @@ func _layout_fire_control() -> void:
 			pixels.position -= window.position
 			safe = safe.intersection(SafeAreaMath.display_safe_area_to_logical(Rect2(pixels), Vector2(1280, 720), Vector2(window.size)))
 	_fire_control.position = safe.end - _fire_control.size - Vector2(36.0, 36.0)
+	if _pickup_control != null:
+		_pickup_control.position = Vector2(_fire_control.position.x - _pickup_control.size.x - 28.0, _fire_control.position.y)
 
 
 func _on_fire_pressed() -> void:
@@ -215,8 +251,12 @@ func _on_hull_damaged(target_id: String, attacker_id: String, amount: float, _re
 		_npc_brain.record_combat_damage(attacker_id, amount, sequence_id, _ai_scheduler.current_tick())
 
 
-func _on_ship_sunk(id: String, _sequence: int) -> void:
+func _on_ship_sunk(id: String, sequence: int) -> void:
 	if id == PRACTICE_TARGET:
+		if _loot != null and _npc_motor != null:
+			var drop := _loot.on_ship_sunk(id, sequence, _npc_motor.global_position)
+			if not drop.is_empty():
+				_save_service.mark_dirty()
 		if _npc_brain != null:
 			_npc_brain.mark_sunk()
 		if _npc_motor != null:
@@ -226,6 +266,47 @@ func _on_ship_sunk(id: String, _sequence: int) -> void:
 			_practice_marker.hide()
 		if _npc_presenter != null:
 			_npc_presenter.hide()
+
+
+func _on_loot_drop_created(drop: Dictionary) -> void:
+	if _loot_marker != null:
+		_loot_marker.position = Vector2(drop["x"], drop["y"])
+		_loot_marker.show()
+
+
+func _on_loot_drop_claimed(_drop_id: String, _item_id: String, _quantity: int) -> void:
+	if _loot_marker != null:
+		_loot_marker.hide()
+	_save_service.mark_dirty()
+
+
+func _on_pickup_pressed() -> void:
+	if _loot == null or _nearby_drop_id.is_empty():
+		return
+	var result := _loot.pickup(FoundationSector.PLAYER, LootAuthority.pickup_intent(_nearby_drop_id))
+	if result["accepted"]:
+		_save_service.mark_dirty()
+		_refresh_loot_control()
+
+
+func _refresh_loot_control() -> void:
+	if _pickup_control == null:
+		return
+	_nearby_drop_id = _loot.nearest_pickup(FoundationSector.PLAYER)
+	_pickup_control.visible = not _nearby_drop_id.is_empty()
+	_pickup_control.disabled = _nearby_drop_id.is_empty()
+
+
+func _sync_loot_marker_from_state() -> void:
+	if _loot == null or _loot_marker == null:
+		return
+	var state := _loot.snapshot_state()
+	if state["drops"].is_empty():
+		_loot_marker.hide()
+		return
+	var drop: Dictionary = state["drops"][0]
+	_loot_marker.position = Vector2(drop["x"], drop["y"])
+	_loot_marker.show()
 
 
 func _refresh_npc_state() -> void:
@@ -279,7 +360,8 @@ func _flush_checkpoint() -> void:
 	if sector == null or not _save_service.is_dirty():
 		return
 	_last_attempt_ms = Time.get_ticks_msec()
-	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id)
+	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
+	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state)
 	save_status = _save_service.save_if_dirty(dto)
 
 
