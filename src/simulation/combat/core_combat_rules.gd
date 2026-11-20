@@ -6,6 +6,7 @@ const FIRE := "element.fire"
 const MAX_VALUE := 1000000000.0
 const MAX_CLOCK := 2147483647
 const MAX_DURATION := 3600000
+const NPC_REPAIR := "item.core_npc_repair"
 const STOWED := "item.vs03_salvage_scrap"
 const ROUND := "item.core_round"
 const EMBER := "item.core_ember"

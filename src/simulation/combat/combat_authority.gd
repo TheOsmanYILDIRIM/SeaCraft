@@ -18,6 +18,7 @@ const BOARD_COOLDOWN := 240
 var _enabled := true
 var _inventory: LootAuthority
 var _ammo_profiles: Dictionary = {}
+var _status_actors: Dictionary = {}
 
 var _sector: SectorRuntime
 var _streams: SeedStreams
@@ -70,12 +71,15 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 
 func advance_tick() -> void:
 	_tick = mini(_tick + 1, CoreCombatRules.MAX_CLOCK)
-	for ship: CombatantState in _roster.values():
-		if ship.statuses.is_empty():
-			continue
+	if _status_actors.is_empty():
+		return
+	for actor_id in _status_actors.keys():
+		var ship: CombatantState = _roster[actor_id]
 		for id in ship.statuses.keys():
 			if int(ship.statuses[id]["expires"]) <= _tick:
 				ship.statuses.erase(id)
+		if ship.statuses.is_empty():
+			_status_actors.erase(actor_id)
 
 
 func acquire(attacker_id: String, point: Vector2, radius: float) -> String:
@@ -193,15 +197,16 @@ func configure_defense(id: String, critical_prevention: float, resistance: Dicti
 	return true
 
 
-func configure_repair(id: String, amount: float, interval_ticks: int, item_id: String = "") -> bool:
+func configure_repair(id: String, amount: float, interval_ticks: int, item_id: String, ai_controlled: bool = false) -> bool:
 	var actor: CombatantState = _roster.get(id)
-	if actor == null or not CoreCombatRules.bounded(amount, 0.000001, actor.max_hull) or interval_ticks <= 0 or interval_ticks > CoreCombatRules.MAX_DURATION or (not item_id.is_empty() and not SectorIds.valid(item_id)):
+	if actor == null or not CoreCombatRules.bounded(amount, 0.000001, actor.max_hull) or interval_ticks <= 0 or interval_ticks > CoreCombatRules.MAX_DURATION or not SectorIds.valid(item_id):
 		return false
 	if actor.repair_interval != 0:
-		return actor.repair_amount == amount and actor.repair_interval == interval_ticks and actor.repair_item == item_id
+		return actor.repair_amount == amount and actor.repair_interval == interval_ticks and actor.repair_item == item_id and actor.repair_is_ai == ai_controlled
 	actor.repair_amount = amount
 	actor.repair_interval = interval_ticks
 	actor.repair_item = item_id
+	actor.repair_is_ai = ai_controlled
 	return true
 
 
@@ -214,7 +219,7 @@ func transact(actor_id: String, command: Dictionary) -> Dictionary:
 
 
 # AI is a trusted local authority adapter. Scheduler time is not accepted from player intents.
-func ai_repair(actor_id: String, decision_tick: int) -> Dictionary:
+func _ai_repair(actor_id: String, decision_tick: int) -> Dictionary:
 	return _transact(actor_id, intent(REPAIR), decision_tick, true)
 
 
@@ -222,7 +227,7 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 	var result := {"accepted": false, "reason": "", "sequence_id": 0, "success": false, "amount": 0.0, "reward_id": ""}
 	if not _enabled:
 		return _reject(result, "authority_disabled")
-	if command.size() != 3 or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY or not command.get("type") is String or not command.get("id") is String:
+	if command.size() not in [3, 4] or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY or not command.get("type") is String or not command.get("id") is String or (command.size() == 4 and (command.get("type") != ACTION or not command.get("target_id") is String)):
 		return _reject(result, "malformed_command")
 	if not is_alive(actor_id):
 		return _reject(result, "invalid_actor")
@@ -236,6 +241,8 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 	var amount := 0.0
 	var success := true
 	var status := ""
+	var recipient_id := actor_id
+	var recipient := actor
 	match kind:
 		AMMO_SELECT:
 			if not actor.ammo_damage.has(id):
@@ -248,7 +255,7 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 			result["success"] = true
 			return result
 		REPAIR:
-			if not id.is_empty() or actor.repair_interval == 0 or ai != actor.repair_item.is_empty():
+			if not id.is_empty() or actor.repair_interval == 0 or ai != actor.repair_is_ai:
 				return _reject(result, "repair_not_configured")
 			if not ai and actor.damage_tick >= 0 and now < actor.damage_tick + 120:
 				return _reject(result, "repair_interrupted")
@@ -271,8 +278,23 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 			cooldown = BOARD_COOLDOWN
 		ACTION:
 			var profile: Dictionary = CoreCombatRules.ACTIONS.get(id, {})
-			if profile.is_empty() or profile["target"] != "self":
+			if profile.is_empty():
 				return _reject(result, "invalid_action")
+			var requested_target: String = command.get("target_id", "")
+			match str(profile["target"]):
+				"self":
+					if not requested_target.is_empty() and requested_target != actor_id:
+						return _reject(result, "invalid_action_target")
+				"hostile":
+					var reason := TargetingService.rejection(_sector, actor_id, actor.faction_id, requested_target, _roster)
+					if not reason.is_empty():
+						return _reject(result, reason)
+					if _sector.entity_position(actor_id).distance_to(_sector.entity_position(requested_target)) > float(profile["range"]):
+						return _reject(result, "out_of_range")
+					recipient_id = requested_target
+					recipient = _roster[requested_target]
+				_:
+					return _reject(result, "invalid_action")
 			status = profile["status"]
 			item = profile["item_id"]
 			cooldown = profile["cooldown"]
@@ -287,7 +309,7 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 	if amount > 0.0:
 		actor.hull = minf(actor.max_hull, actor.hull + amount)
 	if not status.is_empty():
-		_apply_status(actor, status, actor_id)
+		_apply_status(recipient_id, recipient, status, actor_id)
 	_sequence += 1
 	result["accepted"] = true
 	result["sequence_id"] = _sequence
@@ -310,7 +332,8 @@ func _clock_available(now: int) -> bool:
 	return now >= 0 and now <= CoreCombatRules.MAX_CLOCK - CoreCombatRules.MAX_DURATION and _sequence < CoreCombatRules.MAX_CLOCK
 
 
-func _apply_status(actor: CombatantState, id: String, source: String) -> void:
+func _apply_status(actor_id: String, actor: CombatantState, id: String, source: String) -> void:
+	_status_actors[actor_id] = true
 	var profile: Dictionary = CoreCombatRules.STATUSES[id]
 	var previous: Dictionary = actor.statuses.get(id, {})
 	actor.statuses[id] = {"stacks": mini(int(previous.get("stacks", 0)) + 1, int(profile["max_stacks"])), "expires": _tick + int(profile["duration"]), "source": source}
@@ -399,6 +422,7 @@ func restore_state(value: Variant) -> bool:
 		var target: CombatantState = _roster[lock_id]
 		if source.faction_id == target.faction_id or float(planned[lock_id]["hull"]) <= 0.0:
 			return false
+	_status_actors.clear()
 	for id in planned:
 		var ship: CombatantState = _roster[id]
 		var entry: Dictionary = planned[id]
@@ -407,7 +431,14 @@ func restore_state(value: Variant) -> bool:
 		var core: Dictionary = entry["core"]
 		ship.selected_ammo = core["selected_ammo"]
 		ship.statuses = core["statuses"]
+		for status: Dictionary in ship.statuses.values():
+			status["stacks"] = int(status["stacks"])
+			status["expires"] = int(status["expires"])
+		if not ship.statuses.is_empty():
+			_status_actors[id] = true
 		ship.ready = core["ready"]
+		for key in ship.ready:
+			ship.ready[key] = int(ship.ready[key])
 		ship.damage_tick = int(core["damage_tick"])
 		if ship.battery != null:
 			var battery_state: Dictionary = entry["battery"]
@@ -527,7 +558,7 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	if applied > 0.0:
 		target.damage_tick = _tick
 		if ammo != null and not ammo.status_id.is_empty() and not target.sunk():
-			_apply_status(target, ammo.status_id, attacker_id)
+			_apply_status(target_id, target, ammo.status_id, attacker_id)
 	if target.sunk():
 		for ship: CombatantState in _roster.values():
 			if ship.locked_id == target_id:
@@ -579,6 +610,8 @@ static func _valid_weapon(weapon: WeaponDefinition) -> bool:
 
 
 static func _valid_modifiers(modifiers: Dictionary) -> bool:
+	if modifiers.size() > 32:
+		return false
 	for id in modifiers:
 		if not id is String or not SectorIds.valid(id):
 			return false
@@ -586,7 +619,7 @@ static func _valid_modifiers(modifiers: Dictionary) -> bool:
 		if not entry is Dictionary or not StatModifierPipeline.PHASE_ORDER.has(entry.get("operation")):
 			return false
 		var amount: Variant = entry.get("value")
-		if (not amount is float and not amount is int) or not is_finite(float(amount)) or not entry.get("priority", 0) is int:
+		if (not amount is float and not amount is int) or not CoreCombatRules.bounded(float(amount), -1000000.0, 1000000.0) or not entry.get("priority", 0) is int:
 			return false
 	return true
 

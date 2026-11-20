@@ -28,6 +28,7 @@ var _core_buttons: Array[CombatFireButton] = []
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
 const CORE_STOCK := {CoreCombatRules.ROUND: 40, CoreCombatRules.EMBER: 20, CoreCombatRules.STOWED: 8}
+const NPC_STOCK := {CoreCombatRules.NPC_REPAIR: 24}
 
 var _authority := RefCounted.new()
 var _world: SectorWorld
@@ -184,19 +185,20 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_npc_presenter = NpcStatePresenter.new()
 	_npc_motor.add_child(_npc_presenter)
 	_npc_brain = NpcBrain.create(PRACTICE_TARGET, sector, _combat, _npc_motor, NPC_TUNING as NpcAiTuning, true)
-	if _npc_brain == null or not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
+	if _npc_brain == null:
 		push_error("VS-02 AI setup failed")
 		return
 
 	var input: GameplayInputController = $InputController
 	input.combat_target_at = _target_at
 	_loot = LootAuthority.new(sector, _streams, VS03_LOOT_TABLE as LootTable, VS03_LOOT_ITEM as ItemDefinition, true)
-	if not _loot.bind_inventory_owner(FoundationSector.PLAYER, CORE_STOCK):
+	if not _loot.bind_inventory_owner(FoundationSector.PLAYER, CORE_STOCK) or not _loot.reserve_inventory_item(PRACTICE_TARGET, CoreCombatRules.NPC_REPAIR):
 		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
 	_loot.initialize_missing_stock(CORE_STOCK)
+	_loot.initialize_missing_stock(NPC_STOCK)
 	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(CoreCombatRules.ammo(ROUND_AMMO, CoreCombatRules.ROUND, CoreCombatRules.NEUTRAL, 1.0)) or not _combat.register_ammo(CoreCombatRules.ammo(EMBER_AMMO, CoreCombatRules.EMBER, CoreCombatRules.FIRE, 1.15, "status.scorched")):
 		return
 	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):
@@ -204,6 +206,17 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _combat.configure_defense(FoundationSector.PLAYER, 0.15, {}, 8.0, 8.0) or not _combat.configure_defense(PRACTICE_TARGET, 0.1, {CoreCombatRules.FIRE: -0.2}, 0.0, 6.0):
 		return
 	if _pending_combat.has("combat") and not _combat.restore_state(_pending_combat["combat"]):
+		return
+	if _pending_combat.has("npc_motion"):
+		var motion: Variant = _pending_combat["npc_motion"]
+		if not ShipMotor.valid_save_motion(motion) or not sector.move_entity(PRACTICE_TARGET, Vector2(motion["x"], motion["y"])):
+			return
+		_npc_motor.restore_save_motion(motion)
+	if _pending_combat.has("npc_ai") and not _npc_brain.restore_state(_pending_combat["npc_ai"]):
+		return
+	if _pending_combat.has("scheduler") and not _ai_scheduler.restore_state(_pending_combat["scheduler"]):
+		return
+	if not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
 		return
 	if not _combat.is_alive(PRACTICE_TARGET):
 		_npc_brain.mark_sunk()
@@ -407,7 +420,15 @@ func _flush_checkpoint() -> void:
 		return
 	_last_attempt_ms = Time.get_ticks_msec()
 	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
-	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, {"combat": _combat.snapshot_state()} if _combat != null else {})
+	var authority_state: Dictionary = {}
+	if _combat != null and _npc_brain != null:
+		authority_state = {
+			"combat": _combat.snapshot_state(),
+			"npc_motion": _npc_motor.capture_save_motion(),
+			"npc_ai": _npc_brain.persistence_state(),
+			"scheduler": _ai_scheduler.snapshot_state(),
+		}
+	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, authority_state)
 	save_status = _save_service.save_if_dirty(dto)
 
 

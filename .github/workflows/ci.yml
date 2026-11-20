@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   statuses: write
+  actions: read
 
 concurrency:
   group: seacraft-ci-${{ github.ref }}
@@ -240,6 +241,7 @@ jobs:
           cat build/SHA256SUMS.txt
 
       - name: Upload verified build artifacts
+        id: build_artifact
         uses: actions/upload-artifact@v4
         with:
           name: SeaCraft-CORE01-${{ github.sha }}
@@ -252,6 +254,27 @@ jobs:
             build/COMMIT_SHA.txt
             build/SHA256SUMS.txt
 
+
+      - name: Verify uploaded archive and committed provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.build_artifact.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.build_artifact.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          test -n "$ARTIFACT_ID"
+          test -n "$ARTIFACT_DIGEST"
+          archive="$RUNNER_TEMP/seacraft-core01.zip"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" > "$archive"
+          digest="${ARTIFACT_DIGEST#sha256:}"
+          printf '%s  %s\n' "$digest" "$archive" | sha256sum -c -
+          unpack="$(mktemp -d)"
+          unzip -q "$archive" -d "$unpack"
+          printf '%s\n' "$GITHUB_SHA" | cmp - "$unpack/COMMIT_SHA.txt"
+          cmp build/SHA256SUMS.txt "$unpack/SHA256SUMS.txt"
+          (cd "$unpack" && sha256sum -c SHA256SUMS.txt)
+          echo "CORE01_ARCHIVE_VERIFIED artifact_id=$ARTIFACT_ID sha256=$digest sha=$GITHUB_SHA"
 
       - name: Publish final CI status
         if: always()

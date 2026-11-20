@@ -18,6 +18,7 @@ var _claimed: Dictionary = {}
 var _inventory: Dictionary = {}
 var _extra_inventory_ids: Dictionary = {}
 var _inventory_owner := ""
+var _reserved_by_item: Dictionary = {}
 var _processed_events: Dictionary = {}
 var _query_candidates: Array[String] = []
 var _last_query_inspected := 0
@@ -85,6 +86,9 @@ func pickup(player_id: String, command: Dictionary) -> Dictionary:
 		return result
 	var player_position := _sector.entity_position(player_id)
 	var drop_position := Vector2(drop["x"], drop["y"])
+	if not _inventory_owner.is_empty() and player_id != _inventory_owner:
+		result["reason"] = "inventory_owner_mismatch"
+		return result
 	if not player_position.is_finite() or player_position.distance_to(drop_position) > PICKUP_RADIUS:
 		result["reason"] = "out_of_range"
 		return result
@@ -233,6 +237,16 @@ func bind_inventory_owner(actor: String, initial_stock: Dictionary) -> bool:
 	return true
 
 
+# Reservation grants another authority-owned actor access only to its dedicated supply.
+# The quantity remains in the same persisted VS-03 inventory map.
+func reserve_inventory_item(actor: String, item: String) -> bool:
+	if not SectorIds.valid(actor) or not SectorIds.valid(item) or _extra_inventory_ids.has(item) or _valid_item(item) or _reserved_by_item.size() >= 8:
+		return false
+	_extra_inventory_ids[item] = true
+	_reserved_by_item[item] = actor
+	return true
+
+
 func initialize_missing_stock(initial_stock: Dictionary) -> void:
 	for item in initial_stock:
 		if _extra_inventory_ids.has(item) and not _inventory.has(item) and initial_stock[item] is int and _integer_inventory_quantity(initial_stock[item]):
@@ -240,7 +254,7 @@ func initialize_missing_stock(initial_stock: Dictionary) -> void:
 
 
 func can_consume(actor: String, item: String, amount: int) -> bool:
-	return _authority_enabled and actor == _inventory_owner and not actor.is_empty() and _valid_quantity(amount) and inventory_quantity(item) >= amount
+	return _authority_enabled and not actor.is_empty() and actor == _reserved_by_item.get(item, _inventory_owner) and _valid_quantity(amount) and inventory_quantity(item) >= amount
 
 
 func consume(actor: String, item: String, amount: int) -> bool:

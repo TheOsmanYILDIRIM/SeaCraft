@@ -22,6 +22,7 @@ var damage_tick := -1
 var repair_amount := 0.0
 var repair_interval := 0
 var repair_item := ""
+var repair_is_ai := false
 var boarding_power := 0.0
 var boarding_protection := 0.0
 

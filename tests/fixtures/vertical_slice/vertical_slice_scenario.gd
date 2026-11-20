@@ -362,6 +362,16 @@ func _wire_runtime(restoring: bool, authority_state: Dictionary, loot_state: Dic
 		return false
 	if not _combat.register(NPC, "faction.hostile", 100.0):
 		return false
+	_loot = LootAuthority.new(_world.active(), _streams, LOOT_TABLE, LOOT_ITEM, true)
+	var ammo_id := "ammo.vs04_round"
+	var stock := {CoreCombatRules.ROUND: 16, CoreCombatRules.NPC_REPAIR: 24}
+	if not _loot.bind_inventory_owner(PLAYER, {CoreCombatRules.ROUND: 16}) or not _loot.reserve_inventory_item(NPC, CoreCombatRules.NPC_REPAIR) or not _combat.attach_inventory(_loot):
+		return false
+	if restoring and not _loot.restore_state(loot_state):
+		return false
+	_loot.initialize_missing_stock(stock)
+	if not _combat.register_ammo(CoreCombatRules.ammo(ammo_id, CoreCombatRules.ROUND, CoreCombatRules.NEUTRAL, 1.0)) or not _combat.mount_ammo(PLAYER, PackedStringArray([ammo_id])):
+		return false
 	if restoring and not _combat.restore_state(authority_state.get("combat")):
 		return false
 
@@ -375,10 +385,6 @@ func _wire_runtime(restoring: bool, authority_state: Dictionary, loot_state: Dic
 	if restoring and not _scheduler.restore_state(authority_state.get("scheduler")):
 		return false
 	if not _scheduler.register_brain(_brain, NPC_TUNING.decision_interval_ticks, 0):
-		return false
-
-	_loot = LootAuthority.new(_world.active(), _streams, LOOT_TABLE, LOOT_ITEM, true)
-	if restoring and not _loot.restore_state(loot_state):
 		return false
 
 	_save_service = SaveService.new(_save_directory)
