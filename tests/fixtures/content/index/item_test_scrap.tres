@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DefinitionIndexEntry" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/registry/definition_index_entry.gd" id="1_entry"]
+
+[resource]
+script = ExtResource("1_entry")
+stable_id = "item.test_scrap"
+definition_type = "item"
+resource_path = "res://tests/fixtures/content/definitions/item_test_scrap.tres"

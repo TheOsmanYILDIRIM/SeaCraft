@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1_sector"]
+
+[resource]
+script = ExtResource("1_sector")
+stable_id = "sector.test_harbor"
+display_name = "Test Harbor"
+controlling_faction_id = "faction.neutral"

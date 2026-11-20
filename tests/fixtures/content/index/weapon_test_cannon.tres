@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="DefinitionIndexEntry" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/registry/definition_index_entry.gd" id="1_entry"]
+
+[resource]
+script = ExtResource("1_entry")
+stable_id = "weapon.test_cannon"
+definition_type = "weapon"
+resource_path = "res://tests/fixtures/content/definitions/weapon_test_cannon.tres"

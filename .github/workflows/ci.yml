@@ -21,7 +21,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 verification and exports
+    name: FND-01 + FND-02 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -78,7 +78,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT smoke tests
+      - name: GUT FND-01 and FND-02 tests
         shell: bash
         run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
 
@@ -87,7 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           if grep -RInE --include='*.gd' 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|@rpc|rpc\(' src; then
-            echo "FND-01 source unexpectedly contains network/internet API usage." >&2
+            echo "Foundation source unexpectedly contains network/internet API usage." >&2
             exit 1
           fi
           if grep -RInE --include='*.gd' 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
@@ -186,7 +186,7 @@ jobs:
       - name: Upload verified build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-FND01-${{ github.sha }}
+          name: SeaCraft-FND02-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
