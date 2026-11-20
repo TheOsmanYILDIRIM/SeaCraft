@@ -109,3 +109,16 @@ The offline root passes its authoritative ship heading and target intent into `C
 No schema or RNG version change: the existing checkpoint persists encounter RNG progress. The practice NPC, hull, target locks, cooldown and combat sequence are **session-only**; they reset on reload. The saved player motion and active sector are not overwritten by initializing the practice encounter.
 
 **Android device checks not performed by CI:** ship tap/target lock with no accidental move, one-handed fire reach and perceived input latency, small-screen ring readability, salvo frame pacing, rapid tap/fire spam, target lock while the camera moves, and CPU/frame spikes on low- and mid-tier phones.
+
+
+## VS-02 mobile NPC AI slice
+
+VS-02 replaces the static practice target with one authority-owned SC-03 placeholder NPC. Its authoritative chain is a small `NpcBrain` custom FSM (`PATROL → ALERT → RETREAT → REPAIR → RESUME → PATROL`) with primitive-safe intent snapshots, integer-tick threat memory/decay, explicit hysteresis and a separate ShipMotor intent executor. Perception queries the FND-05 spatial hash only on scheduled AI decisions; movement remains on ShipMotor's fixed physics path. Open-water destinations use direct steering, and Navigation/AStar is requested only when the destination changes and direct travel is obstructed.
+
+**Beehave decision:** the T07 candidate was evaluated for this pilot but is intentionally not installed. This slice has only five centralized states and one bounded utility/safe-point choice; adding a per-agent behavior-tree Node graph would add framework/lifecycle cost without making the vertical-slice behavior clearer. The custom FSM is a `RefCounted` brain with no `_process()`, driven by `AiDecisionScheduler` at 10 physics ticks per decision (6 Hz at the 60 Hz authority clock), with a per-physics-tick decision budget and stagger offsets ready for multiple future agents. Beehave remains a later AI-01 candidate if branching behavior complexity justifies the extra runtime structure; it is not mixed with another AI framework here.
+
+Combat remains authoritative in `CombatAuthority`. A neutral `hull_damaged` signal feeds the brain's threat hook without making combat depend on AI, and fixed-tick repair uses the same combat hull authority. Presentation receives detached DTO snapshots only; the geometric NPC silhouette plus PATROL/ALERT/RETREAT/REPAIR/RESUME text markers are not authoritative state.
+
+VS-02 NPC AI state is deliberately **session-only**. FND-06 save schema/version is unchanged; VS-03 owns the later NPC/loot persistence expansion. Determinism here means the same initial state, waypoint data, hull/threat event trace and decision schedule produce the same state/intent trace; Godot floating-point physics is not claimed as lockstep.
+
+**Android device checks not performed by CI:** NPC patrol visual smoothness; Alert/Retreat readability after attack; retreat hitching; Repair/Resume transitions; 30/60 FPS frame pacing; CPU use during long sailing; camera pan/zoom plus NPC state-change spikes; rapid combat-event decision spikes; and AI decision cost on low- and mid-tier phones.

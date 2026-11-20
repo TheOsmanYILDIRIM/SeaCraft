@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="NpcAiTuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/ai/npc_ai_tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+decision_interval_ticks = 10
+perception_radius = 280.0
+max_threat = 1000
+threat_per_damage = 20.0
+threat_decay_interval_ticks = 30
+threat_decay_amount = 50
+retreat_enter_hull_ratio = 0.35
+retreat_exit_hull_ratio = 0.55
+retreat_threat_min = 120
+alert_threat_min = 1
+repair_entry_threat_max = 1000
+repair_interrupt_threat = 120
+repair_interval_ticks = 30
+repair_amount = 8.0
+resume_hull_ratio = 0.7
+resume_threat_max = 50
+safe_distance = 180.0
+arrival_radius = 24.0
+retreat_fallback_distance = 160.0
+patrol_waypoint_ids = PackedStringArray("waypoint.vs02.northwest", "waypoint.vs02.north", "waypoint.vs02.south", "waypoint.vs02.southwest")
+patrol_waypoints = PackedVector2Array(-520, 260, -300, 260, -300, -260, -520, -260)
+safe_point_ids = PackedStringArray("safe.vs02.northwest", "safe.vs02.southwest", "safe.vs02.north", "safe.vs02.south")
+safe_points = PackedVector2Array(-560, 300, -560, -300, -360, 300, -360, -300)

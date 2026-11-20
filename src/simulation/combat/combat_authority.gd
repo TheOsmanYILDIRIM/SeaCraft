@@ -2,6 +2,7 @@ class_name CombatAuthority
 extends RefCounted
 
 signal ship_sunk(entity_id: String, sequence_id: int)
+signal hull_damaged(target_entity_id: String, attacker_entity_id: String, amount: float, remaining_hull: float, sequence_id: int)
 
 const FIRE := "fire_weapon"
 const SELECT := "select_combat_target"
@@ -105,6 +106,44 @@ func hull(id: String) -> float:
 	return ship.hull if ship != null else 0.0
 
 
+func has_combatant(id: String) -> bool:
+	return _roster.has(id)
+
+
+func faction_id(id: String) -> String:
+	var ship: CombatantState = _roster.get(id)
+	return ship.faction_id if ship != null else ""
+
+
+func is_alive(id: String) -> bool:
+	var ship: CombatantState = _roster.get(id)
+	return ship != null and not ship.sunk() and _sector != null and _sector.entity_position(id).is_finite()
+
+
+func hostile(observer_id: String, other_id: String) -> bool:
+	if observer_id == other_id:
+		return false
+	var observer: CombatantState = _roster.get(observer_id)
+	var other: CombatantState = _roster.get(other_id)
+	return observer != null and other != null and not other.sunk() and observer.faction_id != other.faction_id
+
+
+func hull_ratio(id: String) -> float:
+	var ship: CombatantState = _roster.get(id)
+	if ship == null or not is_finite(ship.max_hull) or ship.max_hull <= 0.0:
+		return 0.0
+	return clampf(ship.hull / ship.max_hull, 0.0, 1.0)
+
+
+func repair_hull(id: String, amount: float) -> float:
+	var ship: CombatantState = _roster.get(id)
+	if ship == null or ship.sunk() or not is_finite(amount) or amount <= 0.0:
+		return 0.0
+	var applied := minf(amount, maxf(0.0, ship.max_hull - ship.hull))
+	ship.hull += applied
+	return applied
+
+
 # attacker_id and heading come from the authority-owned actor, never from the intent.
 # An accepted volley uses exactly two encounter rolls, including misses and guaranteed hits.
 func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionary:
@@ -160,6 +199,8 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	result["applied_hull_damage"] = applied
 	result["remaining_hull"] = target.hull
 	result["sunk"] = target.sunk()
+	if applied > 0.0:
+		hull_damaged.emit(target_id, attacker_id, applied, target.hull, _sequence)
 	if target.sunk():
 		attacker.locked_id = ""
 		ship_sunk.emit(target_id, _sequence)

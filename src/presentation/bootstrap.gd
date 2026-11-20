@@ -3,13 +3,19 @@ extends Node2D
 const BOOT_MARKER := "SeaCraft bootstrap ready"
 
 const CHECKPOINT_INTERVAL_MS := 20000
-const PRACTICE_TARGET := "entity.vs01_practice_ship"
-const PRACTICE_POSITION := Vector2(-240, 150)
+const PRACTICE_TARGET := "entity.vs02_sc03"
+const PRACTICE_POSITION := Vector2(-520, 260)
+const NPC_TUNING := preload("res://src/data/ai/vs02_sc03_tuning.tres")
 
 var _combat: CombatAuthority
 var _practice_marker: Polygon2D
 var _target_ring: Line2D
 var _fire_control: CombatFireButton
+var _npc_motor: ShipMotor
+var _npc_brain: NpcBrain
+var _npc_presenter: NpcStatePresenter
+var _ai_scheduler := AiDecisionScheduler.new(8)
+var _last_npc_sequence := -1
 
 var _authority := RefCounted.new()
 var _world: SectorWorld
@@ -76,6 +82,11 @@ func _physics_process(_delta: float) -> void:
 		_combat.advance_tick()
 	var position_now := _ship_motor.global_position
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
+	if _npc_motor != null and _combat != null and _combat.is_alive(PRACTICE_TARGET):
+		_world.active().move_entity(PRACTICE_TARGET, _npc_motor.global_position)
+	if _npc_brain != null:
+		_ai_scheduler.advance_physics_tick()
+		_refresh_npc_state()
 	if position_now != _last_position or _ship_motor.velocity != _last_velocity or _ship_motor.rotation != _last_heading or _ship_motor.has_target() != _observed_target:
 		_save_service.mark_dirty()
 	_last_position = position_now
@@ -122,23 +133,41 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	cannon.accuracy = 0.92
 	cannon.crit_chance = 0.15
 	if not sector.navigation.accessible(PRACTICE_POSITION) or not sector.register_entity(PRACTICE_TARGET, PRACTICE_POSITION):
-		push_error("VS-01 practice target placement failed")
+		push_error("VS-02 NPC placement failed")
 		return
 	if not _combat.register(FoundationSector.PLAYER, "faction.player", 100.0, cannon) or not _combat.register(PRACTICE_TARGET, "faction.practice_hostile", 75.0, null, 4.0, 0.05):
-		push_error("VS-01 combat roster setup failed")
+		push_error("VS-02 combat roster setup failed")
 		return
+
+	_npc_motor = ShipMotor.new()
+	_npc_motor.name = "Vs02NpcMotor"
+	_npc_motor.collision_layer = FoundationSector.SHIP_LAYER
+	_npc_motor.collision_mask = FoundationSector.COAST_LAYER
+	_npc_motor.process_physics_priority = -1
+	add_child(_npc_motor)
+	_npc_motor.global_position = PRACTICE_POSITION
+
 	_practice_marker = Polygon2D.new()
-	_practice_marker.position = PRACTICE_POSITION
-	_practice_marker.polygon = PackedVector2Array([Vector2(-18, 12), Vector2(20, 0), Vector2(-18, -12)])
-	_practice_marker.color = Color(0.9, 0.48, 0.33)
-	add_child(_practice_marker)
+	_practice_marker.polygon = PackedVector2Array([
+		Vector2(-22, 14), Vector2(17, 11), Vector2(27, 0), Vector2(17, -11), Vector2(-22, -14), Vector2(-14, 0),
+	])
+	_practice_marker.color = Color(0.78, 0.42, 0.28)
+	_npc_motor.add_child(_practice_marker)
+
 	_target_ring = Line2D.new()
 	_target_ring.width = 3.5
 	_target_ring.default_color = Color(1.0, 0.9, 0.2)
 	for i in range(25):
-		_target_ring.add_point(Vector2.from_angle(TAU * float(i) / 24.0) * 27.0)
+		_target_ring.add_point(Vector2.from_angle(TAU * float(i) / 24.0) * 31.0)
 	_target_ring.hide()
 	_practice_marker.add_child(_target_ring)
+
+	_npc_presenter = NpcStatePresenter.new()
+	_npc_motor.add_child(_npc_presenter)
+	_npc_brain = NpcBrain.create(PRACTICE_TARGET, sector, _combat, _npc_motor, NPC_TUNING as NpcAiTuning, true)
+	if _npc_brain == null or not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
+		push_error("VS-02 AI setup failed")
+		return
 
 	var input: GameplayInputController = $InputController
 	input.combat_target_at = _target_at
@@ -153,7 +182,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	$UI.add_child(_fire_control)
 	get_viewport().size_changed.connect(_layout_fire_control)
 	_layout_fire_control()
+	_combat.hull_damaged.connect(_on_hull_damaged)
 	_combat.ship_sunk.connect(_on_ship_sunk)
+	_refresh_npc_state()
 	_refresh_combat_indicator()
 
 
@@ -179,9 +210,33 @@ func _on_fire_pressed() -> void:
 	input.emit_fire_intent(_combat.locked_target(FoundationSector.PLAYER))
 
 
+func _on_hull_damaged(target_id: String, attacker_id: String, amount: float, _remaining_hull: float, sequence_id: int) -> void:
+	if target_id == PRACTICE_TARGET and _npc_brain != null:
+		_npc_brain.record_combat_damage(attacker_id, amount, sequence_id, _ai_scheduler.current_tick())
+
+
 func _on_ship_sunk(id: String, _sequence: int) -> void:
 	if id == PRACTICE_TARGET:
-		_practice_marker.hide()
+		if _npc_brain != null:
+			_npc_brain.mark_sunk()
+		if _npc_motor != null:
+			_npc_motor.cancel_target()
+			_npc_motor.set_physics_process(false)
+		if _practice_marker != null:
+			_practice_marker.hide()
+		if _npc_presenter != null:
+			_npc_presenter.hide()
+
+
+func _refresh_npc_state() -> void:
+	if _npc_brain == null or _npc_presenter == null:
+		return
+	var snapshot := _npc_brain.snapshot()
+	var sequence: int = snapshot["decision_sequence"]
+	if sequence == _last_npc_sequence:
+		return
+	_last_npc_sequence = sequence
+	_npc_presenter.apply_snapshot(snapshot)
 
 
 func _refresh_combat_indicator() -> void:
