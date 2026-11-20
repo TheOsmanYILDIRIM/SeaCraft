@@ -118,8 +118,13 @@ jobs:
         run: |
           set -euo pipefail
           : "${ANDROID_HOME:?ANDROID_HOME must be set by the runner}"
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --sdk_root="$ANDROID_HOME" \
+          sdkmanager_bin="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -x "$sdkmanager_bin" ]]; then
+            sdkmanager_bin="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          fi
+          test -x "$sdkmanager_bin"
+          yes | "$sdkmanager_bin" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
+          "$sdkmanager_bin" --sdk_root="$ANDROID_HOME" \
             "platform-tools" \
             "build-tools;35.0.1" \
             "platforms;android-35" \
