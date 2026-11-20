@@ -134,7 +134,7 @@ func on_wreck_destroyed(actor: String, entity_id: String, sequence_id: int) -> D
 		return result
 	_claimed[entity_id] = true
 	_objects.erase(entity_id)
-	_sector.remove_entity(entity_id)
+	_combat.retire_destroyed(entity_id)
 	result["accepted"] = true
 	result["item_id"] = reward["item_id"]
 	result["quantity"] = reward["quantity"]
