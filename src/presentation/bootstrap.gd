@@ -23,6 +23,11 @@ var _loot_marker: Polygon2D
 var _pickup_control: LootPickupButton
 var _nearby_drop_id := ""
 var _pending_loot_state: Dictionary = {}
+var _pending_combat: Dictionary = {}
+var _core_buttons: Array[CombatFireButton] = []
+const ROUND_AMMO := "ammo.core_round"
+const EMBER_AMMO := "ammo.core_ember"
+const CORE_STOCK := {CoreCombatRules.ROUND: 40, CoreCombatRules.EMBER: 20, CoreCombatRules.STOWED: 8}
 
 var _authority := RefCounted.new()
 var _world: SectorWorld
@@ -62,6 +67,7 @@ func _ready() -> void:
 				return
 			_session_id = dto["ownership"]["session_id"]
 			_pending_loot_state = SaveSnapshot.loot_state(dto)
+			_pending_combat = SaveSnapshot.authoritative_state(dto)
 			if save_status["status"] == SaveService.RECOVERED:
 				_save_service.mark_dirty()
 				push_warning("SeaCraft restored a backup checkpoint")
@@ -78,6 +84,9 @@ func _ready() -> void:
 	_ship_motor.process_physics_priority = -1
 	_build_sector_geometry(_world.active())
 	_setup_combat(_world.active())
+	if _fire_control == null:
+		_block_boot({"status": "combat_setup_failed"})
+		return
 	print(BOOT_MARKER)
 
 
@@ -182,9 +191,25 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	var input: GameplayInputController = $InputController
 	input.combat_target_at = _target_at
 	_loot = LootAuthority.new(sector, _streams, VS03_LOOT_TABLE as LootTable, VS03_LOOT_ITEM as ItemDefinition, true)
+	if not _loot.bind_inventory_owner(FoundationSector.PLAYER, CORE_STOCK):
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
+	_loot.initialize_missing_stock(CORE_STOCK)
+	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(CoreCombatRules.ammo(ROUND_AMMO, CoreCombatRules.ROUND, CoreCombatRules.NEUTRAL, 1.0)) or not _combat.register_ammo(CoreCombatRules.ammo(EMBER_AMMO, CoreCombatRules.EMBER, CoreCombatRules.FIRE, 1.15, "status.scorched")):
+		return
+	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):
+		return
+	if not _combat.configure_defense(FoundationSector.PLAYER, 0.15, {}, 8.0, 8.0) or not _combat.configure_defense(PRACTICE_TARGET, 0.1, {CoreCombatRules.FIRE: -0.2}, 0.0, 6.0):
+		return
+	if _pending_combat.has("combat") and not _combat.restore_state(_pending_combat["combat"]):
+		return
+	if not _combat.is_alive(PRACTICE_TARGET):
+		_npc_brain.mark_sunk()
+		_npc_motor.set_physics_process(false)
+		_practice_marker.hide()
+		_npc_presenter.hide()
 	_loot.drop_created.connect(_on_loot_drop_created)
 	_loot.drop_claimed.connect(_on_loot_drop_claimed)
 
@@ -214,6 +239,16 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_pickup_control.pressed.connect(_on_pickup_pressed)
 	_pickup_control.hide()
 	$UI.add_child(_pickup_control)
+	for spec: Array in [["YUVARLAK", CombatAuthority.AMMO_SELECT, ROUND_AMMO], ["KOR", CombatAuthority.AMMO_SELECT, EMBER_AMMO], ["ONAR", CombatAuthority.REPAIR, ""], ["BORDALA", CombatAuthority.BOARD, ""], ["TAKVİYE", CombatAuthority.ACTION, CoreCombatRules.ACTION]]:
+		var button := CombatFireButton.new()
+		button.text = spec[0]
+		button.size = Vector2(126, 64)
+		button.focus_mode = Control.FOCUS_NONE
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.touch_captured.connect(input.reset_touch)
+		button.pressed.connect(_on_core_pressed.bind(button, str(spec[0]), str(spec[1]), str(spec[2])))
+		$UI.add_child(button)
+		_core_buttons.append(button)
 	get_viewport().size_changed.connect(_layout_fire_control)
 	_layout_fire_control()
 	_combat.hull_damaged.connect(_on_hull_damaged)
@@ -239,6 +274,17 @@ func _layout_fire_control() -> void:
 	_fire_control.position = safe.end - _fire_control.size - Vector2(36.0, 36.0)
 	if _pickup_control != null:
 		_pickup_control.position = Vector2(_fire_control.position.x - _pickup_control.size.x - 28.0, _fire_control.position.y)
+	for index in _core_buttons.size():
+		var button := _core_buttons[index]
+		button.position = Vector2(safe.position.x + 24.0 + float(index % 2) * 134.0, safe.end.y - 32.0 - (floorf(float(index) * 0.5) + 1.0) * 70.0)
+
+
+func _on_core_pressed(button: CombatFireButton, label: String, kind: String, id: String) -> void:
+	var target := _combat.locked_target(FoundationSector.PLAYER) if kind == CombatAuthority.BOARD else id
+	var result := _combat.transact(FoundationSector.PLAYER, CombatAuthority.intent(kind, target))
+	button.text = label + (" ✓" if result["success"] else " ×")
+	if result["accepted"]:
+		_save_service.mark_dirty()
 
 
 func _on_fire_pressed() -> void:
@@ -361,7 +407,7 @@ func _flush_checkpoint() -> void:
 		return
 	_last_attempt_ms = Time.get_ticks_msec()
 	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
-	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state)
+	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, {"combat": _combat.snapshot_state()} if _combat != null else {})
 	save_status = _save_service.save_if_dirty(dto)
 
 

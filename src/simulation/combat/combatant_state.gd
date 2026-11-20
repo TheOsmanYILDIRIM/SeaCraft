@@ -11,7 +11,19 @@ var defense := 0.0
 var battery: WeaponBattery
 var locked_id := ""
 var normal_damage := 0.0
-var critical_damage := 0.0
+var attack_modifiers: Dictionary = {}
+var ammo_damage: Dictionary = {}
+var selected_ammo := ""
+var crit_prevention := 0.0
+var resistances: Dictionary = {}
+var statuses: Dictionary = {}
+var ready: Dictionary = {}
+var damage_tick := -1
+var repair_amount := 0.0
+var repair_interval := 0
+var repair_item := ""
+var boarding_power := 0.0
+var boarding_protection := 0.0
 
 
 func sunk() -> bool:

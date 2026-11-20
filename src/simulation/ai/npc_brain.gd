@@ -53,6 +53,8 @@ func _configure(entity_id: String, sector: SectorRuntime, combat: CombatAuthorit
 			return false
 	if not _executor.configure(motor, sector.navigation):
 		return false
+	if authority_enabled and not combat.configure_repair(entity_id, tuning.repair_amount, tuning.repair_interval_ticks):
+		return false
 	_entity_id = entity_id
 	_sector = sector
 	_combat = combat
@@ -301,7 +303,7 @@ func _decide_repair(hull_ratio: float, simulation_tick: int) -> void:
 			_investigate()
 		return
 	while simulation_tick >= _next_repair_tick and _combat.is_alive(_entity_id):
-		_combat.repair_hull(_entity_id, _tuning.repair_amount)
+		_combat.ai_repair(_entity_id, _next_repair_tick)
 		_next_repair_tick += _tuning.repair_interval_ticks
 	hull_ratio = _combat.hull_ratio(_entity_id)
 	_intent = Intent.REPAIR

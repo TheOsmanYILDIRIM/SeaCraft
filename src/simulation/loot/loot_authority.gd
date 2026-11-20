@@ -16,6 +16,8 @@ var _authority_enabled := true
 var _drops: Dictionary = {}
 var _claimed: Dictionary = {}
 var _inventory: Dictionary = {}
+var _extra_inventory_ids: Dictionary = {}
+var _inventory_owner := ""
 var _processed_events: Dictionary = {}
 var _query_candidates: Array[String] = []
 var _last_query_inspected := 0
@@ -205,7 +207,7 @@ func validate_state(value: Variant) -> bool:
 		if not id is String or not SectorIds.valid(id):
 			return false
 	for item_id in state["inventory"]:
-		if not item_id is String or not _valid_item(item_id) or not _integer_inventory_quantity(state["inventory"][item_id]):
+		if not item_id is String or not (_valid_item(item_id) or _extra_inventory_ids.has(item_id)) or not _integer_inventory_quantity(state["inventory"][item_id]):
 			return false
 	for event_id in state["processed_events"]:
 		var drop_id: Variant = state["processed_events"][event_id]
@@ -216,6 +218,36 @@ func validate_state(value: Variant) -> bool:
 
 func inventory_quantity(item_id: String) -> int:
 	return _inventory.get(item_id, 0)
+
+
+# Trusted world setup only; gameplay cannot grant stock through an intent.
+func bind_inventory_owner(actor: String, initial_stock: Dictionary) -> bool:
+	if not _inventory_owner.is_empty() or not SectorIds.valid(actor) or initial_stock.size() > 8:
+		return false
+	for item in initial_stock:
+		if not item is String or not SectorIds.valid(item) or not initial_stock[item] is int or not _integer_inventory_quantity(initial_stock[item]):
+			return false
+	_inventory_owner = actor
+	for item in initial_stock:
+		_extra_inventory_ids[item] = true
+	return true
+
+
+func initialize_missing_stock(initial_stock: Dictionary) -> void:
+	for item in initial_stock:
+		if _extra_inventory_ids.has(item) and not _inventory.has(item) and initial_stock[item] is int and _integer_inventory_quantity(initial_stock[item]):
+			_inventory[item] = initial_stock[item]
+
+
+func can_consume(actor: String, item: String, amount: int) -> bool:
+	return _authority_enabled and actor == _inventory_owner and not actor.is_empty() and _valid_quantity(amount) and inventory_quantity(item) >= amount
+
+
+func consume(actor: String, item: String, amount: int) -> bool:
+	if not can_consume(actor, item, amount):
+		return false
+	_inventory[item] = inventory_quantity(item) - amount
+	return true
 
 
 func has_drop(drop_id: String) -> bool:

@@ -267,7 +267,11 @@ func test_repair_applies_on_fixed_tick_interval() -> void:
 
 func test_repair_never_exceeds_max_hull() -> void:
 	_enter_repair(20)
-	assert_gt(combat.repair_hull(NPC, 68.0), 0.0)
+	var snapshot := combat.snapshot_state()
+	for entry: Dictionary in snapshot["combatants"]:
+		if entry["entity_id"] == NPC:
+			entry["hull"] = 98.0
+	assert_true(combat.restore_state(snapshot))
 	assert_eq(combat.hull(NPC), 98.0)
 	brain.decision_tick(50)
 	assert_eq(combat.hull(NPC), 100.0)
@@ -304,7 +308,11 @@ func test_resume_is_followed_by_patrol() -> void:
 
 func test_hysteresis_prevents_retreat_alert_oscillation() -> void:
 	_enter_repair(20)
-	combat.repair_hull(NPC, 20.0)
+	var snapshot := combat.snapshot_state()
+	for entry: Dictionary in snapshot["combatants"]:
+		if entry["entity_id"] == NPC:
+			entry["hull"] = 50.0
+	assert_true(combat.restore_state(snapshot))
 	brain.decision_tick(30)
 	assert_eq(brain.state_id(), NpcBrain.State.REPAIR)
 	assert_lt(combat.hull_ratio(NPC), tuning.resume_hull_ratio)

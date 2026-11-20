@@ -7,6 +7,17 @@ signal hull_damaged(target_entity_id: String, attacker_entity_id: String, amount
 const FIRE := "fire_weapon"
 const SELECT := "select_combat_target"
 const MAX_RELOAD_SECONDS := 3600.0
+const AMMO_SELECT := "select_ammo"
+const REPAIR := "repair_hull"
+const BOARD := "board_ship"
+const ACTION := "use_action_item"
+const BOARD_RANGE := 120.0
+const BOARD_THRESHOLD := 0.45
+const BOARD_COOLDOWN := 240
+
+var _enabled := true
+var _inventory: LootAuthority
+var _ammo_profiles: Dictionary = {}
 
 var _sector: SectorRuntime
 var _streams: SeedStreams
@@ -17,10 +28,11 @@ var _sequence := 0
 var _tick_rate: int
 
 
-func _init(sector: SectorRuntime, streams: SeedStreams, tick_rate: int = 60) -> void:
+func _init(sector: SectorRuntime, streams: SeedStreams, tick_rate: int = 60, enabled: bool = true) -> void:
 	_sector = sector
 	_streams = streams
 	_tick_rate = clampi(tick_rate, 1, 1000)
+	_enabled = enabled
 
 
 # Configuration is copied at registration; no Resource loading, sorting or copying on fire.
@@ -29,9 +41,9 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 		attack_modifiers: Dictionary = {}, mounted_side: int = 0) -> bool:
 	if _sector == null or not SectorIds.valid(id) or not SectorIds.valid(faction) or _roster.has(id):
 		return false
-	if not _sector.entity_position(id).is_finite() or not is_finite(max_hull) or max_hull <= 0.0:
+	if not _sector.entity_position(id).is_finite() or not CoreCombatRules.bounded(max_hull, 0.000001, CoreCombatRules.MAX_VALUE):
 		return false
-	if not is_finite(defense) or defense < 0.0 or not probability(dodge) or absi(mounted_side) > 1:
+	if not CoreCombatRules.bounded(defense, 0.0, CoreCombatRules.MAX_VALUE) or not probability(dodge) or absi(mounted_side) > 1:
 		return false
 	var ship := CombatantState.new()
 	ship.faction_id = faction
@@ -43,15 +55,11 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 	if weapon != null:
 		if not _valid_weapon(weapon) or not _valid_modifiers(attack_modifiers):
 			return false
-		var critical_base := weapon.base_damage * weapon.crit_multiplier
-		if not is_finite(critical_base):
+		var normal := CoreCombatRules.base_damage(weapon, null, attack_modifiers)
+		if not is_finite(normal):
 			return false
-		var normal := StatModifierPipeline.apply_from_dictionary(weapon.base_damage, attack_modifiers)
-		var critical := StatModifierPipeline.apply_from_dictionary(critical_base, attack_modifiers)
-		if not is_finite(normal) or not is_finite(critical):
-			return false
-		ship.normal_damage = maxf(0.0, normal)
-		ship.critical_damage = maxf(0.0, critical)
+		ship.normal_damage = normal
+		ship.attack_modifiers = attack_modifiers.duplicate(true)
 		ship.battery = WeaponBattery.new()
 		ship.battery.weapon = weapon.duplicate() as WeaponDefinition
 		ship.battery.mounted_side = mounted_side
@@ -61,7 +69,13 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 
 
 func advance_tick() -> void:
-	_tick += 1
+	_tick = mini(_tick + 1, CoreCombatRules.MAX_CLOCK)
+	for ship: CombatantState in _roster.values():
+		if ship.statuses.is_empty():
+			continue
+		for id in ship.statuses.keys():
+			if int(ship.statuses[id]["expires"]) <= _tick:
+				ship.statuses.erase(id)
 
 
 func acquire(attacker_id: String, point: Vector2, radius: float) -> String:
@@ -77,7 +91,7 @@ func acquisition_inspected() -> int:
 
 func select(attacker_id: String, target_id: String) -> bool:
 	var attacker: CombatantState = _roster.get(attacker_id)
-	if attacker == null or attacker.sunk() or not _sector.entity_position(attacker_id).is_finite():
+	if not _enabled or attacker == null or attacker.sunk() or not _sector.entity_position(attacker_id).is_finite():
 		return false
 	if not TargetingService.rejection(_sector, attacker_id, attacker.faction_id, target_id, _roster).is_empty():
 		return false
@@ -87,7 +101,7 @@ func select(attacker_id: String, target_id: String) -> bool:
 
 func clear_target(attacker_id: String) -> void:
 	var attacker: CombatantState = _roster.get(attacker_id)
-	if attacker != null:
+	if _enabled and attacker != null:
 		attacker.locked_id = ""
 
 
@@ -135,13 +149,171 @@ func hull_ratio(id: String) -> float:
 	return clampf(ship.hull / ship.max_hull, 0.0, 1.0)
 
 
-func repair_hull(id: String, amount: float) -> float:
-	var ship: CombatantState = _roster.get(id)
-	if ship == null or ship.sunk() or not is_finite(amount) or amount <= 0.0:
-		return 0.0
-	var applied := minf(amount, maxf(0.0, ship.max_hull - ship.hull))
-	ship.hull += applied
-	return applied
+# Configuration entrypoints are used by the trusted world adapter, never by intents.
+func attach_inventory(inventory: LootAuthority) -> bool:
+	if inventory == null or _inventory != null:
+		return false
+	_inventory = inventory
+	return true
+
+
+func register_ammo(profile: AmmoProfile) -> bool:
+	if profile == null or not profile.valid() or not CoreCombatRules.element_valid(profile.element_id) or (not profile.status_id.is_empty() and not CoreCombatRules.STATUSES.has(profile.status_id)) or _ammo_profiles.has(profile.stable_id) or _ammo_profiles.size() >= 16:
+		return false
+	_ammo_profiles[profile.stable_id] = profile.duplicate() as AmmoProfile
+	return true
+
+
+func mount_ammo(id: String, ids: PackedStringArray) -> bool:
+	var actor: CombatantState = _roster.get(id)
+	if actor == null or actor.battery == null or not actor.ammo_damage.is_empty() or ids.is_empty() or ids.size() > 16:
+		return false
+	var computed: Dictionary = {}
+	for ammo_id in ids:
+		var profile: AmmoProfile = _ammo_profiles.get(ammo_id)
+		if profile == null or computed.has(ammo_id):
+			return false
+		var damage := CoreCombatRules.base_damage(actor.battery.weapon, profile, actor.attack_modifiers)
+		if not is_finite(damage):
+			return false
+		computed[ammo_id] = damage
+	actor.ammo_damage = computed
+	actor.selected_ammo = ids[0]
+	return true
+
+
+func configure_defense(id: String, critical_prevention: float, resistance: Dictionary, boarding_power: float, boarding_protection: float) -> bool:
+	var actor: CombatantState = _roster.get(id)
+	if actor == null or not probability(critical_prevention) or not CoreCombatRules.valid_resistances(resistance) or not CoreCombatRules.bounded(boarding_power, 0.0, 10000.0) or not CoreCombatRules.bounded(boarding_protection, 0.0, 10000.0):
+		return false
+	actor.crit_prevention = critical_prevention
+	actor.resistances = resistance.duplicate(true)
+	actor.boarding_power = boarding_power
+	actor.boarding_protection = boarding_protection
+	return true
+
+
+func configure_repair(id: String, amount: float, interval_ticks: int, item_id: String = "") -> bool:
+	var actor: CombatantState = _roster.get(id)
+	if actor == null or not CoreCombatRules.bounded(amount, 0.000001, actor.max_hull) or interval_ticks <= 0 or interval_ticks > CoreCombatRules.MAX_DURATION or (not item_id.is_empty() and not SectorIds.valid(item_id)):
+		return false
+	if actor.repair_interval != 0:
+		return actor.repair_amount == amount and actor.repair_interval == interval_ticks and actor.repair_item == item_id
+	actor.repair_amount = amount
+	actor.repair_interval = interval_ticks
+	actor.repair_item = item_id
+	return true
+
+
+static func intent(kind: String, id: String = "") -> Dictionary:
+	return {"domain": GameplayCommand.DOMAIN_GAMEPLAY, "type": kind, "id": id}
+
+
+func transact(actor_id: String, command: Dictionary) -> Dictionary:
+	return _transact(actor_id, command, _tick, false)
+
+
+# AI is a trusted local authority adapter. Scheduler time is not accepted from player intents.
+func ai_repair(actor_id: String, decision_tick: int) -> Dictionary:
+	return _transact(actor_id, intent(REPAIR), decision_tick, true)
+
+
+func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dictionary:
+	var result := {"accepted": false, "reason": "", "sequence_id": 0, "success": false, "amount": 0.0, "reward_id": ""}
+	if not _enabled:
+		return _reject(result, "authority_disabled")
+	if command.size() != 3 or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY or not command.get("type") is String or not command.get("id") is String:
+		return _reject(result, "malformed_command")
+	if not is_alive(actor_id):
+		return _reject(result, "invalid_actor")
+	if not _clock_available(now):
+		return _reject(result, "clock_exhausted")
+	var actor: CombatantState = _roster[actor_id]
+	var id: String = command["id"]
+	var kind: String = command["type"]
+	var item := ""
+	var cooldown := 0
+	var amount := 0.0
+	var success := true
+	var status := ""
+	match kind:
+		AMMO_SELECT:
+			if not actor.ammo_damage.has(id):
+				return _reject(result, "invalid_ammo")
+			var profile: AmmoProfile = _ammo_profiles[id]
+			if not _can_pay(actor_id, profile.item_id):
+				return _reject(result, "insufficient_resource")
+			actor.selected_ammo = id
+			result["accepted"] = true
+			result["success"] = true
+			return result
+		REPAIR:
+			if not id.is_empty() or actor.repair_interval == 0 or ai != actor.repair_item.is_empty():
+				return _reject(result, "repair_not_configured")
+			if not ai and actor.damage_tick >= 0 and now < actor.damage_tick + 120:
+				return _reject(result, "repair_interrupted")
+			amount = minf(actor.repair_amount, actor.max_hull - actor.hull)
+			if amount <= 0.0:
+				return _reject(result, "full_hull")
+			item = actor.repair_item
+			cooldown = actor.repair_interval
+		BOARD:
+			var reason := TargetingService.rejection(_sector, actor_id, actor.faction_id, id, _roster)
+			if not reason.is_empty():
+				return _reject(result, reason)
+			if _sector.entity_position(actor_id).distance_to(_sector.entity_position(id)) > BOARD_RANGE:
+				return _reject(result, "out_of_range")
+			if hull_ratio(id) > BOARD_THRESHOLD:
+				return _reject(result, "hull_threshold")
+			var target: CombatantState = _roster[id]
+			success = actor.boarding_power > target.boarding_protection
+			item = CoreCombatRules.STOWED
+			cooldown = BOARD_COOLDOWN
+		ACTION:
+			var profile: Dictionary = CoreCombatRules.ACTIONS.get(id, {})
+			if profile.is_empty() or profile["target"] != "self":
+				return _reject(result, "invalid_action")
+			status = profile["status"]
+			item = profile["item_id"]
+			cooldown = profile["cooldown"]
+		_:
+			return _reject(result, "unknown_intent")
+	var key := id if kind == ACTION else kind
+	if now < int(actor.ready.get(key, 0)):
+		return _reject(result, "cooldown")
+	if not _pay(actor_id, item):
+		return _reject(result, "insufficient_resource")
+	actor.ready[key] = now + cooldown
+	if amount > 0.0:
+		actor.hull = minf(actor.max_hull, actor.hull + amount)
+	if not status.is_empty():
+		_apply_status(actor, status, actor_id)
+	_sequence += 1
+	result["accepted"] = true
+	result["sequence_id"] = _sequence
+	result["success"] = success
+	result["amount"] = amount
+	if kind == BOARD and success:
+		result["reward_id"] = "reward.boarding_salvage"
+	return result
+
+
+func _can_pay(actor_id: String, item: String) -> bool:
+	return item.is_empty() or (_inventory != null and _inventory.can_consume(actor_id, item, 1))
+
+
+func _pay(actor_id: String, item: String) -> bool:
+	return item.is_empty() or (_inventory != null and _inventory.consume(actor_id, item, 1))
+
+
+func _clock_available(now: int) -> bool:
+	return now >= 0 and now <= CoreCombatRules.MAX_CLOCK - CoreCombatRules.MAX_DURATION and _sequence < CoreCombatRules.MAX_CLOCK
+
+
+func _apply_status(actor: CombatantState, id: String, source: String) -> void:
+	var profile: Dictionary = CoreCombatRules.STATUSES[id]
+	var previous: Dictionary = actor.statuses.get(id, {})
+	actor.statuses[id] = {"stacks": mini(int(previous.get("stacks", 0)) + 1, int(profile["max_stacks"])), "expires": _tick + int(profile["duration"]), "source": source}
 
 
 func snapshot_state() -> Dictionary:
@@ -162,6 +334,7 @@ func snapshot_state() -> Dictionary:
 			"hull": ship.hull,
 			"locked_id": ship.locked_id,
 			"battery": battery,
+			"core": {"selected_ammo": ship.selected_ammo, "statuses": ship.statuses.duplicate(true), "ready": ship.ready.duplicate(true), "damage_tick": ship.damage_tick},
 		})
 	return {"tick": _tick, "sequence": _sequence, "combatants": combatants}
 
@@ -179,7 +352,7 @@ func restore_state(value: Variant) -> bool:
 		return false
 	var planned: Dictionary = {}
 	for raw in raw_combatants:
-		if not raw is Dictionary or raw.size() != 4:
+		if not raw is Dictionary or raw.size() not in [4, 5] or (raw.size() == 5 and not raw.has("core")):
 			return false
 		var entry: Dictionary = raw
 		var raw_id: Variant = entry.get("entity_id")
@@ -205,10 +378,14 @@ func restore_state(value: Variant) -> bool:
 				return false
 			if not _state_integer(raw_battery.get("last_side")) or absi(int(raw_battery["last_side"])) > 1:
 				return false
+		var core: Variant = entry.get("core", {"selected_ammo": ship.selected_ammo, "statuses": {}, "ready": {}, "damage_tick": -1})
+		if not _valid_core_state(core, ship, int(state["tick"])):
+			return false
 		planned[raw_id] = {
 			"hull": restored_hull,
 			"locked_id": raw_lock,
 			"battery": raw_battery.duplicate(true),
+			"core": core.duplicate(true),
 		}
 	if planned.size() != _roster.size():
 		return false
@@ -227,6 +404,11 @@ func restore_state(value: Variant) -> bool:
 		var entry: Dictionary = planned[id]
 		ship.hull = entry["hull"]
 		ship.locked_id = entry["locked_id"]
+		var core: Dictionary = entry["core"]
+		ship.selected_ammo = core["selected_ammo"]
+		ship.statuses = core["statuses"]
+		ship.ready = core["ready"]
+		ship.damage_tick = int(core["damage_tick"])
 		if ship.battery != null:
 			var battery_state: Dictionary = entry["battery"]
 			ship.battery.ready_tick = int(battery_state["ready_tick"])
@@ -238,10 +420,45 @@ func restore_state(value: Variant) -> bool:
 
 # attacker_id and heading come from the authority-owned actor, never from the intent.
 # An accepted volley uses exactly two encounter rolls, including misses and guaranteed hits.
+func _valid_core_state(value: Variant, ship: CombatantState, tick: int) -> bool:
+	if not value is Dictionary or value.size() != 4:
+		return false
+	var selected: Variant = value.get("selected_ammo")
+	if not selected is String or (not ship.ammo_damage.is_empty() and not ship.ammo_damage.has(selected)) or (ship.ammo_damage.is_empty() and not selected.is_empty()):
+		return false
+	var damage_tick: Variant = value.get("damage_tick")
+	if not _state_integer(damage_tick) or int(damage_tick) < -1 or int(damage_tick) > tick:
+		return false
+	var ready: Variant = value.get("ready")
+	var statuses: Variant = value.get("statuses")
+	if not ready is Dictionary or ready.size() > 4 or not statuses is Dictionary or statuses.size() > CoreCombatRules.STATUSES.size():
+		return false
+	for key in ready:
+		if key not in [REPAIR, BOARD] and not CoreCombatRules.ACTIONS.has(key):
+			return false
+		if not _state_integer(ready[key]) or int(ready[key]) < 0:
+			return false
+	for id in statuses:
+		var entry: Variant = statuses[id]
+		if not CoreCombatRules.STATUSES.has(id) or not entry is Dictionary or entry.size() != 3:
+			return false
+		if not entry.get("source") is String or not _roster.has(entry["source"]):
+			return false
+		if not _state_integer(entry.get("stacks")) or int(entry["stacks"]) < 1 or int(entry["stacks"]) > int(CoreCombatRules.STATUSES[id]["max_stacks"]):
+			return false
+		if not _state_integer(entry.get("expires")) or int(entry["expires"]) <= tick or int(entry["expires"]) > tick + int(CoreCombatRules.STATUSES[id]["duration"]):
+			return false
+	return true
+
+
 func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionary:
 	var target_value: Variant = command.get("target_id")
 	var target_id := str(target_value) if target_value is String else ""
 	var result := CombatTransaction.dto(attacker_id, target_id)
+	if not _enabled:
+		return _reject(result, "authority_disabled")
+	if not _clock_available(_tick):
+		return _reject(result, "clock_exhausted")
 	if command.size() != 3 or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY or command.get("type") != FIRE or not target_value is String or not SectorIds.valid(target_id) or not is_finite(heading):
 		return _reject(result, "malformed_command")
 	var attacker: CombatantState = _roster.get(attacker_id)
@@ -262,6 +479,8 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 		return _reject(result, "target_not_locked")
 	var offset := _sector.entity_position(target_id) - origin
 	var distance := offset.length()
+	if not is_finite(distance):
+		return _reject(result, "out_of_range")
 	result["distance"] = distance
 	if distance < weapon.min_range_meters or distance > weapon.range_meters:
 		return _reject(result, "out_of_range")
@@ -272,12 +491,26 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	if _tick < battery.ready_tick:
 		return _reject(result, "reloading")
 
-	var hit := _roll_passes(_streams.next_float(SeedStreams.STREAM_ENCOUNTER), weapon.accuracy * (1.0 - target.dodge))
+	var ammo: AmmoProfile = _ammo_profiles.get(attacker.selected_ammo)
+	var normal := attacker.normal_damage
+	var element := CoreCombatRules.NEUTRAL
+	if not attacker.ammo_damage.is_empty():
+		if ammo == null or not attacker.ammo_damage.has(attacker.selected_ammo):
+			return _reject(result, "invalid_ammo")
+		normal = float(attacker.ammo_damage[attacker.selected_ammo])
+		element = ammo.element_id
+		if not _pay(attacker_id, ammo.item_id):
+			return _reject(result, "insufficient_resource")
+		result["ammo_id"] = ammo.stable_id
+	var hit := _roll_passes(_streams.next_float(SeedStreams.STREAM_ENCOUNTER), CoreCombatRules.hit_chance(weapon.accuracy, target.dodge))
 	var crit_roll := _streams.next_float(SeedStreams.STREAM_ENCOUNTER)
-	var crit := hit and _roll_passes(crit_roll, weapon.crit_chance)
-	var raw := (attacker.critical_damage if crit else attacker.normal_damage) if hit else 0.0
-	var prevented := minf(raw, maxf(0.0, target.defense - weapon.defense_penetration))
-	var applied := minf(target.hull, raw - prevented)
+	var crit := hit and _roll_passes(crit_roll, weapon.crit_chance * (1.0 - target.crit_prevention))
+	var resistance := float(target.resistances.get(element, 0.0)) if element != CoreCombatRules.NEUTRAL else 0.0
+	var defense := target.defense + (5.0 if target.statuses.has("status.braced") else 0.0)
+	var damage := CoreCombatRules.damage(normal if hit else 0.0, weapon.crit_multiplier if crit else 1.0, resistance, defense, weapon.defense_penetration, target.hull)
+	var raw: float = damage["raw"]
+	var prevented: float = damage["prevented"]
+	var applied: float = damage["applied"]
 	target.hull = maxf(0.0, target.hull - applied)
 	battery.ready_tick = _tick + battery.reload_ticks
 	battery.last_side = side
@@ -292,10 +525,18 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	result["remaining_hull"] = target.hull
 	result["sunk"] = target.sunk()
 	if applied > 0.0:
-		hull_damaged.emit(target_id, attacker_id, applied, target.hull, _sequence)
+		target.damage_tick = _tick
+		if ammo != null and not ammo.status_id.is_empty() and not target.sunk():
+			_apply_status(target, ammo.status_id, attacker_id)
 	if target.sunk():
-		attacker.locked_id = ""
-		ship_sunk.emit(target_id, _sequence)
+		for ship: CombatantState in _roster.values():
+			if ship.locked_id == target_id:
+				ship.locked_id = ""
+	var sequence: int = result["sequence_id"]
+	if applied > 0.0:
+		hull_damaged.emit(target_id, attacker_id, applied, float(result["remaining_hull"]), sequence)
+	if result["sunk"]:
+		ship_sunk.emit(target_id, sequence)
 	return result
 
 
@@ -327,12 +568,12 @@ static func _reject(result: Dictionary, reason: String) -> Dictionary:
 
 
 static func _valid_weapon(weapon: WeaponDefinition) -> bool:
-	return (SectorIds.valid(weapon.stable_id) and is_finite(weapon.base_damage) and weapon.base_damage >= 0.0
+	return (SectorIds.valid(weapon.stable_id) and CoreCombatRules.bounded(weapon.base_damage, 0.0, CoreCombatRules.MAX_VALUE)
 		and is_finite(weapon.min_range_meters) and weapon.min_range_meters >= 0.0
 		and is_finite(weapon.range_meters) and weapon.range_meters >= weapon.min_range_meters
 		and is_finite(weapon.reload_seconds) and weapon.reload_seconds > 0.0 and weapon.reload_seconds <= MAX_RELOAD_SECONDS
-		and probability(weapon.accuracy) and probability(weapon.crit_chance)
-		and is_finite(weapon.crit_multiplier) and weapon.crit_multiplier >= 1.0
+		and CoreCombatRules.bounded(weapon.accuracy, 0.0, 4.0) and probability(weapon.crit_chance)
+		and CoreCombatRules.bounded(weapon.crit_multiplier, 1.0, 8.0)
 		and is_finite(weapon.broadside_half_arc_degrees) and weapon.broadside_half_arc_degrees > 0.0 and weapon.broadside_half_arc_degrees < 90.0
 		and is_finite(weapon.defense_penetration) and weapon.defense_penetration >= 0.0)
 
