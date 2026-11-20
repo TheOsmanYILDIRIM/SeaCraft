@@ -160,11 +160,12 @@ func restore_state(value: Variant) -> bool:
 	for id in state["claimed_ids"]:
 		_claimed[id] = true
 	for item_id in state["inventory"]:
-		_inventory[item_id] = state["inventory"][item_id]
+		_inventory[item_id] = int(state["inventory"][item_id])
 	for event_id in state["processed_events"]:
 		_processed_events[event_id] = state["processed_events"][event_id]
 	for raw in state["drops"]:
 		var drop: Dictionary = raw.duplicate(true)
+		drop["quantity"] = int(drop["quantity"])
 		var id: String = drop["drop_id"]
 		_drops[id] = drop
 		if _sector != null and drop["sector_id"] == _sector.sector_id:
@@ -193,7 +194,7 @@ func validate_state(value: Variant) -> bool:
 			return false
 		if not drop.get("item_id") is String or not _valid_item(drop["item_id"]):
 			return false
-		if not drop.get("quantity") is int or not _valid_quantity(drop["quantity"]):
+		if not _integer_quantity(drop.get("quantity")):
 			return false
 		if typeof(drop.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(drop.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
@@ -204,7 +205,7 @@ func validate_state(value: Variant) -> bool:
 		if not id is String or not SectorIds.valid(id):
 			return false
 	for item_id in state["inventory"]:
-		if not item_id is String or not _valid_item(item_id) or not state["inventory"][item_id] is int or state["inventory"][item_id] < 0 or state["inventory"][item_id] > MAX_QUANTITY:
+		if not item_id is String or not _valid_item(item_id) or not _integer_inventory_quantity(state["inventory"][item_id]):
 			return false
 	for event_id in state["processed_events"]:
 		var drop_id: Variant = state["processed_events"][event_id]
@@ -247,6 +248,20 @@ func _valid_item(item_id: String) -> bool:
 
 static func _valid_quantity(value: int) -> bool:
 	return value > 0 and value <= MAX_QUANTITY
+
+
+static func _integer_quantity(value: Variant) -> bool:
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value)
+	return is_finite(number) and number == floorf(number) and number > 0.0 and number <= float(MAX_QUANTITY)
+
+
+static func _integer_inventory_quantity(value: Variant) -> bool:
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value)
+	return is_finite(number) and number == floorf(number) and number >= 0.0 and number <= float(MAX_QUANTITY)
 
 
 static func _drop_id(entity_id: String, sequence_id: int) -> String:
