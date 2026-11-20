@@ -161,7 +161,9 @@ func test_dto_contract_rejects_godot_runtime_objects() -> void:
 	assert_true(DTO_CONTRACT.is_stable_id("ship.test_sloop"))
 
 	assert_false(DTO_CONTRACT.is_primitive_safe(Resource.new()))
-	assert_false(DTO_CONTRACT.is_primitive_safe(Node.new()))
+	var runtime_node := Node.new()
+	assert_false(DTO_CONTRACT.is_primitive_safe(runtime_node))
+	runtime_node.free()
 	assert_false(DTO_CONTRACT.is_primitive_safe(RID()))
 	assert_false(DTO_CONTRACT.is_primitive_safe(Callable(self, "_dummy_callable")))
 
