@@ -19,8 +19,10 @@ var _npc_presenter: NpcStatePresenter
 var _ai_scheduler := AiDecisionScheduler.new(8)
 var _last_npc_sequence := -1
 var _loot: LootAuthority
+var _world_objects: WorldObjectAuthority
 var _loot_marker: Polygon2D
 var _pickup_control: LootPickupButton
+var _harpoon_control: CombatFireButton
 var _nearby_drop_id := ""
 var _pending_loot_state: Dictionary = {}
 var _pending_combat: Dictionary = {}
@@ -135,6 +137,12 @@ func _on_gameplay_command(command: Dictionary) -> void:
 					_save_service.mark_dirty()
 				_refresh_combat_indicator()
 				return
+			CombatAuthority.HARPOON:
+				var result := _combat.harpoon(FoundationSector.PLAYER, command)
+				if result["accepted"]:
+					_save_service.mark_dirty()
+				_refresh_combat_indicator()
+				return
 			GameplayCommand.CANCEL:
 				_combat.clear_target(FoundationSector.PLAYER)
 				_refresh_combat_indicator()
@@ -203,6 +211,18 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):
 		return
+	var harpoon := HarpoonProfile.new()
+	harpoon.stable_id = "harpoon.core02_debug"
+	harpoon.display_name = "Debug Harpoon"
+	harpoon.base_damage = 18.0
+	harpoon.range_meters = 320.0
+	harpoon.reload_seconds = 1.25
+	harpoon.element_id = CoreCombatRules.NEUTRAL
+	if not _combat.mount_harpoon(FoundationSector.PLAYER, harpoon):
+		return
+	_world_objects = WorldObjectAuthority.new(sector, _loot, _combat, VS03_LOOT_TABLE as LootTable, FoundationSector.PLAYER, true)
+	if _pending_combat.has("world") and not _world_objects.restore_state(_pending_combat["world"]):
+		return
 	if not _combat.configure_defense(FoundationSector.PLAYER, 0.15, {}, 8.0, 8.0) or not _combat.configure_defense(PRACTICE_TARGET, 0.1, {CoreCombatRules.FIRE: -0.2}, 0.0, 6.0):
 		return
 	if _pending_combat.has("combat") and not _combat.restore_state(_pending_combat["combat"]):
@@ -242,6 +262,15 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_fire_control.touch_captured.connect(input.reset_touch)
 	_fire_control.pressed.connect(_on_fire_pressed)
 	$UI.add_child(_fire_control)
+	_harpoon_control = CombatFireButton.new()
+	_harpoon_control.text = "ZIPKIN"
+	_harpoon_control.add_theme_font_size_override("font_size", 36)
+	_harpoon_control.size = Vector2(224.0, 132.0)
+	_harpoon_control.mouse_filter = Control.MOUSE_FILTER_STOP
+	_harpoon_control.focus_mode = Control.FOCUS_NONE
+	_harpoon_control.touch_captured.connect(input.reset_touch)
+	_harpoon_control.pressed.connect(_on_harpoon_pressed)
+	$UI.add_child(_harpoon_control)
 	_pickup_control = LootPickupButton.new()
 	_pickup_control.text = "TOPLA"
 	_pickup_control.add_theme_font_size_override("font_size", 38)
@@ -285,8 +314,11 @@ func _layout_fire_control() -> void:
 			pixels.position -= window.position
 			safe = safe.intersection(SafeAreaMath.display_safe_area_to_logical(Rect2(pixels), Vector2(1280, 720), Vector2(window.size)))
 	_fire_control.position = safe.end - _fire_control.size - Vector2(36.0, 36.0)
+	if _harpoon_control != null:
+		_harpoon_control.position = Vector2(_fire_control.position.x - _harpoon_control.size.x - 28.0, _fire_control.position.y)
 	if _pickup_control != null:
-		_pickup_control.position = Vector2(_fire_control.position.x - _pickup_control.size.x - 28.0, _fire_control.position.y)
+		var right_edge := _harpoon_control.position.x if _harpoon_control != null else _fire_control.position.x
+		_pickup_control.position = Vector2(right_edge - _pickup_control.size.x - 28.0, _fire_control.position.y)
 	for index in _core_buttons.size():
 		var button := _core_buttons[index]
 		button.position = Vector2(safe.position.x + 24.0 + float(index % 2) * 134.0, safe.end.y - 32.0 - (floorf(float(index) * 0.5) + 1.0) * 70.0)
@@ -303,6 +335,12 @@ func _on_core_pressed(button: CombatFireButton, label: String, kind: String, id:
 func _on_fire_pressed() -> void:
 	var input: GameplayInputController = $InputController
 	input.emit_fire_intent(_combat.locked_target(FoundationSector.PLAYER))
+
+
+func _on_harpoon_pressed() -> void:
+	if _combat == null:
+		return
+	_on_gameplay_command(CombatAuthority.harpoon_intent(_combat.locked_target(FoundationSector.PLAYER)))
 
 
 func _on_hull_damaged(target_id: String, attacker_id: String, amount: float, _remaining_hull: float, sequence_id: int) -> void:
@@ -342,7 +380,13 @@ func _on_loot_drop_claimed(_drop_id: String, _item_id: String, _quantity: int) -
 func _on_pickup_pressed() -> void:
 	if _loot == null or _nearby_drop_id.is_empty():
 		return
-	var result := _loot.pickup(FoundationSector.PLAYER, LootAuthority.pickup_intent(_nearby_drop_id))
+	var result: Dictionary
+	if _loot.has_drop(_nearby_drop_id):
+		result = _loot.pickup(FoundationSector.PLAYER, LootAuthority.pickup_intent(_nearby_drop_id))
+	elif _world_objects != null and _world_objects.has_object(_nearby_drop_id):
+		result = _world_objects.pickup(FoundationSector.PLAYER, _nearby_drop_id)
+	else:
+		return
 	if result["accepted"]:
 		_save_service.mark_dirty()
 		_refresh_loot_control()
@@ -352,6 +396,8 @@ func _refresh_loot_control() -> void:
 	if _pickup_control == null:
 		return
 	_nearby_drop_id = _loot.nearest_pickup(FoundationSector.PLAYER)
+	if _nearby_drop_id.is_empty() and _world_objects != null:
+		_nearby_drop_id = _world_objects.nearest_pickup(FoundationSector.PLAYER)
 	_pickup_control.visible = not _nearby_drop_id.is_empty()
 	_pickup_control.disabled = _nearby_drop_id.is_empty()
 
@@ -382,9 +428,12 @@ func _refresh_npc_state() -> void:
 func _refresh_combat_indicator() -> void:
 	if _target_ring == null:
 		return
-	var locked := _combat.locked_target(FoundationSector.PLAYER) == PRACTICE_TARGET
+	var locked_id := _combat.locked_target(FoundationSector.PLAYER)
+	var locked := locked_id == PRACTICE_TARGET
 	_target_ring.visible = locked
-	_fire_control.disabled = not locked
+	_fire_control.disabled = locked_id.is_empty()
+	if _harpoon_control != null:
+		_harpoon_control.disabled = locked_id.is_empty() or TargetingService.weapon_rejection(TargetingService.HARPOON, _combat.target_class(locked_id)) != ""
 
 
 func _block_boot(reason: Dictionary) -> void:
@@ -427,6 +476,7 @@ func _flush_checkpoint() -> void:
 			"npc_motion": _npc_motor.capture_save_motion(),
 			"npc_ai": _npc_brain.persistence_state(),
 			"scheduler": _ai_scheduler.snapshot_state(),
+			"world": _world_objects.snapshot_state() if _world_objects != null else {"objects": [], "claimed_ids": [], "processed_spawns": []},
 		}
 	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, authority_state)
 	save_status = _save_service.save_if_dirty(dto)
