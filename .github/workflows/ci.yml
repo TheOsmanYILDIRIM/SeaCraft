@@ -21,7 +21,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -83,7 +83,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT FND-01 through FND-06 plus VS-01 and VS-02 tests
+      - name: GUT FND-01 through FND-06 plus VS-01, VS-02 and VS-03 tests
         shell: bash
         run: |
           set -euo pipefail
@@ -92,8 +92,10 @@ jobs:
           grep -Fq "test_vs01_combat.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_vs01_mobile_input.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_vs02_npc_ai.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_vs03_loot.gd" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
+          python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|Orphans[[:space:]]+[1-9]' "$RUNNER_TEMP/gut.log"; then
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
@@ -209,7 +211,7 @@ jobs:
       - name: Upload verified build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-VS02-${{ github.sha }}
+          name: SeaCraft-VS03-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
