@@ -205,6 +205,17 @@ func update_monster_position(id: String, requested_position: Vector2) -> bool:
 	return _sector.move_entity(id, bounded)
 
 
+func retire_destroyed(id: String) -> bool:
+	var target: CombatantState = _roster.get(id)
+	if target == null or not target.sunk() or target.target_class not in [TargetingService.MONSTER, TargetingService.WRECK]:
+		return false
+	_status_actors.erase(id)
+	_roster.erase(id)
+	if _sector.entity_position(id).is_finite():
+		_sector.remove_entity(id)
+	return true
+
+
 func faction_id(id: String) -> String:
 	var ship: CombatantState = _roster.get(id)
 	return ship.faction_id if ship != null else ""
