@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   statuses: write
 
 concurrency:
@@ -272,28 +273,46 @@ jobs:
             build/SHA256SUMS.txt
 
 
-      # Same-run artifact readback uses the Actions runtime service. The release
-      # check additionally hashes the actual REST-downloaded ZIP independently.
-      - name: Read back the uploaded build
-        uses: actions/download-artifact@v4
-        with:
-          name: SeaCraft-CORE02-${{ github.sha }}
-          path: ${{ runner.temp }}/core02-readback
-
-      - name: Verify uploaded files and committed provenance
+      # The artifact catalog can lag upload finalization. Read the exact artifact
+      # back through the authenticated REST endpoint with bounded retry, then verify
+      # the downloaded ZIP's commit marker and every payload hash.
+      - name: Read back uploaded artifact and verify committed provenance
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ steps.build_artifact.outputs.artifact-id }}
-          ZIP_DIGEST: ${{ steps.build_artifact.outputs.artifact-digest }}
+          UPLOAD_DIGEST: ${{ steps.build_artifact.outputs.artifact-digest }}
         run: |
           set -euo pipefail
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          [[ "${ZIP_DIGEST#sha256:}" =~ ^[a-f0-9]{64}$ ]]
+          archive="$RUNNER_TEMP/core02-artifact.zip"
+          api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
+          ok=0
+          for attempt in {1..12}; do
+            code="$(curl --silent --show-error --location \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              --output "$archive.part" --write-out '%{http_code}' "$api" || true)"
+            if [[ "$code" == "200" && -s "$archive.part" ]]; then
+              mv "$archive.part" "$archive"
+              ok=1
+              break
+            fi
+            rm -f "$archive.part"
+            sleep 2
+          done
+          [[ "$ok" == "1" ]]
+          zip_sha="$(sha256sum "$archive" | awk '{print $1}')"
+          [[ "$zip_sha" =~ ^[a-f0-9]{64}$ ]]
           unpack="$RUNNER_TEMP/core02-readback"
+          rm -rf "$unpack"
+          mkdir -p "$unpack"
+          unzip -q "$archive" -d "$unpack"
           printf '%s\n' "$GITHUB_SHA" | cmp - "$unpack/COMMIT_SHA.txt"
           cmp build/SHA256SUMS.txt "$unpack/SHA256SUMS.txt"
           (cd "$unpack" && sha256sum -c SHA256SUMS.txt)
-          echo "CORE02_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID upload_zip_sha256=${ZIP_DIGEST#sha256:} sha=$GITHUB_SHA"
+          echo "CORE02_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
 
       - name: Publish final CI status
         if: always()
