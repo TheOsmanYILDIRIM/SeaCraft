@@ -59,6 +59,21 @@ FND-05 device checklist (not executed by CI): cold sector load time, startup mem
 
 CI verifies parsing, simulation logic and APK export, but a real Android device is still required later for tap world targeting, one-finger drag/pan, pinch zoom, notch/safe-area placement, UI/world input conflicts, a long touch route, ship turning feel and frame pacing under dense input. Test the 1280×720 landscape baseline plus small 320–411dp-class screens; these real-device checks are explicitly separate evidence from CI.
 
+
+## CORE-02 monster, harpoon and world-object authority
+
+- Combat remains a single `CombatAuthority`. Authoritative target classes are `ship`, `monster`, `wreck` and `pickup`; `TargetingService` owns the cannon/harpoon target matrix, so presentation snapshots cannot rewrite target tags. Cannon accepts ships only; harpoon accepts monsters and wrecks only. Rejected weapon/target combinations occur before stock, cooldown, RNG or transaction sequence mutation.
+- `MonsterDefinition` is a typed read-only content definition for stable ID, health, faction, elemental resistances, loot-table reference and bounded territory radius. Runtime hull, position, cooldown and target state remain authority-owned. Monster registration uses a `monster_territory` `SectorAnchor`; event-driven position updates are clamped to that territory without a per-frame world scan.
+- `HarpoonProfile` is a separate typed weapon profile while harpoon damage reuses `CoreCombatRules.damage`. Harpoon transactions validate authority, actor/target state, target class, lock, range, cooldown and optional shared-inventory stock before committing. Lethal monster and wreck events have separate domain signals and are emitted once.
+- `WorldObjectAuthority` supplies bounded `chest`, `glitter` and `wreck` archetypes on authored sector anchors. Stable spawn IDs are deterministic hashes of sector ID, anchor ID, archetype and slot. Processed-spawn and claimed ledgers reject duplicate spawn/claim without loot RNG; spatial-hash queries provide bounded nearby pickup selection. Wrecks join the same combat roster and are harpoon targets.
+- Monster, chest, glitter and wreck rewards all use `LootAuthority.grant_from_table`, so VS-03/CORE-01 inventory remains the single persisted inventory truth. Generic event IDs share the existing processed-event ledger; duplicate death/claim events do not roll loot twice.
+- CORE-02 persistence stores loot/inventory/RNG through the existing FND-06 snapshot and places detached combat/world-object state under the existing primitive-safe `authoritative_state`. Active objects, stable IDs, processed spawns/claims and monster/wreck hull/positions restore without a parallel world truth.
+- Simulation stays offline and host-ready: no presentation, storage or network APIs are introduced into the authority layer. Debug/mobile selection can use the existing enlarged world-target radius; harpoon and pickup actions are authority commands and UI touch capture remains separate from movement.
+
+### CORE-02 Android device verification — not_run
+
+CI export is not real-device evidence. The following remain `not_run` until exercised on Android hardware: monster touch selection; harpoon button reach/readability; cannon-versus-harpoon mis-selection risk; small glitter/chest pickup; wreck selection; multiple-small-object overdraw; camera plus monster combat; spam tap; low/mid-device frame pacing; and save/reload world-object persistence.
+
 ## Local boot
 
 With Godot 4.7.2 installed, project boot needs no network connection:
