@@ -167,7 +167,8 @@ func run_full() -> Dictionary:
 
 	_set_phase("pickup")
 	var drop_before := _loot.drop_snapshot(_last_drop_id)
-	if not _move_player_to(Vector2(float(drop_before["x"]), float(drop_before["y"])), false):
+	var drop_position := Vector2(float(drop_before["x"]), float(drop_before["y"]))
+	if not _move_player_within(drop_position, LootAuthority.PICKUP_RADIUS * 0.75, false):
 		return _fail("pickup_move_failed")
 	var nearest := _loot.nearest_pickup(PLAYER)
 	_query_count = _loot.last_query_inspected()
@@ -449,6 +450,19 @@ func _move_player_to(target: Vector2, advance_ai: bool) -> bool:
 	for _frame in MAX_MOVE_FRAMES:
 		_step_frame(advance_ai, true)
 		if not _player_motor.has_target():
+			return true
+	return false
+
+
+func _move_player_within(target: Vector2, radius: float, advance_ai: bool) -> bool:
+	if not target.is_finite() or not is_finite(radius) or radius <= 0.0:
+		return false
+	if not _player_motor.apply_authoritative_command(GameplayCommand.move_to_world_position(target)):
+		return false
+	for _frame in MAX_MOVE_FRAMES:
+		_step_frame(advance_ai, true)
+		if _player_motor.global_position.distance_to(target) <= radius:
+			_player_motor.apply_authoritative_command(GameplayCommand.cancel())
 			return true
 	return false
 
