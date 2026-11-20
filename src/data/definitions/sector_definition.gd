@@ -3,6 +3,14 @@ extends BaseDefinition
 
 @export var display_name: String = ""
 @export var controlling_faction_id: String = ""
+@export var label_id: String = ""
+@export var bounds: Rect2
+@export var navigation_fixture: SectorNavigationFixture
+@export var spawn_anchors: Array[SectorAnchor] = []
+@export var neighbor_ids: PackedStringArray
+@export var transition_gates: Array[SectorGate] = []
+@export var hazard_cost_profile_id: String = ""
+@export_enum("surface", "sub") var layer: int = 0
 
 
 func definition_type() -> String:
@@ -13,4 +21,5 @@ func referenced_stable_ids() -> PackedStringArray:
 	var refs := PackedStringArray()
 	if not controlling_faction_id.is_empty():
 		refs.append(controlling_faction_id)
+	refs.append_array(neighbor_ids)
 	return refs

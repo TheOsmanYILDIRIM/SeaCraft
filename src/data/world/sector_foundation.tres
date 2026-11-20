@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_anchor.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_navigation_fixture.gd" id="3"]
+
+[sub_resource type="Resource" id="Anchor_player"]
+script = ExtResource("2")
+stable_id = "anchor.player"
+sector_id = "sector.foundation"
+position = Vector2(-240, 0)
+category = "player"
+
+[sub_resource type="Resource" id="Nav_fixture"]
+script = ExtResource("3")
+obstacles = Array[Rect2]([Rect2(-48, -160, 96, 320)])
+waypoints = PackedVector2Array(-76, -188, 76, -188, -76, 188, 76, 188)
+clearance = 24.0
+
+[resource]
+script = ExtResource("1")
+stable_id = "sector.foundation"
+display_name = "Foundation Waters"
+label_id = "label.foundation"
+bounds = Rect2(-640, -360, 1280, 720)
+navigation_fixture = SubResource("Nav_fixture")
+spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_player")])

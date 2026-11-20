@@ -4,7 +4,7 @@ Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game tar
 
 ## FND-01 contract
 
-- Main scene: `src/presentation/bootstrap.tscn`; it only prints a local boot marker and performs no network or internet access.
+- Main scene: `src/presentation/bootstrap.tscn`; it opens the local sector fixture before printing the boot marker; it performs no network or internet access.
 - Renderer: Compatibility (`gl_compatibility`) on desktop and mobile.
 - Mobile baseline: 1280×720 landscape, `canvas_items` stretch with `expand`; future UI must respect `DisplayServer.get_display_safe_area()` rather than assuming full-screen safe bounds.
 - Architecture boundaries are tracked under `src/simulation`, `src/presentation`, `src/data`, and `tests`.
@@ -45,7 +45,17 @@ Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game tar
 - Same-build replay with the same initial state, movement profile, fixed delta and command trace is expected to reproduce within tolerance. This is not a cross-platform lockstep guarantee.
 - The bootstrap movement profile is placeholder tuning for foundation verification, not final ship-content balance.
 
+## FND-05 mobile sector core
+
+- Bootstrap loads only the active typed sector; the graph stores paths, anchor IDs and directed gate metadata without loading sector definitions or scenes. The world owner replaces its active runtime only after destination validation succeeds. Presentation owns disposable local colliders/visuals; no background sector tick, global map or entity node requirement.
+- The authoritative player spawns at a stable anchor and is indexed after its fixed ship step. The fixture uses simple static rectangles on a coast layer; ships query only that layer.
+- Use direct steering for unobstructed water. The optional visibility-graph route uses Godot AStar2D, clearance and bounded waypoint weights; callers retain packed paths and request reroutes on events, not per tick. No navigation agent runs in the background and ShipMotor does not depend on navigation.
+- Vector2i spatial buckets accept caller-reused arrays, inspect only intersecting cells, and return unordered exact-radius matches. Keep entity/LOD scheduling independent of rendering; target 60 FPS with a 30 FPS rendering fallback and unchanged fixed simulation timing.
+- Gate requests require the simulation owner's capability and an indexed entity within the gate's exit-anchor radius. FND-05 supplies logical enter/leave and validated entry metadata; no transition UI, remote replication or save/load.
+
 ### Android device verification note
+
+FND-05 device checklist (not executed by CI): cold sector load time, startup memory and sector load spike, 30/60 FPS frame pacing, navigation query load, thermal behavior during sustained sailing, and CPU load with dense entities.
 
 CI verifies parsing, simulation logic and APK export, but a real Android device is still required later for tap world targeting, one-finger drag/pan, pinch zoom, notch/safe-area placement, UI/world input conflicts, a long touch route, ship turning feel and frame pacing under dense input. Test the 1280×720 landscape baseline plus small 320–411dp-class screens; these real-device checks are explicitly separate evidence from CI.
 
@@ -71,4 +81,4 @@ The addon is ignored by Git and removed before exports, and `tests/**`, `tools/*
 
 ## CI/export
 
-GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/resource parsing, headless boot, FND-01 settings, all FND-01 through FND-04 GUT tests, simulation/network separation, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).
+GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/resource parsing, headless boot, FND-01 settings, all FND-01 through FND-05 GUT tests, simulation/network separation, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).

@@ -18,6 +18,8 @@ var _has_target: bool = false
 var _target_position: Vector2 = Vector2.ZERO
 var _desired_heading: float = 0.0
 var _speed_modifiers: Dictionary = {}
+var _modifier_cache_base: float = -1.0
+var _modifier_cache_speed: float = 0.0
 
 
 func _ready() -> void:
@@ -71,12 +73,14 @@ func set_speed_modifiers(modifiers_by_id: Dictionary) -> bool:
 	if not authority_enabled or not _modifiers_are_finite(modifiers_by_id):
 		return false
 	_speed_modifiers = modifiers_by_id.duplicate(true)
+	_modifier_cache_base = -1.0
 	return true
 
 
 func clear_speed_modifiers() -> void:
 	if authority_enabled:
 		_speed_modifiers.clear()
+		_modifier_cache_base = -1.0
 
 
 func step_authoritative(delta: float, apply_collision: bool = true) -> void:
@@ -171,10 +175,13 @@ func current_turn_radius() -> float:
 
 func effective_max_forward_speed() -> float:
 	var base_speed: float = _positive_or_zero(_profile().max_forward_speed)
-	var modified_speed: float = MODIFIER_PIPELINE.apply_from_dictionary(base_speed, _speed_modifiers)
-	if not is_finite(modified_speed):
-		return 0.0
-	return maxf(0.0, modified_speed)
+	if _speed_modifiers.is_empty():
+		return base_speed
+	if base_speed != _modifier_cache_base:
+		var modified_speed: float = MODIFIER_PIPELINE.apply_from_dictionary(base_speed, _speed_modifiers)
+		_modifier_cache_speed = maxf(0.0, modified_speed) if is_finite(modified_speed) else 0.0
+		_modifier_cache_base = base_speed
+	return _modifier_cache_speed
 
 
 func refresh_collision_envelope() -> void:

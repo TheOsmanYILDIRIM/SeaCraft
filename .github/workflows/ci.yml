@@ -21,7 +21,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -78,7 +78,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT FND-01, FND-02, FND-03 and FND-04 tests
+      - name: GUT FND-01, FND-02, FND-03, FND-04 and FND-05 tests
         shell: bash
         run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
 
@@ -186,7 +186,7 @@ jobs:
       - name: Upload verified build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-FND04-${{ github.sha }}
+          name: SeaCraft-FND05-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
