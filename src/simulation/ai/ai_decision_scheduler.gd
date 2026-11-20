@@ -54,3 +54,28 @@ func current_tick() -> int:
 
 func brain_count() -> int:
 	return _brains.size()
+
+
+func snapshot_state() -> Dictionary:
+	return {"physics_tick": _physics_tick, "decision_count": decision_count}
+
+
+func restore_state(value: Variant) -> bool:
+	if not _brains.is_empty() or not value is Dictionary or value.size() != 2:
+		return false
+	var state: Dictionary = value
+	if not _integer(state.get("physics_tick")) or int(state["physics_tick"]) < 0:
+		return false
+	if not _integer(state.get("decision_count")) or int(state["decision_count"]) < 0:
+		return false
+	_physics_tick = int(state["physics_tick"])
+	decision_count = int(state["decision_count"])
+	_cursor = 0
+	return true
+
+
+static func _integer(value_in: Variant) -> bool:
+	if typeof(value_in) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value_in)
+	return is_finite(number) and number == floorf(number) and absf(number) <= 2147483647.0

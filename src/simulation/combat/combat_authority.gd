@@ -144,6 +144,98 @@ func repair_hull(id: String, amount: float) -> float:
 	return applied
 
 
+func snapshot_state() -> Dictionary:
+	var combatants: Array = []
+	var ids: Array = _roster.keys()
+	ids.sort()
+	for id_value in ids:
+		var id: String = id_value
+		var ship: CombatantState = _roster[id]
+		var battery: Dictionary = {}
+		if ship.battery != null:
+			battery = {
+				"ready_tick": ship.battery.ready_tick,
+				"last_side": ship.battery.last_side,
+			}
+		combatants.append({
+			"entity_id": id,
+			"hull": ship.hull,
+			"locked_id": ship.locked_id,
+			"battery": battery,
+		})
+	return {"tick": _tick, "sequence": _sequence, "combatants": combatants}
+
+
+func restore_state(value: Variant) -> bool:
+	if not value is Dictionary or value.size() != 3:
+		return false
+	var state: Dictionary = value
+	if not _state_integer(state.get("tick")) or int(state["tick"]) < 0:
+		return false
+	if not _state_integer(state.get("sequence")) or int(state["sequence"]) < 0:
+		return false
+	var raw_combatants: Variant = state.get("combatants")
+	if not raw_combatants is Array or raw_combatants.size() != _roster.size():
+		return false
+	var planned: Dictionary = {}
+	for raw in raw_combatants:
+		if not raw is Dictionary or raw.size() != 4:
+			return false
+		var entry: Dictionary = raw
+		var raw_id: Variant = entry.get("entity_id")
+		if not raw_id is String or not SectorIds.valid(raw_id) or not _roster.has(raw_id) or planned.has(raw_id):
+			return false
+		var ship: CombatantState = _roster[raw_id]
+		if typeof(entry.get("hull")) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		var restored_hull := float(entry["hull"])
+		if not is_finite(restored_hull) or restored_hull < 0.0 or restored_hull > ship.max_hull:
+			return false
+		var raw_lock: Variant = entry.get("locked_id")
+		if not raw_lock is String or (not raw_lock.is_empty() and not SectorIds.valid(raw_lock)):
+			return false
+		var raw_battery: Variant = entry.get("battery")
+		if not raw_battery is Dictionary:
+			return false
+		if ship.battery == null:
+			if not raw_battery.is_empty():
+				return false
+		else:
+			if raw_battery.size() != 2 or not _state_integer(raw_battery.get("ready_tick")) or int(raw_battery["ready_tick"]) < 0:
+				return false
+			if not _state_integer(raw_battery.get("last_side")) or absi(int(raw_battery["last_side"])) > 1:
+				return false
+		planned[raw_id] = {
+			"hull": restored_hull,
+			"locked_id": raw_lock,
+			"battery": raw_battery.duplicate(true),
+		}
+	if planned.size() != _roster.size():
+		return false
+	for id in planned:
+		var lock_id: String = planned[id]["locked_id"]
+		if lock_id.is_empty():
+			continue
+		if not planned.has(lock_id):
+			return false
+		var source: CombatantState = _roster[id]
+		var target: CombatantState = _roster[lock_id]
+		if source.faction_id == target.faction_id or float(planned[lock_id]["hull"]) <= 0.0:
+			return false
+	for id in planned:
+		var ship: CombatantState = _roster[id]
+		var entry: Dictionary = planned[id]
+		ship.hull = entry["hull"]
+		ship.locked_id = entry["locked_id"]
+		if ship.battery != null:
+			var battery_state: Dictionary = entry["battery"]
+			ship.battery.ready_tick = int(battery_state["ready_tick"])
+			ship.battery.last_side = int(battery_state["last_side"])
+	_tick = int(state["tick"])
+	_sequence = int(state["sequence"])
+	return true
+
+
 # attacker_id and heading come from the authority-owned actor, never from the intent.
 # An accepted volley uses exactly two encounter rolls, including misses and guaranteed hits.
 func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionary:
@@ -256,3 +348,10 @@ static func _valid_modifiers(modifiers: Dictionary) -> bool:
 		if (not amount is float and not amount is int) or not is_finite(float(amount)) or not entry.get("priority", 0) is int:
 			return false
 	return true
+
+
+static func _state_integer(value_in: Variant) -> bool:
+	if typeof(value_in) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value_in)
+	return is_finite(number) and number == floorf(number) and absf(number) <= 2147483647.0

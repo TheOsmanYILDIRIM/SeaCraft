@@ -135,3 +135,14 @@ FND-06 checkpoints now include the primitive loot/drop ledger, minimal inventory
 The mobile slice uses one large safe-area-aware contextual **TOPLA** control next to **ATEŞ** and a lightweight diamond placeholder for the drop. The control consumes touch events so pickup does not leak into world movement; it is only visible while a bounded proximity query finds a pickup.
 
 **VS-03 Android device gate — not run by CI:** verify touch pickup on a real phone; drop and TOPLA readability on small screens; no accidental move/pickup collision; save → force-stop → load for both claimed and unclaimed drops; pickup-time frame spike; and long-session loot/save behavior on low- and mid-tier devices. CI export/boot evidence is not a substitute for these device checks.
+
+
+## VS-04 offline vertical slice integration gate
+
+VS-04 is the first-playable integration gate, not a new mechanic layer. The reusable `scenario.vs04.offline_first_playable.v1` fixture drives the existing authoritative movement, sector, VS-02 AI, targeting/combat, VS-03 loot/pickup and FND-06 persistence paths with deterministic gameplay commands. It proves patrol → threat/Alert → Retreat → Repair → Resume, real broadside range/reload/hit/damage, single sunk/drop/pickup, and a fresh-runtime checkpoint replay without adding network, login, cloud, RPC, discovery or ENet dependencies.
+
+The checkpoint keeps player motion/active sector and RNG through FND-06, plus the mutable NPC motion, combat authority state, AI/threat state, scheduler tick, loot processed-event/claim ledgers and inventory required to resume the same scenario. Reload reconstructs new runtime objects, restores the authority snapshots, rejects repeated death/drop/pickup rewards, and then continues with real ShipMotor movement. Low-cost T32 diagnostics log scenario phase, decision count, spawn count, checkpoint duration and bounded query counts; they are diagnostics only and never replace authoritative state.
+
+CI requires the real VS-04 test script to execute, verifies integration/checkpoint/soak markers, preserves the prior VS-01/VS-02/VS-03 execution verifiers and parse/load/ignored/failing/orphan guards, keeps offline/network separation, boots the Linux export, exports the Android arm64-v8a APK, and packages exact-commit provenance as `SeaCraft-VS04-<SHA>`. The stable scenario ID is intentionally reusable later by NET-03; no NET-03 implementation is included here.
+
+**VS-04 real Android device gate — not run:** verify airplane-mode/internet-free boot; touch movement; camera follow; target lock; fire; NPC state readability; loot pickup; save; force-close/reopen; load continuation; no duplicate loot/claim; small-screen readability; hitch/frame spikes; and input reliability through the long scenario. CI export evidence is not a real-device pass.

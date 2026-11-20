@@ -22,8 +22,9 @@ func _init(directory: String = "user://seacraft-save") -> void:
 
 
 func create_snapshot(sector: SectorRuntime, entity_id: String, ship: ShipMotor, streams: SeedStreams,
-		owner_kind: String = SaveSnapshot.LOCAL, session_id: String = "", loot_state: Dictionary = {}) -> Dictionary:
-	return SaveSnapshot.capture(sector, entity_id, ship, streams, owner_kind, session_id, loot_state)
+		owner_kind: String = SaveSnapshot.LOCAL, session_id: String = "", loot_state: Dictionary = {},
+		authoritative_state: Dictionary = {}) -> Dictionary:
+	return SaveSnapshot.capture(sector, entity_id, ship, streams, owner_kind, session_id, loot_state, authoritative_state)
 
 
 func validate_snapshot(dto: Variant) -> String:

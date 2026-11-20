@@ -8,7 +8,8 @@ const LOCAL := "local"
 const HOST := "host"
 
 static func capture(sector: SectorRuntime, entity_id: String, ship: ShipMotor, streams: SeedStreams,
-		owner_kind: String = LOCAL, session_id: String = "", loot_state: Dictionary = {}) -> Dictionary:
+		owner_kind: String = LOCAL, session_id: String = "", loot_state: Dictionary = {},
+		authoritative_state: Dictionary = {}) -> Dictionary:
 	if sector == null or ship == null or streams == null or not ship.authority_enabled:
 		return {}
 	if not sector.entity_position(entity_id).is_finite():
@@ -25,6 +26,8 @@ static func capture(sector: SectorRuntime, entity_id: String, ship: ShipMotor, s
 	dto["rng"] = rng
 	dto["ownership"] = {"kind": owner_kind, "session_id": session_id}
 	dto["loot"] = loot_state.duplicate(true) if not loot_state.is_empty() else empty_loot_state()
+	if not authoritative_state.is_empty():
+		dto["authoritative_state"] = authoritative_state.duplicate(true)
 	return dto
 
 
@@ -52,10 +55,14 @@ static func _validate_current(dto: Dictionary) -> String:
 		return "invalid_rng"
 	if dto["rng_stream_version"] != DataContractVersions.RNG_STREAM_VERSION:
 		return "unsupported_rng_version"
-	if dto.size() not in [8, 9] or not _stable(dto.get("sector_id")):
+	if dto.size() not in [8, 9, 10] or not _stable(dto.get("sector_id")):
 		return "invalid_sector"
 	if dto.has("loot") and not _validate_loot(dto["loot"]):
 		return "invalid_loot"
+	if dto.has("authoritative_state"):
+		var authoritative: Variant = dto["authoritative_state"]
+		if not authoritative is Dictionary or authoritative.is_empty() or not _safe(authoritative, 0) or not DtoContract.is_primitive_safe(authoritative):
+			return "invalid_authoritative_state"
 	var player: Variant = dto.get("player")
 	if not player is Dictionary or player.size() != 2 or not _stable(player.get("entity_id")):
 		return "invalid_player"
@@ -96,6 +103,11 @@ static func empty_loot_state() -> Dictionary:
 
 static func loot_state(dto: Dictionary) -> Dictionary:
 	return (dto.get("loot", empty_loot_state()) as Dictionary).duplicate(true)
+
+
+static func authoritative_state(dto: Dictionary) -> Dictionary:
+	var value: Variant = dto.get("authoritative_state", {})
+	return (value as Dictionary).duplicate(true) if value is Dictionary else {}
 
 
 static func _validate_loot(value: Variant) -> bool:

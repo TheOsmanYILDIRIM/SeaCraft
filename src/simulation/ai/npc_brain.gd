@@ -133,6 +133,89 @@ func telemetry() -> Dictionary:
 	}
 
 
+func persistence_state() -> Dictionary:
+	return {
+		"npc_stable_id": _entity_id,
+		"sunk": _sunk,
+		"state_id": _state,
+		"intent_id": _intent,
+		"target_entity_id": _target_entity_id,
+		"destination": {"x": _destination.x, "y": _destination.y},
+		"patrol_index": _patrol_index,
+		"selected_safe_id": _selected_safe_id,
+		"decision_sequence": _decision_sequence,
+		"last_decision_tick": _last_decision_tick,
+		"last_transition_reason": _last_transition_reason,
+		"repair_started_tick": _repair_started_tick,
+		"next_repair_tick": _next_repair_tick,
+		"last_damage_sequence": _last_damage_sequence,
+		"memory": _memory.snapshot_state(),
+	}
+
+
+func restore_state(value: Variant) -> bool:
+	if not _valid or not value is Dictionary or value.size() != 15:
+		return false
+	var state: Dictionary = value
+	if state.get("npc_stable_id") != _entity_id or not state.get("sunk") is bool:
+		return false
+	if not _state_integer(state.get("state_id")) or int(state["state_id"]) < State.PATROL or int(state["state_id"]) > State.RESUME:
+		return false
+	if not _state_integer(state.get("intent_id")) or int(state["intent_id"]) < Intent.PATROL_TO_WAYPOINT or int(state["intent_id"]) > Intent.RESUME_PATROL:
+		return false
+	var raw_target: Variant = state.get("target_entity_id")
+	if not raw_target is String or (not raw_target.is_empty() and not SectorIds.valid(raw_target)):
+		return false
+	var raw_destination: Variant = state.get("destination")
+	if not raw_destination is Dictionary or raw_destination.size() != 2:
+		return false
+	if typeof(raw_destination.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(raw_destination.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var destination := Vector2(float(raw_destination["x"]), float(raw_destination["y"]))
+	if not destination.is_finite():
+		return false
+	if not _state_integer(state.get("patrol_index")) or int(state["patrol_index"]) < 0 or int(state["patrol_index"]) >= _tuning.patrol_waypoints.size():
+		return false
+	var raw_safe: Variant = state.get("selected_safe_id")
+	if not raw_safe is String or (not raw_safe.is_empty() and raw_safe != "fallback" and not SectorIds.valid(raw_safe)):
+		return false
+	for key in ["decision_sequence", "last_decision_tick", "next_repair_tick", "last_damage_sequence"]:
+		if not _state_integer(state.get(key)) or int(state[key]) < 0:
+			return false
+	if not _state_integer(state.get("repair_started_tick")) or int(state["repair_started_tick"]) < -1:
+		return false
+	var raw_reason: Variant = state.get("last_transition_reason")
+	if not raw_reason is String or raw_reason.length() > 128:
+		return false
+	var restored_memory := NpcThreatMemory.new()
+	if not restored_memory.restore_state(state.get("memory")):
+		return false
+
+	_sunk = state["sunk"]
+	_state = int(state["state_id"])
+	_intent = int(state["intent_id"])
+	_target_entity_id = raw_target
+	_destination = destination
+	_patrol_index = int(state["patrol_index"])
+	_selected_safe_id = raw_safe
+	_decision_sequence = int(state["decision_sequence"])
+	_last_decision_tick = int(state["last_decision_tick"])
+	_last_transition_reason = raw_reason
+	_repair_started_tick = int(state["repair_started_tick"])
+	_next_repair_tick = int(state["next_repair_tick"])
+	_last_damage_sequence = int(state["last_damage_sequence"])
+	_memory = restored_memory
+	_perceived_target = ""
+	_last_perception_inspected = 0
+	if _sunk or _state == State.REPAIR:
+		_executor.stop()
+		return true
+	if _intent == Intent.REPAIR:
+		_executor.stop()
+		return true
+	return _executor.request_destination(_sector.entity_position(_entity_id), _destination)
+
+
 func state_id() -> int:
 	return _state
 
@@ -374,3 +457,10 @@ func _transition(next_state: int, reason: String) -> void:
 		return
 	_state = next_state
 	_last_transition_reason = reason
+
+
+static func _state_integer(value_in: Variant) -> bool:
+	if typeof(value_in) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value_in)
+	return is_finite(number) and number == floorf(number) and absf(number) <= 2147483647.0
