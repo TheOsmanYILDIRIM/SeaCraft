@@ -2,11 +2,15 @@ class_name CombatAuthority
 extends RefCounted
 
 signal ship_sunk(entity_id: String, sequence_id: int)
+signal monster_defeated(entity_id: String, sequence_id: int)
+signal wreck_destroyed(entity_id: String, sequence_id: int)
 signal hull_damaged(target_entity_id: String, attacker_entity_id: String, amount: float, remaining_hull: float, sequence_id: int)
 
 const FIRE := "fire_weapon"
+const HARPOON := "fire_harpoon"
 const SELECT := "select_combat_target"
 const MAX_RELOAD_SECONDS := 3600.0
+const MAX_MONSTERS_PER_SECTOR := 16
 const AMMO_SELECT := "select_ammo"
 const REPAIR := "repair_hull"
 const BOARD := "board_ship"
@@ -39,8 +43,9 @@ func _init(sector: SectorRuntime, streams: SeedStreams, tick_rate: int = 60, ena
 # Configuration is copied at registration; no Resource loading, sorting or copying on fire.
 func register(id: String, faction: String, max_hull: float, weapon: WeaponDefinition = null,
 		defense: float = 0.0, dodge: float = 0.0, selectable: bool = true,
-		attack_modifiers: Dictionary = {}, mounted_side: int = 0) -> bool:
-	if _sector == null or not SectorIds.valid(id) or not SectorIds.valid(faction) or _roster.has(id):
+		attack_modifiers: Dictionary = {}, mounted_side: int = 0,
+		target_class: String = TargetingService.SHIP) -> bool:
+	if _sector == null or not SectorIds.valid(id) or not SectorIds.valid(faction) or _roster.has(id) or not TargetingService.target_class_valid(target_class):
 		return false
 	if not _sector.entity_position(id).is_finite() or not CoreCombatRules.bounded(max_hull, 0.000001, CoreCombatRules.MAX_VALUE):
 		return false
@@ -48,6 +53,7 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 		return false
 	var ship := CombatantState.new()
 	ship.faction_id = faction
+	ship.target_class = target_class
 	ship.max_hull = max_hull
 	ship.hull = max_hull
 	ship.defense = defense
@@ -126,6 +132,61 @@ func hull(id: String) -> float:
 
 func has_combatant(id: String) -> bool:
 	return _roster.has(id)
+
+
+func target_class(id: String) -> String:
+	var actor: CombatantState = _roster.get(id)
+	return actor.target_class if actor != null else ""
+
+
+func sequence_id() -> int:
+	return _sequence
+
+
+func register_monster(id: String, definition: MonsterDefinition, anchor_id: String) -> bool:
+	if definition == null or not definition.valid() or _sector == null or _roster.has(id) or not SectorIds.valid(id):
+		return false
+	var count := 0
+	for actor: CombatantState in _roster.values():
+		if actor.target_class == TargetingService.MONSTER:
+			count += 1
+	if count >= MAX_MONSTERS_PER_SECTOR:
+		return false
+	var anchor := _sector.anchor(anchor_id)
+	if anchor == null or anchor.category != "monster_territory" or not _sector.navigation.accessible(anchor.position):
+		return false
+	if not _sector.register_entity(id, anchor.position):
+		return false
+	if not register(id, definition.faction_id, definition.max_health, null, 0.0, 0.0, true, {}, 0, TargetingService.MONSTER):
+		_sector.remove_entity(id)
+		return false
+	var monster: CombatantState = _roster[id]
+	monster.resistances = definition.elemental_resistances.duplicate(true)
+	monster.territory_anchor_id = anchor_id
+	monster.territory_center = anchor.position
+	monster.territory_radius = definition.territory_radius
+	return true
+
+
+func mount_harpoon(id: String, profile: HarpoonProfile) -> bool:
+	var actor: CombatantState = _roster.get(id)
+	if actor == null or actor.harpoon != null or profile == null or not profile.valid():
+		return false
+	actor.harpoon = profile.duplicate() as HarpoonProfile
+	return actor.harpoon != null
+
+
+func update_monster_position(id: String, requested_position: Vector2) -> bool:
+	var monster: CombatantState = _roster.get(id)
+	if monster == null or monster.target_class != TargetingService.MONSTER or monster.sunk() or not requested_position.is_finite() or monster.territory_radius <= 0.0:
+		return false
+	var offset := requested_position - monster.territory_center
+	var bounded := requested_position
+	if offset.length() > monster.territory_radius:
+		bounded = monster.territory_center + offset.normalized() * monster.territory_radius
+	if _sector.navigation == null or not _sector.navigation.accessible(bounded):
+		return false
+	return _sector.move_entity(id, bounded)
 
 
 func faction_id(id: String) -> String:
@@ -352,12 +413,14 @@ func snapshot_state() -> Dictionary:
 				"ready_tick": ship.battery.ready_tick,
 				"last_side": ship.battery.last_side,
 			}
+		var position := _sector.entity_position(id)
 		combatants.append({
 			"entity_id": id,
 			"hull": ship.hull,
 			"locked_id": ship.locked_id,
 			"battery": battery,
-			"core": {"selected_ammo": ship.selected_ammo, "statuses": ship.statuses.duplicate(true), "ready": ship.ready.duplicate(true), "damage_tick": ship.damage_tick},
+			"position": {"x": position.x, "y": position.y},
+			"core": {"selected_ammo": ship.selected_ammo, "statuses": ship.statuses.duplicate(true), "ready": ship.ready.duplicate(true), "damage_tick": ship.damage_tick, "harpoon_ready_tick": ship.harpoon_ready_tick},
 		})
 	return {"tick": _tick, "sequence": _sequence, "combatants": combatants}
 
@@ -375,7 +438,7 @@ func restore_state(value: Variant) -> bool:
 		return false
 	var planned: Dictionary = {}
 	for raw in raw_combatants:
-		if not raw is Dictionary or raw.size() not in [4, 5] or (raw.size() == 5 and not raw.has("core")):
+		if not raw is Dictionary or raw.size() not in [4, 5, 6] or (raw.size() >= 5 and not raw.has("core")):
 			return false
 		var entry: Dictionary = raw
 		var raw_id: Variant = entry.get("entity_id")
@@ -401,6 +464,12 @@ func restore_state(value: Variant) -> bool:
 				return false
 			if not _state_integer(raw_battery.get("last_side")) or absi(int(raw_battery["last_side"])) > 1:
 				return false
+		var raw_position: Variant = entry.get("position", {"x": _sector.entity_position(raw_id).x, "y": _sector.entity_position(raw_id).y})
+		if not raw_position is Dictionary or raw_position.size() != 2 or typeof(raw_position.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(raw_position.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		var restored_position := Vector2(float(raw_position["x"]), float(raw_position["y"]))
+		if not restored_position.is_finite() or not _sector.bounds.has_point(restored_position):
+			return false
 		var core: Variant = entry.get("core", {"selected_ammo": ship.selected_ammo, "statuses": {}, "ready": {}, "damage_tick": -1})
 		if not _valid_core_state(core, ship, int(state["tick"])):
 			return false
@@ -408,6 +477,7 @@ func restore_state(value: Variant) -> bool:
 			"hull": restored_hull,
 			"locked_id": raw_lock,
 			"battery": raw_battery.duplicate(true),
+			"position": restored_position,
 			"core": core.duplicate(true),
 		}
 	if planned.size() != _roster.size():
@@ -440,6 +510,9 @@ func restore_state(value: Variant) -> bool:
 		for key in ship.ready:
 			ship.ready[key] = int(ship.ready[key])
 		ship.damage_tick = int(core["damage_tick"])
+		ship.harpoon_ready_tick = int(core.get("harpoon_ready_tick", 0))
+		if not _sector.move_entity(id, entry["position"]):
+			return false
 		if ship.battery != null:
 			var battery_state: Dictionary = entry["battery"]
 			ship.battery.ready_tick = int(battery_state["ready_tick"])
@@ -452,7 +525,10 @@ func restore_state(value: Variant) -> bool:
 # attacker_id and heading come from the authority-owned actor, never from the intent.
 # An accepted volley uses exactly two encounter rolls, including misses and guaranteed hits.
 func _valid_core_state(value: Variant, ship: CombatantState, tick: int) -> bool:
-	if not value is Dictionary or value.size() != 4:
+	if not value is Dictionary or value.size() not in [4, 5]:
+		return false
+	var harpoon_ready: Variant = value.get("harpoon_ready_tick", 0)
+	if not _state_integer(harpoon_ready) or int(harpoon_ready) < 0:
 		return false
 	var selected: Variant = value.get("selected_ammo")
 	if not selected is String or (not ship.ammo_damage.is_empty() and not ship.ammo_damage.has(selected)) or (ship.ammo_damage.is_empty() and not selected.is_empty()):
@@ -505,6 +581,9 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	if not reason.is_empty():
 		return _reject(result, reason)
 	var target: CombatantState = _roster[target_id]
+	reason = TargetingService.weapon_rejection(TargetingService.CANNON, target.target_class)
+	if not reason.is_empty():
+		return _reject(result, reason)
 	result["remaining_hull"] = target.hull
 	if attacker.locked_id != target_id:
 		return _reject(result, "target_not_locked")
@@ -569,6 +648,75 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 	if result["sunk"]:
 		ship_sunk.emit(target_id, sequence)
 	return result
+
+
+func harpoon(attacker_id: String, command: Dictionary) -> Dictionary:
+	var target_value: Variant = command.get("target_id")
+	var target_id := str(target_value) if target_value is String else ""
+	var result := {"accepted": false, "reason": "", "sequence_id": 0, "attacker_id": attacker_id, "target_id": target_id,
+		"profile_id": "", "element_id": "", "applied_damage": 0.0, "remaining_hull": 0.0, "destroyed": false}
+	if not _enabled:
+		return _reject(result, "authority_disabled")
+	if not _clock_available(_tick):
+		return _reject(result, "clock_exhausted")
+	if command.size() != 3 or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY or command.get("type") != HARPOON or not target_value is String or not SectorIds.valid(target_id):
+		return _reject(result, "malformed_command")
+	var attacker: CombatantState = _roster.get(attacker_id)
+	var origin := _sector.entity_position(attacker_id) if _sector != null else Vector2.INF
+	if attacker == null or attacker.harpoon == null or not origin.is_finite():
+		return _reject(result, "invalid_attacker")
+	if attacker.sunk():
+		return _reject(result, "sunk_attacker")
+	var profile := attacker.harpoon
+	result["profile_id"] = profile.stable_id
+	result["element_id"] = profile.element_id
+	var reason := TargetingService.rejection(_sector, attacker_id, attacker.faction_id, target_id, _roster)
+	if not reason.is_empty():
+		return _reject(result, reason)
+	var target: CombatantState = _roster[target_id]
+	reason = TargetingService.weapon_rejection(TargetingService.HARPOON, target.target_class)
+	if not reason.is_empty() or not profile.accepts(target.target_class):
+		return _reject(result, "wrong_target_class" if reason.is_empty() else reason)
+	if attacker.locked_id != target_id:
+		return _reject(result, "target_not_locked")
+	var target_position := _sector.entity_position(target_id)
+	var distance := origin.distance_to(target_position)
+	if not is_finite(distance) or distance > profile.range_meters:
+		return _reject(result, "out_of_range")
+	if _tick < attacker.harpoon_ready_tick:
+		return _reject(result, "reloading")
+	if not _can_pay(attacker_id, profile.item_id):
+		return _reject(result, "insufficient_resource")
+	var resistance := float(target.resistances.get(profile.element_id, 0.0)) if profile.element_id != CoreCombatRules.NEUTRAL else 0.0
+	var damage := CoreCombatRules.damage(profile.base_damage, 1.0, resistance, target.defense, 0.0, target.hull)
+	var applied: float = damage["applied"]
+	if not _pay(attacker_id, profile.item_id):
+		return _reject(result, "insufficient_resource")
+	target.hull = maxf(0.0, target.hull - applied)
+	attacker.harpoon_ready_tick = _tick + maxi(1, ceili(profile.reload_seconds * _tick_rate))
+	_sequence += 1
+	result["accepted"] = true
+	result["sequence_id"] = _sequence
+	result["applied_damage"] = applied
+	result["remaining_hull"] = target.hull
+	result["destroyed"] = target.sunk()
+	if applied > 0.0:
+		target.damage_tick = _tick
+		hull_damaged.emit(target_id, attacker_id, applied, target.hull, _sequence)
+	if target.sunk():
+		for actor: CombatantState in _roster.values():
+			if actor.locked_id == target_id:
+				actor.locked_id = ""
+		match target.target_class:
+			TargetingService.MONSTER:
+				monster_defeated.emit(target_id, _sequence)
+			TargetingService.WRECK:
+				wreck_destroyed.emit(target_id, _sequence)
+	return result
+
+
+static func harpoon_intent(target_id: String) -> Dictionary:
+	return {"domain": GameplayCommand.DOMAIN_GAMEPLAY, "type": HARPOON, "target_id": target_id}
 
 
 static func fire_intent(target_id: String) -> Dictionary:
