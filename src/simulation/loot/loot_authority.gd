@@ -250,8 +250,8 @@ static func _valid_quantity(value: int) -> bool:
 
 
 static func _drop_id(entity_id: String, sequence_id: int) -> String:
-	return "drop.%s.%d" % [entity_id.replace(".", "_"), sequence_id]
+	return "drop.%s.seq_%d" % [entity_id.replace(".", "_"), sequence_id]
 
 
 static func _event_id(entity_id: String, sequence_id: int) -> String:
-	return "sunk.%s.%d" % [entity_id.replace(".", "_"), sequence_id]
+	return "sunk.%s.seq_%d" % [entity_id.replace(".", "_"), sequence_id]
