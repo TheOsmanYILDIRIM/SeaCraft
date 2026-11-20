@@ -135,11 +135,11 @@ func test_missing_definition_reference_is_controlled() -> void:
 
 func test_temp_open_failure_preserves_verified_primary() -> void:
 	_expect_save(_snapshot())
-	var primary := FileAccess.get_as_text(_directory.path_join(SaveService.PRIMARY))
+	var primary := _read_text(_directory.path_join(SaveService.PRIMARY))
 	assert_eq(DirAccess.make_dir_absolute(_directory.path_join(SaveService.TEMP)), OK)
 	_ship.rotation = 1.5
 	assert_eq(_save_status(_snapshot()), "temp_open_failed")
-	assert_eq(FileAccess.get_as_text(_directory.path_join(SaveService.PRIMARY)), primary)
+	assert_eq(_read_text(_directory.path_join(SaveService.PRIMARY)), primary)
 	assert_eq(_service.load()["status"], SaveService.OK_STATUS)
 
 
@@ -151,11 +151,11 @@ func test_interruption_before_rotation_ignores_temp() -> void:
 
 func test_interruption_after_rotation_preserves_last_checkpoint() -> void:
 	_expect_save(_snapshot())
-	var primary := FileAccess.get_as_text(_directory.path_join(SaveService.PRIMARY))
+	var primary := _read_text(_directory.path_join(SaveService.PRIMARY))
 	_ship.rotation = 1.5
 	var writer := InterruptedService.new(_directory)
 	assert_eq(writer.save(_snapshot())["status"], "primary_replace_failed")
-	assert_eq(FileAccess.get_as_text(_directory.path_join(SaveService.BACKUP)), primary)
+	assert_eq(_read_text(_directory.path_join(SaveService.BACKUP)), primary)
 	var result := _service.load()
 	assert_eq(result["status"], SaveService.RECOVERED)
 	assert_almost_eq(float(result["snapshot"]["player"]["motion"]["heading"]), 0.75, 0.0001)
@@ -166,13 +166,13 @@ func test_bad_primary_recovers_good_backup_without_rotating_damage() -> void:
 	_ship.rotation = 1.5
 	_expect_save(_snapshot())
 	_write(SaveService.PRIMARY, "bad")
-	var backup := FileAccess.get_as_text(_directory.path_join(SaveService.BACKUP))
+	var backup := _read_text(_directory.path_join(SaveService.BACKUP))
 	var result := _service.recover_backup()
 	assert_eq(result["status"], SaveService.RECOVERED)
 	assert_almost_eq(float(result["snapshot"]["player"]["motion"]["heading"]), 0.75, 0.0001)
 	_expect_save(result["snapshot"])
 	assert_eq(_service.load()["status"], SaveService.OK_STATUS)
-	assert_eq(FileAccess.get_as_text(_directory.path_join(SaveService.BACKUP)), backup)
+	assert_eq(_read_text(_directory.path_join(SaveService.BACKUP)), backup)
 
 
 func test_bad_primary_and_backup_refuse_overwrite() -> void:
@@ -183,16 +183,16 @@ func test_bad_primary_and_backup_refuse_overwrite() -> void:
 	assert_eq(result["primary_status"], "invalid_json")
 	assert_eq(result["backup_status"], "invalid_json")
 	assert_eq(_save_status(_snapshot()), SaveService.FAILED)
-	assert_eq(FileAccess.get_as_text(_directory.path_join(SaveService.PRIMARY)), "broken primary")
+	assert_eq(_read_text(_directory.path_join(SaveService.PRIMARY)), "broken primary")
 
 
 func test_current_schema_fixture_is_readable() -> void:
-	_write(SaveService.PRIMARY, FileAccess.get_as_text(CURRENT))
+	_write(SaveService.PRIMARY, _read_text(CURRENT))
 	assert_eq(_service.load()["status"], SaveService.OK_STATUS)
 
 
 func test_old_schema_fixture_is_explicitly_unsupported() -> void:
-	_write(SaveService.PRIMARY, FileAccess.get_as_text(LEGACY))
+	_write(SaveService.PRIMARY, _read_text(LEGACY))
 	assert_eq(_service.load()["status"], "unsupported_version")
 
 
@@ -277,7 +277,7 @@ func test_bootstrap_load_and_pause_hook_use_isolated_store() -> void:
 
 func test_persistence_and_simulation_boundary() -> void:
 	for path in ["res://src/simulation/world/sector_world.gd", "res://src/simulation/movement/ship_motor.gd"]:
-		var source := FileAccess.get_as_text(path)
+		var source := _read_text(path)
 		assert_ne(source, "")
 		for forbidden in ["FileAccess", "SaveService", "MultiplayerAPI", "@rpc"]:
 			assert_false(source.contains(forbidden))
@@ -338,3 +338,13 @@ func _write(name: String, body: String) -> void:
 	assert_not_null(file)
 	assert_true(file.store_string(body))
 	file.close()
+
+
+func _read_text(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	assert_not_null(file)
+	if file == null:
+		return ""
+	var body := file.get_as_text()
+	file.close()
+	return body

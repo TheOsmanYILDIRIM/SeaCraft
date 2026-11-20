@@ -85,7 +85,14 @@ jobs:
 
       - name: GUT FND-01, FND-02, FND-03, FND-04, FND-05 and FND-06 tests
         shell: bash
-        run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
+        run: |
+          set -euo pipefail
+          godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit 2>&1 | tee "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_fnd06_save_service.gd" "$RUNNER_TEMP/gut.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|Orphans[[:space:]]+[1-9]' "$RUNNER_TEMP/gut.log"; then
+            echo "GUT reported a parse/load/test/orphan failure." >&2
+            exit 1
+          fi
 
       - name: Guard offline boot and simulation/network separation
         shell: bash
