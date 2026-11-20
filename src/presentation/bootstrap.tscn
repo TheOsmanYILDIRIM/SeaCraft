@@ -1,16 +1,25 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/presentation/bootstrap.gd" id="1_bootstrap"]
 [ext_resource type="Script" path="res://src/presentation/camera/gameplay_camera.gd" id="2_camera"]
 [ext_resource type="Script" path="res://src/presentation/input/gameplay_input_controller.gd" id="3_input"]
 [ext_resource type="Script" path="res://src/presentation/input/input_blocker.gd" id="4_blocker"]
+[ext_resource type="Script" path="res://src/simulation/movement/ship_motor.gd" id="5_motor"]
+[ext_resource type="Resource" path="res://src/data/movement/ship_placeholder_profile.tres" id="6_profile"]
+[ext_resource type="Script" path="res://src/presentation/ship/ship_state_presenter.gd" id="7_presenter"]
 
 [node name="Bootstrap" type="Node2D"]
 script = ExtResource("1_bootstrap")
 
+[node name="ShipMotor" type="CharacterBody2D" parent="."]
+script = ExtResource("5_motor")
+movement_profile = ExtResource("6_profile")
+
 [node name="BoatMarker" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-18, 12, 20, 0, -18, -12)
 color = Color(0.72, 0.8, 0.86, 1)
+script = ExtResource("7_presenter")
+simulation_target_path = NodePath("../ShipMotor")
 
 [node name="GameplayCamera" type="Camera2D" parent="."]
 enabled = true
@@ -29,3 +38,5 @@ offset_bottom = 64.0
 mouse_filter = 0
 color = Color(0.08, 0.11, 0.15, 0.75)
 script = ExtResource("4_blocker")
+
+[connection signal="command_emitted" from="InputController" to="." method="_on_gameplay_command"]

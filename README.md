@@ -33,9 +33,21 @@ Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game tar
 - `GameplayCamera` is a `Camera2D` presentation node with follow/recenter, free pan, zoom clamp, smoothing, world limits and world↔screen conversion. It never writes simulation state.
 - Safe-area conversion remains based on `DisplayServer.get_display_safe_area()`; the FND-03 math helper converts display-pixel safe rectangles into the logical landscape viewport used by `canvas_items` + `expand`.
 
+## FND-04 authoritative ship movement contract
+
+- FND-03 gameplay `move_to_world_position` and `cancel` commands enter simulation only through `ShipMotor.apply_authoritative_command`; device input and presentation never write authoritative position, velocity or rotation.
+- `ShipMotor` is a `CharacterBody2D` driven only from fixed physics steps. A typed `ShipMovementProfile` Resource owns acceleration, deceleration, maximum forward speed, minimum maneuvering speed, turn rate, arrival radius, collision radius and stop epsilon.
+- Heading changes are turn-rate limited and speed-gated; target approach uses braking-distance speed limiting so the ship slows into its arrival radius instead of snapping or teleporting.
+- Collision uses a real CharacterBody2D circular envelope and `move_and_slide()`. FND-04 does not build island navigation or pathfinding.
+- Damaged speed enters through the FND-02 `StatModifierPipeline`; removing the modifier restores the base movement profile speed.
+- Broadside preparation is combat-agnostic: current heading, desired heading, signed angular difference, port/starboard side and current turn radius are exposed as pure helper data.
+- Simulation remains network-API independent and authority-gated. Offline play uses the same authoritative command API a future host adapter can call; ENet, RPC, prediction and reconciliation are outside FND-04.
+- Same-build replay with the same initial state, movement profile, fixed delta and command trace is expected to reproduce within tolerance. This is not a cross-platform lockstep guarantee.
+- The bootstrap movement profile is placeholder tuning for foundation verification, not final ship-content balance.
+
 ### Android device verification note
 
-CI verifies parsing, logic tests and APK export, but a real Android device is still required later for tap world targeting, one-finger drag/pan, pinch zoom, notch/safe-area placement and UI/world input conflict checks. Test the 1280×720 landscape baseline plus small 320–411dp-class screens; real-device results are separate evidence from CI.
+CI verifies parsing, simulation logic and APK export, but a real Android device is still required later for tap world targeting, one-finger drag/pan, pinch zoom, notch/safe-area placement, UI/world input conflicts, a long touch route, ship turning feel and frame pacing under dense input. Test the 1280×720 landscape baseline plus small 320–411dp-class screens; these real-device checks are explicitly separate evidence from CI.
 
 ## Local boot
 
@@ -53,10 +65,10 @@ GUT is a development/CI-only dependency. `tools/ci/install_gut.sh` downloads the
 godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
 ```
 
-The suite keeps FND-01 smoke coverage and adds FND-02 registry, typed-resource, runtime-state, modifier, RNG and primitive-DTO contract tests.
+The suite preserves the 25 FND-01/FND-02/FND-03 tests and adds FND-04 authoritative movement coverage for acceleration, deceleration, turn limits, arrival/overshoot, deterministic-enough fixed-step replay, authority gating, damaged-speed modifiers, collision and broadside heading helpers.
 
 The addon is ignored by Git and removed before exports, and `tests/**`, `tools/**`, and `addons/**` are excluded by export presets.
 
 ## CI/export
 
-GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/scene parsing, headless boot, FND-01 settings, all GUT tests, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).
+GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/resource parsing, headless boot, FND-01 settings, all FND-01 through FND-04 GUT tests, simulation/network separation, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).

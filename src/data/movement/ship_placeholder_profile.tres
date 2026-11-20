@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ShipMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/movement/ship_movement_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+acceleration = 90.0
+deceleration = 140.0
+max_forward_speed = 180.0
+minimum_maneuvering_speed = 18.0
+turn_rate_degrees_per_second = 72.0
+arrival_radius = 18.0
+collision_radius = 12.0
+stop_speed_epsilon = 0.5
