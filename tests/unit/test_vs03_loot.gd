@@ -74,7 +74,7 @@ func test_duplicate_sunk_event_creates_no_second_drop_or_rng_draw() -> void:
 
 
 func test_drop_id_is_stable() -> void:
-	assert_eq(_drop()["drop_id"], "drop.entity_vs02_sc03.7")
+	assert_eq(_drop()["drop_id"], "drop.entity_vs02_sc03.seq_7")
 
 
 func test_valid_pickup_updates_inventory_and_removes_world_drop() -> void:
