@@ -221,15 +221,15 @@ func test_pickup_button_consumes_touch_before_world_command() -> void:
 	button.position = Vector2(100, 100)
 	button.size = Vector2(224, 132)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	var captured := 0
-	button.touch_captured.connect(func() -> void: captured += 1)
+	var captured := [0]
+	button.touch_captured.connect(func() -> void: captured[0] += 1)
 	view.add_child(button)
 	var touch := InputEventScreenTouch.new()
 	touch.index = 0
 	touch.position = Vector2(160, 140)
 	touch.pressed = true
 	view.push_input(touch, true)
-	assert_eq(captured, 1)
+	assert_eq(captured[0], 1)
 
 
 func _round_trip(source: LootAuthority, rng_state: Dictionary = {}) -> LootAuthority:
