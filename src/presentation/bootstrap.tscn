@@ -1,6 +1,31 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://src/presentation/bootstrap.gd" id="1_bootstrap"]
+[ext_resource type="Script" path="res://src/presentation/camera/gameplay_camera.gd" id="2_camera"]
+[ext_resource type="Script" path="res://src/presentation/input/gameplay_input_controller.gd" id="3_input"]
+[ext_resource type="Script" path="res://src/presentation/input/input_blocker.gd" id="4_blocker"]
 
-[node name="Bootstrap" type="Node"]
+[node name="Bootstrap" type="Node2D"]
 script = ExtResource("1_bootstrap")
+
+[node name="BoatMarker" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-18, 12, 20, 0, -18, -12)
+color = Color(0.72, 0.8, 0.86, 1)
+
+[node name="GameplayCamera" type="Camera2D" parent="."]
+enabled = true
+follow_target_path = NodePath("../BoatMarker")
+script = ExtResource("2_camera")
+
+[node name="InputController" type="Node" parent="."]
+camera_path = NodePath("../GameplayCamera")
+script = ExtResource("3_input")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InputBlocker" type="ColorRect" parent="UI"]
+offset_right = 96.0
+offset_bottom = 64.0
+mouse_filter = 0
+color = Color(0.08, 0.11, 0.15, 0.75)
+script = ExtResource("4_blocker")

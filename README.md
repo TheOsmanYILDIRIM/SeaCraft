@@ -23,6 +23,20 @@ Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game tar
 - RNG stream state is primitive-safe and restorable for a future save layer. Godot's RNG algorithm itself is not considered a permanent cross-version protocol guarantee.
 - Future LAN remains host-authoritative; FND-02 does not add networking, lockstep or save-system code.
 
+## FND-03 input and camera contract
+
+- Device events never mutate authoritative gameplay state. Mouse, keyboard, gamepad and touch are translated into primitive-safe command dictionaries first.
+- Primary mouse click and single-touch tap produce the same `move_to_world_position` command for the same world coordinate; secondary mouse click produces `select_world_position`.
+- Cancel/deselect, target-cycle, camera pan/zoom and camera recenter intents share the same command layer. FND-04 will consume gameplay commands; FND-03 does not move the ship.
+- Touch uses an explicit gesture state machine: one-finger tap targets the world, one-finger drag pans the camera, and two-finger pinch zooms. Entering multi-touch cancels the tap candidate so pinch/pan cannot also fire a gameplay target.
+- Touch-to-mouse and mouse-to-touch emulation are disabled to avoid duplicate device events. `Control.accept_event()` plus `_unhandled_input` keeps UI-consumed pointer events out of world command routing.
+- `GameplayCamera` is a `Camera2D` presentation node with follow/recenter, free pan, zoom clamp, smoothing, world limits and world↔screen conversion. It never writes simulation state.
+- Safe-area conversion remains based on `DisplayServer.get_display_safe_area()`; the FND-03 math helper converts display-pixel safe rectangles into the logical landscape viewport used by `canvas_items` + `expand`.
+
+### Android device verification note
+
+CI verifies parsing, logic tests and APK export, but a real Android device is still required later for tap world targeting, one-finger drag/pan, pinch zoom, notch/safe-area placement and UI/world input conflict checks. Test the 1280×720 landscape baseline plus small 320–411dp-class screens; real-device results are separate evidence from CI.
+
 ## Local boot
 
 With Godot 4.7.2 installed, project boot needs no network connection:
