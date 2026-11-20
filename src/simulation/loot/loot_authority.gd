@@ -63,6 +63,51 @@ func on_ship_sunk(entity_id: String, sequence_id: int, position: Vector2) -> Dic
 	return drop.duplicate(true)
 
 
+# Generic authoritative reward path for CORE-02 monster/world-object events.
+# Validation, capacity checks and duplicate rejection all happen before loot RNG.
+func grant_from_table(actor: String, event_id: String, table: LootTable) -> Dictionary:
+	var result := {"accepted": false, "reason": "", "event_id": event_id, "item_id": "", "quantity": 0}
+	if not _authority_enabled:
+		result["reason"] = "authority_disabled"
+		return result
+	if _streams == null or table == null or not table.valid():
+		result["reason"] = "invalid_loot_table"
+		return result
+	if not SectorIds.valid(event_id):
+		result["reason"] = "invalid_event"
+		return result
+	if _processed_events.has(event_id):
+		result["reason"] = "already_processed"
+		return result
+	if _inventory_owner.is_empty() or actor != _inventory_owner:
+		result["reason"] = "inventory_owner_mismatch"
+		return result
+	for entry in table.entries:
+		if entry == null or not _valid_inventory_item(entry.item_id):
+			result["reason"] = "invalid_reward"
+			return result
+		var current: int = _inventory.get(entry.item_id, 0)
+		if current < 0 or current > MAX_QUANTITY - entry.max_quantity:
+			result["reason"] = "quantity_overflow"
+			return result
+	var rolled := table.roll(_streams)
+	if rolled.is_empty() or not _valid_inventory_item(str(rolled.get("item_id", ""))) or not _integer_quantity(rolled.get("quantity")):
+		result["reason"] = "invalid_reward"
+		return result
+	var item_id: String = rolled["item_id"]
+	var quantity := int(rolled["quantity"])
+	_inventory[item_id] = int(_inventory.get(item_id, 0)) + quantity
+	_processed_events[event_id] = event_id
+	result["accepted"] = true
+	result["item_id"] = item_id
+	result["quantity"] = quantity
+	return result
+
+
+func is_processed_event(event_id: String) -> bool:
+	return _processed_events.has(event_id)
+
+
 func pickup(player_id: String, command: Dictionary) -> Dictionary:
 	var result := {"accepted": false, "reason": "", "drop_id": "", "item_id": "", "quantity": 0}
 	var drop_value: Variant = command.get("drop_id")
@@ -286,6 +331,10 @@ func set_authority_enabled(enabled: bool) -> void:
 
 static func pickup_intent(drop_id: String) -> Dictionary:
 	return {"domain": GameplayCommand.DOMAIN_GAMEPLAY, "type": PICKUP, "drop_id": drop_id}
+
+
+func _valid_inventory_item(item_id: String) -> bool:
+	return SectorIds.valid(item_id) and (_valid_item(item_id) or _extra_inventory_ids.has(item_id))
 
 
 func _valid_item(item_id: String) -> bool:
