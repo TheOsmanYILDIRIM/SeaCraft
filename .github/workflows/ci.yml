@@ -1,0 +1,191 @@
+name: Godot 4.7 CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seacraft-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  GODOT_STATUS: "stable"
+  GODOT_BIN_SHA256: "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4"
+  GODOT_TEMPLATES_SHA256: "f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011"
+  GUT_COMMIT: "aeb5d4f3f7f0a6c9b5e178876d6c99b791fda605"
+
+jobs:
+  foundation:
+    name: FND-01 verification and exports
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Godot 4.7.2 editor
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_STATUS}"
+          archive="Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64.zip"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/$archive" "$base/$archive"
+          echo "${GODOT_BIN_SHA256}  $RUNNER_TEMP/$archive" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/godot"
+          unzip -q "$RUNNER_TEMP/$archive" -d "$RUNNER_TEMP/godot"
+          install -m 0755 "$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-${GODOT_STATUS}_linux.x86_64" "$RUNNER_TEMP/godot/godot"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+
+      - name: Verify exact Godot version
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --version | tee "$RUNNER_TEMP/godot-version.txt"
+          grep -Eq '^4\.7\.2\.stable\.official\.' "$RUNNER_TEMP/godot-version.txt"
+
+      - name: Validate project and export presets
+        shell: bash
+        run: godot --headless --path . --script res://tools/ci/validate_fnd01.gd
+
+      - name: Install pinned GUT from official upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./tools/ci/install_gut.sh
+          test -f addons/gut/gut_cmdln.gd
+          grep -q "${GUT_COMMIT}" tools/ci/install_gut.sh
+
+      - name: Import and parse project resources
+        shell: bash
+        run: godot --headless --editor --path . --quit
+
+      - name: Headless project boot
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
+          grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
+
+      - name: GUT smoke tests
+        shell: bash
+        run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
+
+      - name: Guard offline boot and simulation/network separation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|@rpc|rpc\(' src; then
+            echo "FND-01 source unexpectedly contains network/internet API usage." >&2
+            exit 1
+          fi
+          if grep -RInE 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
+            echo "Simulation boundary unexpectedly depends on multiplayer APIs." >&2
+            exit 1
+          fi
+
+      - name: Remove CI-only GUT before export
+        shell: bash
+        run: rm -rf addons/gut
+
+      - name: Install official Godot export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_STATUS}"
+          templates="Godot_v${GODOT_VERSION}-${GODOT_STATUS}_export_templates.tpz"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/$templates" "$base/$templates"
+          echo "${GODOT_TEMPLATES_SHA256}  $RUNNER_TEMP/$templates" | sha256sum -c -
+          target="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_STATUS}"
+          mkdir -p "$target"
+          unzip -q -j "$RUNNER_TEMP/$templates" 'templates/*' -d "$target"
+          test -f "$target/linux_debug.x86_64"
+          test -f "$target/android_debug.apk"
+
+      - name: Install Godot 4.7 Android SDK components
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME must be set by the runner}"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "build-tools;35.0.1" \
+            "platforms;android-35" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;28.1.13356709"
+          test -x "$ANDROID_HOME/build-tools/35.0.1/aapt"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          java -version
+
+      - name: Create isolated Android debug keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore "$RUNNER_TEMP/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Export Linux desktop debug build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/linux
+          godot --headless --path . --export-debug "Linux Desktop" build/linux/SeaCraft.x86_64
+          test -x build/linux/SeaCraft.x86_64
+          timeout 10s build/linux/SeaCraft.x86_64 --headless --quit-after 1 2>&1 | tee "$RUNNER_TEMP/exported-linux-boot.log"
+          grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/exported-linux-boot.log"
+
+      - name: Export Android debug APK
+        shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ runner.temp }}/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          set -euo pipefail
+          mkdir -p build/android
+          godot --headless --path . --export-debug "Android Debug" build/android/SeaCraft-debug.apk
+          test -s build/android/SeaCraft-debug.apk
+          unzip -tq build/android/SeaCraft-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-badging.txt"
+          grep -q "package: name='com.osmanyildirim.seacraft'" "$RUNNER_TEMP/apk-badging.txt"
+
+      - name: Record artifact provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${GITHUB_SHA}" > build/COMMIT_SHA.txt
+          sha256sum build/android/SeaCraft-debug.apk build/linux/SeaCraft.x86_64 > build/SHA256SUMS.txt
+          cat build/COMMIT_SHA.txt
+          cat build/SHA256SUMS.txt
+
+      - name: Upload verified build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaCraft-FND01-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            build/android/SeaCraft-debug.apk
+            build/linux/SeaCraft.x86_64
+            build/COMMIT_SHA.txt
+            build/SHA256SUMS.txt
