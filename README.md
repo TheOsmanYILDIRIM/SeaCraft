@@ -122,3 +122,16 @@ Combat remains authoritative in `CombatAuthority`. A neutral `hull_damaged` sign
 VS-02 NPC AI state is deliberately **session-only**. FND-06 save schema/version is unchanged; VS-03 owns the later NPC/loot persistence expansion. Determinism here means the same initial state, waypoint data, hull/threat event trace and decision schedule produce the same state/intent trace; Godot floating-point physics is not claimed as lockstep.
 
 **Android device checks not performed by CI:** NPC patrol visual smoothness; Alert/Retreat readability after attack; retreat hitching; Repair/Resume transitions; 30/60 FPS frame pacing; CPU use during long sailing; camera pan/zoom plus NPC state-change spikes; rapid combat-event decision spikes; and AI decision cost on low- and mid-tier phones.
+
+
+## VS-03 minimum loot, pickup and persistence
+
+VS-03 consumes the authoritative VS-02 `ship_sunk` event through a dedicated `LootAuthority`. A typed `LootTable` Resource rolls only the existing `loot` RNG stream; the result is copied into primitive-safe drop state with a deterministic stable drop ID. Reprocessing the same sunk event is blocked by a persisted event ledger before another RNG draw can occur. Presentation receives detached drop snapshots and cannot choose loot or mutate authority.
+
+Pickup is one authority-gated transaction. It validates drop existence, claim state, active sector, player distance, stable item ID, positive integer quantity and overflow before atomically recording the claim, incrementing the minimal `stable item ID -> integer quantity` inventory and removing the drop from the sector spatial index. Duplicate pickup returns no reward. Nearby lookup uses the existing FND-05 spatial hash with a bounded radius; there is no whole-world per-frame entity scan, per-item Node inventory, projectile simulation, GLoot dependency, RPC or ENet API.
+
+FND-06 checkpoints now include the primitive loot/drop ledger, minimal inventory and processed sunk-event ledger while preserving the existing schema/version compatibility path: older schema-1 saves without the additive `loot` field load as an empty loot state, while malformed loot state is rejected explicitly. The existing RNG snapshot persists the loot stream, so save/load continues the same authoritative RNG state. Unclaimed drops are re-indexed in their sector; claimed drops remain absent after reload. The runtime remains offline/local-authority today and host-ready for a future adapter where a client sends only pickup intent.
+
+The mobile slice uses one large safe-area-aware contextual **TOPLA** control next to **ATEŞ** and a lightweight diamond placeholder for the drop. The control consumes touch events so pickup does not leak into world movement; it is only visible while a bounded proximity query finds a pickup.
+
+**VS-03 Android device gate — not run by CI:** verify touch pickup on a real phone; drop and TOPLA readability on small screens; no accidental move/pickup collision; save → force-stop → load for both claimed and unclaimed drops; pickup-time frame spike; and long-session loot/save behavior on low- and mid-tier devices. CI export/boot evidence is not a substitute for these device checks.
