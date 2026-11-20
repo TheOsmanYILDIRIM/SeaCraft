@@ -212,6 +212,26 @@ func test_loot_state_is_primitive_safe_and_has_no_runtime_objects() -> void:
 	assert_false(state.has("node"))
 
 
+func test_pickup_button_consumes_touch_before_world_command() -> void:
+	var view := SubViewport.new()
+	view.size = Vector2i(512, 384)
+	view.gui_disable_input = false
+	add_child_autofree(view)
+	var button := LootPickupButton.new()
+	button.position = Vector2(100, 100)
+	button.size = Vector2(224, 132)
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var captured := 0
+	button.touch_captured.connect(func() -> void: captured += 1)
+	view.add_child(button)
+	var touch := InputEventScreenTouch.new()
+	touch.index = 0
+	touch.position = Vector2(160, 140)
+	touch.pressed = true
+	view.push_input(touch, true)
+	assert_eq(captured, 1)
+
+
 func _round_trip(source: LootAuthority, rng_state: Dictionary = {}) -> LootAuthority:
 	var directory := "user://vs03-save-%s-%s" % [get_instance_id(), Time.get_ticks_usec()]
 	assert_eq(DirAccess.make_dir_recursive_absolute(directory), OK)
