@@ -679,27 +679,27 @@
 
 | Sınıf | Durum | Ana kaynak |
 |---|---|---|
-| Oyuncu gemileri / Gold & Elite ship designs | Gold 12 + Elite 1–33 somut kayıtlandı; raid design örnekleri eklendi | "+U.design+" |
-| Special/Event ship designs A–Z | Resmî sayfa binlerce satırlık ve sürekli büyüyen A–Z arşiv; bu snapshot'ta tamamı tek tek transkribe edilmedi | "+U.design+" |
-| NPC gemileri / Admiral / boss | Regionlar, Eizo ve ROK dahil geniş somut örnek seti; resmî NPC sayfası ana indeks | "+U.npc+" |
-| Monsters / boss-like harpoon targets | Normal→ROK tüm resmî region listeleri ve Atlantis monsters kayıtlandı | "+U.monster+" |
-| Atlantis submarines/NPC/monsters | 2026 tier 1–6 roster + all-tier entities + launchers/torpedoes | "+U.atlantis+" |
-| Cannons / weapons | Gold/Elite ve güncel cannon family isimleri + Repair Cannon | "+U.cannon+" |
-| Ammunition | Gold, elite, debuff, elemental, event ve ROK örnekleri | "+U.ammo+" |
-| Harpoons | Copper→Lava tam hasar basamakları | "+U.harpoon+" |
-| Ship extensions/upgrades | Resmî extension örnekleri; castle/trophy/core mekanikleri Mekanik Kataloğu'nda | "+U.ext+" |
-| Crew/officers/pirates/trainers | Ana roller ve trainer familyaları | "+U.crew+" |
-| Pets | Resmî A–S sayfasından geniş somut örnek seti; page-2 / sonradan eklenen petler tam transkribe edilmedi | "+U.pets+" |
-| Gems | Ship/Pet gem familyaları + Atlantis gem sistemi referansı | "+U.gems+" |
-| Consumables/action items | Amulets, rockets, mines, traps, buffs, ROK/event materials | "+U.action+" |
-| Quest items | Somut örnekler + quest system kaynağı | "+U.quest+" |
-| Currencies/tokens | Ana, region, event, raid-access ve progression tokenları | "+U.currency+" |
-| Loot/chests/glitters/shipwrecks | Normal/event/Atlantis chest, glitter, shipwreck varyantları | "+U.chests+" |
-| Islands/ports/Safe Havens | Guild Island/Tower + Safe Haven; world-map ownership | "+U.world+" |
-| Sea Chart regions/biomes | Normal, Tropical, Ice, Lava, Commonwealth, Fenghuang, Al’Mahareen + Eizo/ROK genişlemeleri | "+U.regions+" |
-| Bonus/raid/boss/event maps | Zodiac/legacy bonus maps, raids, Map of Forever portals ve 2026 event maps | "+U.index+" |
-| Factions/reputations | Vovoi/Commonwealth/Fenghuang elemental reputation lines | "+U.rep+" |
-| Quest givers/world entities | Erken quest giver örnekleri + Safe Haven service roles | "+U.q34+" |
+| Oyuncu gemileri / Gold & Elite ship designs | Gold 12 + Elite 1–33 somut kayıtlandı; raid design örnekleri eklendi | [kaynak](https://board-en.seafight.com/threads/designs.171633/) |
+| Special/Event ship designs A–Z | Resmî sayfa binlerce satırlık ve sürekli büyüyen A–Z arşiv; bu snapshot'ta tamamı tek tek transkribe edilmedi | [kaynak](https://board-en.seafight.com/threads/designs.171633/) |
+| NPC gemileri / Admiral / boss | Regionlar, Eizo ve ROK dahil geniş somut örnek seti; resmî NPC sayfası ana indeks | [kaynak](https://board-en.seafight.com/threads/npcs.1823/) |
+| Monsters / boss-like harpoon targets | Normal→ROK tüm resmî region listeleri ve Atlantis monsters kayıtlandı | [kaynak](https://board-en.seafight.com/threads/monsters.1812/) |
+| Atlantis submarines/NPC/monsters | 2026 tier 1–6 roster + all-tier entities + launchers/torpedoes | [kaynak](https://board-en.seafight.com/threads/atlantis-expansion-milestone-1.187118/) |
+| Cannons / weapons | Gold/Elite ve güncel cannon family isimleri + Repair Cannon | [kaynak](https://board-en.seafight.com/threads/cannons.1822/) |
+| Ammunition | Gold, elite, debuff, elemental, event ve ROK örnekleri | [kaynak](https://board-en.seafight.com/threads/ammunition.9856/) |
+| Harpoons | Copper→Lava tam hasar basamakları | [kaynak](https://board-en.seafight.com/threads/harpoons.172246/) |
+| Ship extensions/upgrades | Resmî extension örnekleri; castle/trophy/core mekanikleri Mekanik Kataloğu'nda | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) |
+| Crew/officers/pirates/trainers | Ana roller ve trainer familyaları | [kaynak](https://board-en.seafight.com/threads/crew.1045/) |
+| Pets | Resmî A–S sayfasından geniş somut örnek seti; page-2 / sonradan eklenen petler tam transkribe edilmedi | [kaynak](https://board-en.seafight.com/threads/pets.171762/) |
+| Gems | Ship/Pet gem familyaları + Atlantis gem sistemi referansı | [kaynak](https://board-en.seafight.com/threads/gems.171760/) |
+| Consumables/action items | Amulets, rockets, mines, traps, buffs, ROK/event materials | [kaynak](https://board-en.seafight.com/threads/action-items.1824/) |
+| Quest items | Somut örnekler + quest system kaynağı | [kaynak](https://board-en.seafight.com/threads/quests.1920/) |
+| Currencies/tokens | Ana, region, event, raid-access ve progression tokenları | [kaynak](https://board-en.seafight.com/threads/game-currencies.49379/) |
+| Loot/chests/glitters/shipwrecks | Normal/event/Atlantis chest, glitter, shipwreck varyantları | [kaynak](https://board-en.seafight.com/threads/chests-chest-loot-table.1974/) |
+| Islands/ports/Safe Havens | Guild Island/Tower + Safe Haven; world-map ownership | [kaynak](https://board-en.seafight.com/threads/world-map.171887/) |
+| Sea Chart regions/biomes | Normal, Tropical, Ice, Lava, Commonwealth, Fenghuang, Al’Mahareen + Eizo/ROK genişlemeleri | [kaynak](https://board-en.seafight.com/threads/map-regions.172403/) |
+| Bonus/raid/boss/event maps | Zodiac/legacy bonus maps, raids, Map of Forever portals ve 2026 event maps | [kaynak](https://board-en.seafight.com/threads/index.2506/) |
+| Factions/reputations | Vovoi/Commonwealth/Fenghuang elemental reputation lines | [kaynak](https://board-en.seafight.com/threads/reputation-points.47453/) |
+| Quest givers/world entities | Erken quest giver örnekleri + Safe Haven service roles | [kaynak](https://board-en.seafight.com/threads/quests-level-3-4.1916/) |
 
 ## Görsel referansları — URL-only
 
@@ -720,7 +720,9 @@
 
 1. **Special ship designs A–Z** ve **Pets page 2 / en yeni event petleri** çok büyük, sürekli değişen arşivlerdir; bu snapshot bunların tamamını satır satır taşımıyor. Ana resmî A–Z kaynak URL'leri kaydedildi.
 2. Bazı tarihsel NPC/monster HP, reward ve raid level aralıkları zaman içinde değişmiştir; resmî FAQ'lar da değerlerin yaklaşık olabileceğini söyler. SeaCraft denge değeri olarak alınmamalıdır.
-3. Eizo II monster sayfasında bazı HP/reward alanları resmî kaynağın kendisinde ## Ana kaynak dizini
+3. Eizo II monster kayıtlarındaki bazı HP/reward alanları bu snapshot'ta kesin doğrulanamadı; bunlar SeaCraft denge girdisi olarak kullanılmamalıdır.
+
+## Ana kaynak dizini
 
 - Seafight Bible Index: https://board-en.seafight.com/threads/index.2506/
 - Designs: https://board-en.seafight.com/threads/designs.171633/
