@@ -19,6 +19,8 @@ func before_each() -> void:
 func test_bootstrap_is_deterministic() -> void:
 	var first := BOOT.instantiate()
 	var second := BOOT.instantiate()
+	first.set("_save_service", SaveService.new("user://seacraft-fnd05-determinism-test"))
+	second.set("_save_service", SaveService.new("user://seacraft-fnd05-determinism-test"))
 	add_child_autofree(first)
 	add_child_autofree(second)
 	assert_not_null(first.active_sector())

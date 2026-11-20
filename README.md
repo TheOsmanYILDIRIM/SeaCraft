@@ -81,4 +81,21 @@ The addon is ignored by Git and removed before exports, and `tests/**`, `tools/*
 
 ## CI/export
 
-GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/resource parsing, headless boot, FND-01 settings, all FND-01 through FND-05 GUT tests, simulation/network separation, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).
+GitHub Actions pins Godot 4.7.2 and validates the official binary/template SHA-256 values before use. CI checks project/resource parsing, headless boot, FND-01 settings, all FND-01 through FND-06 GUT tests, simulation/network separation, Linux desktop export and an Android arm64 debug APK. Android setup follows the Godot 4.7 toolchain baseline (JDK 17, Android Platform/Build Tools 35, CMake 3.10.2 and NDK r28b).
+
+
+## FND-06 mobile checkpoint baseline
+
+- The offline composition root loads or explicitly refuses the checkpoint before opening any sector. Only the selected sector runtime is restored. A bad/unsupported checkpoint never silently starts a new world or replaces the save.
+- One writer uses app-private `user://seacraft-save/`: `world.json`, `world.tmp`, `world.bak`. A JSON DTO is validated, staged and read back; only a verified primary rotates to backup, then verified temp replaces primary. A process kill between renames leaves the verified backup. Temp is never trusted as a recovery source. Read-only backup recovery reports `recovered_backup`; a successful subsequent checkpoint restores primary without rotating the damaged file. This is not a filesystem power-loss/fsync guarantee.
+- Player stable ID, active sector ID, motion (including current destination when set), schema/content identity and RNG state are saved. The fixture has no live HP, inventory or quest simulation to persist. RNG's signed 64-bit values use decimal strings; resumption is verified on the same engine build, not guaranteed across Godot versions. Schema 1 is supported; other schemas report `unsupported_version`. Incompatible content reports `unsupported_content` separately. The content fingerprint is documented in `SaveSnapshot` and must be updated when its content inputs change.
+- `request_checkpoint()` defers explicit/manual and critical checkpoint writes, including a hook for a future committed sector transition. Dirty movement flushes outside physics at most once per 20 seconds in the periodic path; the app-pause notification flushes only if dirty. Failed writes remain dirty for retry. Runtime and network layers do not write files. A single local owner writes; host ownership/session metadata is reserved without enabling LAN or client world writes.
+- CI exports `SeaCraft-FND06-<commit SHA>` and includes `COMMIT_SHA.txt` and `SHA256SUMS.txt` (including the arm64 APK).
+
+### FND-06 real Android device gate — not run by CI
+
+- Verify normal save/load and background → foreground resume.
+- Kill the process during checkpoint writes, then force-stop/relaunch; verify the last completed checkpoint or backup is available.
+- Corrupt primary on an isolated test install and verify explicit backup recovery.
+- Confirm app-private `user://` needs no storage permission.
+- Measure save-related frame spikes on a lower-end phone and test controlled failure/retry with low free storage.

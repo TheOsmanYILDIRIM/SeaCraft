@@ -59,14 +59,7 @@ func _activate(id: String, entry_id: String, entity_id: String) -> bool:
 	var path := _graph.definition_path(id)
 	if path.is_empty():
 		return false
-	var definition: SectorDefinition
-	if _loader.is_valid():
-		definition = _loader.call(path) as SectorDefinition
-	else:
-		definition = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
-	if definition == null or definition.stable_id != id or not _graph.matches_definition(definition):
-		return false
-	var candidate_runtime := SectorRuntime.build(definition)
+	var candidate_runtime := _build_runtime(id, path)
 	if candidate_runtime == null:
 		return false
 	var entry := candidate_runtime.anchor(entry_id)
@@ -74,3 +67,30 @@ func _activate(id: String, entry_id: String, entity_id: String) -> bool:
 		return false
 	_runtime = candidate_runtime
 	return true
+
+
+# Restore only the selected world runtime, committing it after validation.
+func restore_active(authority: RefCounted, id: String, entity_id: String, position: Vector2) -> String:
+	if not _authorized(authority):
+		return "not_authorized"
+	var path := _graph.definition_path(id)
+	if not SectorIds.valid(id) or path.is_empty():
+		return "unknown_sector"
+	var candidate := _build_runtime(id, path)
+	if candidate == null:
+		return "missing_or_invalid_sector_definition"
+	if not position.is_finite() or not candidate.bounds.has_point(position) or not candidate.register_entity(entity_id, position):
+		return "invalid_spawn_state"
+	_runtime = candidate
+	return ""
+
+
+func _build_runtime(id: String, path: String) -> SectorRuntime:
+	var definition: SectorDefinition
+	if _loader.is_valid():
+		definition = _loader.call(path) as SectorDefinition
+	elif ResourceLoader.exists(path):
+		definition = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	if definition == null or definition.stable_id != id or not _graph.matches_definition(definition):
+		return null
+	return SectorRuntime.build(definition)

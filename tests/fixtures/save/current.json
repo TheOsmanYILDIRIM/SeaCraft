@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "content_version": "fnd02-fixture-1",
+  "rng_stream_version": 1,
+  "content_hash": "b379fac338fb4ae59b52e9559180a97c9dedd90ff3463d7183ec7ab0ea0605d6",
+  "sector_id": "sector.foundation",
+  "player": {
+    "entity_id": "entity.player",
+    "motion": {
+      "x": -231,
+      "y": 13,
+      "heading": 0.75,
+      "vx": 3.5,
+      "vy": -1.5,
+      "has_target": true,
+      "target_x": -205,
+      "target_y": 21,
+      "desired_heading": 0.25
+    }
+  },
+  "rng": {
+    "schema_version": 1,
+    "rng_stream_version": 1,
+    "master_seed": "1",
+    "streams": {
+      "world": {
+        "derived_seed": 1612087846,
+        "state": "-9223372036854775808"
+      },
+      "encounter": {
+        "derived_seed": 1534165590,
+        "state": "-9223372036854775808"
+      },
+      "loot": {
+        "derived_seed": 577724805,
+        "state": "-9223372036854775808"
+      }
+    }
+  },
+  "ownership": {
+    "kind": "local",
+    "session_id": ""
+  }
+}

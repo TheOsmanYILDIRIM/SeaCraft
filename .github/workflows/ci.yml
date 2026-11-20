@@ -21,7 +21,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -83,7 +83,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT FND-01, FND-02, FND-03, FND-04 and FND-05 tests
+      - name: GUT FND-01, FND-02, FND-03, FND-04, FND-05 and FND-06 tests
         shell: bash
         run: godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
 
@@ -97,6 +97,10 @@ jobs:
           fi
           if grep -RInE --include='*.gd' 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
             echo "Simulation boundary unexpectedly depends on multiplayer APIs." >&2
+            exit 1
+          fi
+          if grep -RInE --include='*.gd' 'FileAccess|DirAccess|SaveService|res://src/persistence' src/simulation; then
+            echo "Simulation must not access checkpoint storage." >&2
             exit 1
           fi
 
@@ -179,6 +183,7 @@ jobs:
           unzip -tq build/android/SeaCraft-debug.apk
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-badging.txt"
           grep -q "package: name='com.osmanyildirim.seacraft'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fx "native-code: 'arm64-v8a'" "$RUNNER_TEMP/apk-badging.txt"
 
       - name: Record artifact provenance
         shell: bash
@@ -192,7 +197,7 @@ jobs:
       - name: Upload verified build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-FND05-${{ github.sha }}
+          name: SeaCraft-FND06-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |

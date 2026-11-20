@@ -285,3 +285,32 @@ static func _positive_or_zero(value: float) -> float:
 	if not is_finite(value):
 		return 0.0
 	return maxf(0.0, value)
+
+
+# Cold persistence boundary: no file or lifecycle dependencies in simulation.
+func capture_save_motion() -> Dictionary:
+	return {"x": global_position.x, "y": global_position.y, "heading": rotation,
+		"vx": velocity.x, "vy": velocity.y, "has_target": _has_target,
+		"target_x": _target_position.x, "target_y": _target_position.y, "desired_heading": _desired_heading}
+
+
+static func valid_save_motion(value: Variant) -> bool:
+	if not value is Dictionary or value.size() != 9 or not value.get("has_target") is bool:
+		return false
+	for key in ["x", "y", "heading", "vx", "vy", "target_x", "target_y", "desired_heading"]:
+		var raw: Variant = value.get(key)
+		if not _is_number(raw) or not is_finite(float(raw)) or absf(float(raw)) > 1.0e9:
+			return false
+	return true
+
+
+func restore_save_motion(motion: Dictionary) -> bool:
+	if not authority_enabled or not valid_save_motion(motion):
+		return false
+	global_position = Vector2(motion["x"], motion["y"])
+	rotation = motion["heading"]
+	velocity = Vector2(motion["vx"], motion["vy"])
+	_has_target = motion["has_target"]
+	_target_position = Vector2(motion["target_x"], motion["target_y"])
+	_desired_heading = motion["desired_heading"]
+	return true
