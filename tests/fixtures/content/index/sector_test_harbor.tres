@@ -6,5 +6,5 @@
 script = ExtResource("1_entry")
 stable_id = "sector.test_harbor"
 definition_type = "sector"
-resource_path = "res://tests/fixtures/content/definitions/sector_test_harbor.tres"
+definition_path = "res://tests/fixtures/content/definitions/sector_test_harbor.tres"
 referenced_ids = PackedStringArray("faction.neutral")

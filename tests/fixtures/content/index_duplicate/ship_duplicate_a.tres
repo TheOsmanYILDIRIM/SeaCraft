@@ -6,5 +6,5 @@
 script = ExtResource("1_entry")
 stable_id = "ship.test_sloop"
 definition_type = "ship"
-resource_path = "res://tests/fixtures/content/definitions/ship_test_sloop.tres"
+definition_path = "res://tests/fixtures/content/definitions/ship_test_sloop.tres"
 referenced_ids = PackedStringArray("faction.neutral", "weapon.test_cannon")

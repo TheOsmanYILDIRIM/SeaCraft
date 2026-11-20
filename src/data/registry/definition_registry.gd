@@ -63,12 +63,12 @@ func load_definition(stable_id: String) -> BaseDefinition:
 
 	var entry := _entries_by_id[stable_id] as DefinitionIndexEntry
 	var loaded := ResourceLoader.load(
-		entry.resource_path,
+		entry.definition_path,
 		"",
 		ResourceLoader.CACHE_MODE_IGNORE
 	)
 	if loaded == null or not (loaded is BaseDefinition):
-		_fail("definition is not a BaseDefinition: %s" % entry.resource_path, ERR_PARSE_ERROR)
+		_fail("definition is not a BaseDefinition: %s" % entry.definition_path, ERR_PARSE_ERROR)
 		return null
 
 	var definition := loaded as BaseDefinition
@@ -121,13 +121,13 @@ func _validate_entry(entry: DefinitionIndexEntry, entry_path: String) -> Error:
 			"index entry has unsupported definition type: %s" % entry.definition_type,
 			ERR_INVALID_DATA
 		)
-	if not entry.resource_path.begins_with("res://"):
+	if not entry.definition_path.begins_with("res://"):
 		return _fail(
-			"definition path must be a res:// resource: %s" % entry.resource_path,
+			"definition path must be a res:// resource: %s" % entry.definition_path,
 			ERR_INVALID_DATA
 		)
-	if not ResourceLoader.exists(entry.resource_path):
-		return _fail("definition resource is missing: %s" % entry.resource_path, ERR_FILE_NOT_FOUND)
+	if not ResourceLoader.exists(entry.definition_path):
+		return _fail("definition resource is missing: %s" % entry.definition_path, ERR_FILE_NOT_FOUND)
 	return OK
 
 

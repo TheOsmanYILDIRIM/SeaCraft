@@ -6,4 +6,4 @@
 script = ExtResource("1_entry")
 stable_id = "faction.neutral"
 definition_type = "faction"
-resource_path = "res://tests/fixtures/content/definitions/faction_neutral.tres"
+definition_path = "res://tests/fixtures/content/definitions/faction_neutral.tres"
