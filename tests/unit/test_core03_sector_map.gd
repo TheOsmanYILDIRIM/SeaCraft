@@ -88,6 +88,21 @@ func test_core03_failed_transition_is_atomic_and_stale_runtime_rebinds() -> void
 	var world: SectorWorld = fixture["world"]
 	var combat: CombatAuthority = fixture["combat"]
 	var objects: WorldObjectAuthority = fixture["objects"]
+	var state_before := [
+		combat.snapshot_state(),
+		objects.snapshot_state(),
+		fixture["loot"].snapshot_state(),
+		fixture["rng"].snapshot_state(),
+	]
+	var no_mutation := world.request_transition(fixture["authority"], PLAYER, FoundationSector.GATE_FOUNDATION_OUTER)
+	assert_false(no_mutation["accepted"])
+	assert_eq(no_mutation["reason"], "out_of_radius")
+	assert_eq([
+		combat.snapshot_state(),
+		objects.snapshot_state(),
+		fixture["loot"].snapshot_state(),
+		fixture["rng"].snapshot_state(),
+	], state_before)
 	var old_runtime: WeakRef = weakref(world.active())
 	assert_true(world.active().move_entity(PLAYER, world.active().anchor(FoundationSector.FOUNDATION_GATE).position))
 	var result := world.request_transition(fixture["authority"], PLAYER, FoundationSector.GATE_FOUNDATION_OUTER)

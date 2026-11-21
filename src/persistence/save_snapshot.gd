@@ -3,7 +3,7 @@ extends RefCounted
 
 # SHA-256 of newline-terminated Git blob IDs for the movement profile, sector
 # definition and authored foundation graph (in that order). Bump on content changes.
-const CONTENT_HASH := "c033f8c86ce7e674776340063fa8eb374027273181a557c742ed74c5506b6a95"
+const CONTENT_HASH := "8b9a1b829700f114e7b6a16daa14c4e2288e1e7ff9b36125e30f078c55d6b39d"
 const LOCAL := "local"
 const HOST := "host"
 

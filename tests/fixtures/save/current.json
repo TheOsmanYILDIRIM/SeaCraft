@@ -2,7 +2,7 @@
   "schema_version": 1,
   "content_version": "fnd02-fixture-1",
   "rng_stream_version": 1,
-  "content_hash": "c033f8c86ce7e674776340063fa8eb374027273181a557c742ed74c5506b6a95",
+  "content_hash": "8b9a1b829700f114e7b6a16daa14c4e2288e1e7ff9b36125e30f078c55d6b39d",
   "sector_id": "sector.foundation",
   "player": {
     "entity_id": "entity.player",
