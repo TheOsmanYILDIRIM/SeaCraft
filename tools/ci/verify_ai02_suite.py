@@ -3,6 +3,7 @@ import re
 import sys
 from pathlib import Path
 
+SCRIPT = "res://tests/unit/test_ai02_tactical_combat.gd"
 EXPECTED_TESTS = [
     "test_ai02_tactical_context_is_detached_primitive_safe_and_bounded",
     "test_ai02_expected_dps_uses_core_rules_without_rng_or_transaction_mutation",
@@ -42,7 +43,9 @@ def main() -> None:
     path = Path(sys.argv[1])
     if not path.is_file():
         fail(f"missing log: {path}")
-    text = path.read_text(encoding="utf-8", errors="replace")
+    text = re.sub(r"\x1b\[[0-9;]*m", "", path.read_text(encoding="utf-8", errors="replace"))
+    if SCRIPT not in text:
+        fail("AI-02 test script did not load")
     for token in FATAL:
         if token in text:
             fail(f"fatal GUT token present: {token}")
