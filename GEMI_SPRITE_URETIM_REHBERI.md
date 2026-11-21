@@ -439,3 +439,33 @@ Template kuralları:
 - kaynak alfa ekran kenarına değiyorsa `KAYNAK KENARA DEĞİYOR` uyarısı verir. Bu uyarı HTML'in kırptığı anlamına gelmez; PNG'nin kendisinin daha önce kesilmiş olabileceğini bildirir.
 
 **Kural:** Gemiden gemiye yeni HTML üretme. Yeni işlev gerekiyorsa bu tek template'i geliştir ve GitHub'daki dosyayı güncelle.
+
+
+## 14. Su temaslı destek anchor sistemi
+
+SC-03 manuel hizalama testi, yalnız alpha centroid veya direk/yelken ağırlıklı merkez hesabının yeterli olmadığını gösterdi. Gemiler insan karakterlerindeki “ayak” mantığına benzer biçimde **denize oturan gövde destek yüzeyi** üzerinden hizalanmalıdır.
+
+Kanonik normalizer artık varsayılan olarak şu yöntemi kullanır:
+
+1. yelken, ince arma ve direk etkisini azaltmak için yoğun ahşap/gövde maskesi çıkarır;
+2. gövdenin geniş taşıyıcı kısmındaki yatay kesitlerden X destek merkezini hesaplar;
+3. yoğun gövde kütlesinden Y destek merkezini hesaplar;
+4. N/S, NE/SW, E/W, SE/NW karşı yönlerini aynı fiziksel aile olarak ele alır;
+5. gövde heading-span ölçüsünden teorik 55° projeksiyon oranına göre scale tahmini yapar;
+6. karşı yön çiftlerinin scale tahminini birlikte yumuşatır;
+7. SC-03 manuel QA verisinden çıkarılmış küçük **aile bazlı residual** düzeltmeleri %100 değil, yumuşatılmış ağırlıkla uygular;
+8. son kompozisyonda yine `compose_no_crop()` güvenlik kapısı çalışır.
+
+Bu yaklaşım tek tek frame değerlerini ezberlemez. Amaç insan gözüyle yapılan hizalamaya yaklaşırken her yönün doğal projeksiyon farkını ve küçük model morflarını tolere etmektir.
+
+SC-03 test setinde elde edilen doğrulama:
+- X/Y düzeltme bileşen RMSE: yaklaşık **8.6 px**
+- scale RMSE: yaklaşık **0.0157** (yaklaşık %1.6)
+- karşı yönlerde küçük insan ayarı farkları bilerek tamamen ezberlenmedi
+- N/S, NE/SW, E/W, SE/NW fiziksel çiftleri yumuşatılmış ortak scale ile tutuldu
+
+Bu nedenle final kabul sırası değişmez:
+
+`sprite_normalize.py → rotation/contact-sheet kontrolü → sprite_manual_aligner_template.html → gerekirse birkaç piksellik manuel residual`
+
+**Kural:** direk tepesi, yelken bbox'ı veya full-alpha merkezi final anchor değildir. Ana anchor gövdenin denize oturan yoğun destek yapısıdır.
