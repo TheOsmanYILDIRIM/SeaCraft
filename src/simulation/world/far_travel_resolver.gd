@@ -92,7 +92,7 @@ static func advance(state: Dictionary, graph_snapshot: Dictionary, hazard_facts:
 		return {"state": result, "arrived": destination == result["sector_id"] and not destination.is_empty(), "events": events}
 	var route: Array = (travel["route"] as Array).duplicate()
 	var route_index := int(travel["route_index"])
-	var route_matches := not route.is_empty() and route_index >= 0 and route_index < route.size() and route[route_index] == result["sector_id"] and route[route.size() - 1] == destination
+	var route_matches: bool = not route.is_empty() and route_index >= 0 and route_index < route.size() and route[route_index] == result["sector_id"] and route[route.size() - 1] == destination
 	if not route_matches:
 		route = plan_route(graph_snapshot, str(result["sector_id"]), destination, hazard_facts)
 		if route.is_empty():
