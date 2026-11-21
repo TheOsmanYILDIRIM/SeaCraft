@@ -200,7 +200,7 @@ func _on_host_intent_applied(peer_id: int, player_id: String, intent_type: Strin
 
 
 func _finish_client() -> void:
-	_client.disconnect()
+	_client.close_session()
 	_finish_at_ms = Time.get_ticks_msec() + 200
 
 
@@ -209,7 +209,7 @@ func _fail(message: String) -> void:
 	if _host != null:
 		_host.stop()
 	if _client != null:
-		_client.disconnect()
+		_client.close_session()
 	quit(1)
 
 

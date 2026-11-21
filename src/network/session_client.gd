@@ -95,7 +95,7 @@ func send_command(command: Dictionary) -> bool:
 	return true
 
 
-func disconnect() -> void:
+func close_session() -> void:
 	if _peer != null:
 		_peer.close()
 	if multiplayer.multiplayer_peer != null:
