@@ -231,3 +231,222 @@ Bu `not_run` alanları CI başarısı gibi gösterilmemiştir.
 NET-01 için offline boot, network boundary, canonical compatibility handshake, host-owned peer mapping, bounded client intents, spoof/replay/malformed/pre-handshake rejection, real ENet/RPC separate-process host authority, Android INTERNET permission, eski regresyonlar, orphan=0, Linux/Android export, exact artifact provenance/readback ve Beyin strict kapanışı doğrulandı.
 
 NET-01 tamamlandı. NET-02 başlatılmadı.
+
+---
+
+## SOHBET-29 — SeaCraft NET-02 — Spawn, Snapshot ve Temel State Replikasyonu
+
+### Kapanış durumu
+
+- Durum: **DONE**
+- Exact doğrulanmış kod SHA: `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+- GitHub Actions: run `#171`, ID `44959034942`, sonuç **success**
+- CI URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/44959034942
+- NET-03: `not_started`
+- Gerçek Android cihaz testleri: `not_run` (CI fiziksel cihaz değildir)
+
+NET-02 kapsamı, yalnız `main` üzerinde host-authoritative spawn/despawn, stable-ID player/NPC/monster/loot mirror yaşam döngüsü, bounded snapshot replication, host AOI, reliable combat/loot semantic events, client-side bounded interpolation ve client outcome-mutation rejection olarak tamamlandı. Prediction/reconciliation, reconnect/late-join recovery, discovery ve NET-03 kapsamı başlatılmadı.
+
+### Uygulama mimarisi ve authority sınırı
+
+Yeni/uzatılan ağ katmanı:
+
+- `src/network/session_protocol.gd`: exact-shape primitive DTO validation; stable ID, snapshot/event sequence ve limit sözleşmeleri.
+- `src/network/network_entity_proxy.gd`: presentation-only player/NPC/monster/loot mirror; authoritative target state ve en fazla 4 interpolation sample.
+- `src/network/network_entity_registry.gd`: stable-ID + generation idempotency, authority/mirror registry, sector-aware spatial index.
+- `src/network/network_replication_peer.gd`: host-only `MultiplayerSpawner`, snapshot üretimi, host AOI, semantic event replication ve telemetry.
+- `src/network/session_rpc_bridge.gd`: snapshot için `@rpc("authority", "call_remote", "unreliable_ordered", 2)`; semantic combat/loot event için `@rpc("authority", "call_remote", "reliable", 1)`.
+- `src/network/session_host.gd` / `session_client.gd`: NET-01 session boundary içine replication peer bağlandı.
+- Simulation/data/persistence/presentation katmanları doğrudan peer/RPC/spawner bağımlılığı almadı; offline boot korunmuştur.
+
+Client→host outcome mutation RPC eklenmedi. NET-01 allowlist dışındaki `spawn_entity`, `despawn_entity`, `set_hull`, `set_position`, `set_npc_state`, `create_loot`, `claim_result` benzeri sonuç mutasyonları reddedilir. CI guard, `src/network` dışında `MultiplayerSpawner` / `MultiplayerSynchronizer` kullanımını ve simulation katmanında multiplayer bağımlılığını engellemektedir.
+
+### Stable-ID spawn/despawn ve snapshot sözleşmesi
+
+- Replikasyon aktif-set üst sınırı: `96`.
+- Snapshot entity üst sınırı: `64`.
+- Snapshot encoded byte üst sınırı: `8192`.
+- Snapshot cadence: her `3` authority physics tick.
+- Client interpolation buffer: en fazla `4` sample.
+- AOI radius: `600.0`.
+- Snapshot row'ları stable-ID sırasına göre deterministik; duplicate/out-of-order row ve duplicate/stale snapshot sequence reddedilir/ignore edilir.
+- Snapshot transport: channel 2, `unreliable_ordered`.
+- Combat/loot semantic event transport: channel 1, `reliable`, monotonik event sequence + stable event ID ile idempotent.
+- `MultiplayerSynchronizer` ile aynı state için ikinci truth source oluşturulmadı.
+
+### Gerçek host + 2 client entegrasyonu
+
+`tools/ci/run_net02_process_integration.sh` gerçek ayrı Godot process'leriyle aynı anda:
+
+- 1 ENet host,
+- client A → `player.alpha`,
+- client B → `player.beta`
+
+çalıştırdı ve `NET02_PROCESS_INTEGRATION_OK host=1 clients=2` ile tamamlandı.
+
+Senaryoda doğrulananlar:
+
+- baseline player/NPC/monster/loot stable-ID spawn seti her iki client'ta oluştu,
+- host state update sonrası daha yeni snapshot client mirror'larına ulaştı,
+- client A ve B host-authoritative konumlarına göre farklı AOI visible setleri aldı,
+- `hull_damaged` combat semantic event iki client'a ulaştı,
+- `drop_created` loot semantic event iki client'a ulaştı,
+- `npc.late` gameplay sırasında host tarafından spawn edildi ve client'larda görüldü,
+- `loot.shared` host tarafından despawn edildi ve iki client registry'sinden kalktı,
+- client A sahte `spawn_entity` ve `set_hull` outcome intent'leri gönderdi; iki komut da unsupported intent olarak reddedildi ve host `npc.shared` state'i değişmeden kaldı,
+- iki client clean exit yaptı, host stop-file sonrasında clean exit yaptı.
+
+NET-02 verifier sonucu:
+
+`NET02_VERIFIER_OK tests=11 real_process_rpc=1 host=1 clients=2 spawned=8 snapshots_sent=64 max_snapshot_bytes=1360`
+
+Verifier'ın exact host telemetry kapıları ayrıca:
+
+- `despawned=1`
+- `snapshots_sent=64`
+- observed max snapshot payload: `1360` byte < `8192` limit
+- interval: `3` tick
+- stale snapshot count: `0`
+- interpolation cap: `4`
+- combat event count >= `1`
+- loot event count >= `1`
+- rejected malicious client outcome mutations: `2`
+
+değerlerini doğruladı.
+
+### GUT ve regresyon kapıları
+
+Exact kod SHA üzerinde GUT summary:
+
+- Scripts: `21`
+- Tests: `316`
+- Passing Tests: `316`
+- Asserts: `25875`
+- Time: `38.65s`
+- Sonuç: `All tests passed!`
+- Failing test: `0`
+- Parse/load/script fatal: `0`
+- Nonzero orphan guard: geçti
+
+NET-02'ye eklenen GUT testleri: `11`. Bunlar registry generation/idempotency, primitive bounded spawn DTO, host-only spawner sınırı, snapshot ordering/stale rejection, bounded interpolation, authority AOI, reliable/idempotent combat events, reliable/idempotent loot events, client outcome mutation denial, snapshot entity/byte budget ve offline/network boundary/channel sözleşmesini kapsar.
+
+Exact run üzerinde eski kapılar da geçti:
+
+- NET-01: `NET01_PROCESS_INTEGRATION_OK`
+- NET-01 verifier: `NET01_VERIFIER_OK tests=10 real_process_rpc=1 host_authority=1`
+- VS-01 manifest/değişmezlik kapısı: geçti
+- VS-02: `38` test execution doğrulandı
+- VS-03: `23` test execution doğrulandı
+- VS-04: `25` test + integration/checkpoint/soak marker'ları geçti
+- CORE-01: `6` test
+- CORE-02: `8` test; target tag, harpoon, duplicate spawn/claim ve persistence marker'ları geçti
+- CORE-03: `10` test; transition/rebind/safe-zone/hazard/map/persistence kapıları geçti
+- CORE-04: `10` test; migration/content registry/recovery/malformed/large-roundtrip kapıları geçti; large roundtrip `entity_count=512`, `encoded_bytes=376584`
+- AI-01: `10` test
+- AI-02: `11` test; `npc=20 decisions=480 max_per_tick=2 tactical=480`
+- AI-03: `10` test; `fleets=6 ships=24 max_formation=4 max_path=4`
+- AI-04: `10` test; `world_entities=100 near=20 mid=30 far=50 max_near=8 max_mid=6 max_far=8 max_path=4 max_spawn=4 starvation=0`
+
+### CI düzeltme zinciri
+
+NET-02 kod zincirinde dört exact push run oluştu:
+
+| Run | Exact SHA | Sonuç | Kök neden / düzeltme |
+| --- | --- | --- | --- |
+| `44958414762` / #168 | `1e0cc10007f7d987d4153cd181d890c9553dd6d8` | failed | Godot 4.7 `var_to_bytes` API'si tek argümanlı; çağrı 4.7 API'ye düzeltildi. |
+| `44958640566` / #169 | `13966ba71980c261a451e61ae0fc8ccc55c921db` | failed | Snapshot test duplicate-sequence expectation ve numeric-ending event stable-ID sözleşmesi düzeltildi. |
+| `44958815594` / #170 | `1883e8b05febc07c1be725302212d651bc3b59d3` | failed | Gerçek process harness'te untyped literal → `Array[String]` runtime assignment hatası giderildi. |
+| `44959034942` / #171 | `8e26aafe3acd3a23a02755b9c58ef719da10d20a` | **success** | Tüm GUT, host+2-client, regression, export, artifact ve readback kapıları geçti. |
+
+Uygulama commit'i: `1e0cc10007f7d987d4153cd181d890c9553dd6d8`.
+
+Düzeltme commit'leri:
+
+- `13966ba71980c261a451e61ae0fc8ccc55c921db`
+- `1883e8b05febc07c1be725302212d651bc3b59d3`
+- `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+
+### Linux / Android export
+
+Linux debug export başarıyla üretildi:
+
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+
+Android debug export başarıyla üretildi:
+
+- `android/SeaCraft-debug.apk`
+- APK içinde `android.permission.INTERNET` aapt/readback ile doğrulandı.
+- CI log: `Adding permission android.permission.INTERNET`
+- CI readback: `uses-permission: name='android.permission.INTERNET'`
+
+Fiziksel Android cihaz / gerçek Wi-Fi cihaz matrisi CI'da çalıştırılmadı ve başarı gibi gösterilmedi: `not_run`.
+
+### Artifact provenance ve bağımsız readback
+
+Artifact:
+
+- Ad: `SeaCraft-NET02-8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+- ID: `14728589326`
+- Boyut: `57132619` byte
+- Workflow run: `44959034942`
+- Artifact head SHA: `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+- GitHub artifact ZIP digest: `3970b606f8a4bbb1177ea6c8eec078607e34e136016ed912bec15f5fbd734a29`
+- Artifact URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/44959034942/artifacts/14728589326
+
+CI authenticated REST readback exact marker:
+
+`NET02_ARTIFACT_READBACK_OK artifact_id=14728589326 rest_zip_sha256=3970b606f8a4bbb1177ea6c8eec078607e34e136016ed912bec15f5fbd734a29 upload_digest=3970b606f8a4bbb1177ea6c8eec078607e34e136016ed912bec15f5fbd734a29 sha=8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+
+Artifact ayrıca GitHub connector üzerinden yeniden indirildi ve bağımsız doğrulandı:
+
+- ZIP SHA-256: `3970b606f8a4bbb1177ea6c8eec078607e34e136016ed912bec15f5fbd734a29` — GitHub upload digest ile birebir.
+- `COMMIT_SHA.txt`: `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+- `sha256sum -c SHA256SUMS.txt`: APK/Linux executable/Linux PCK üçü de `OK`.
+
+Artifact iç hashleri:
+
+- APK: `d823f3663aeb9061c2fdfe956b128162b54fe55584eba44eabdd21695b737c5c`
+- Linux executable: `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e`
+- Linux PCK: `fd14f1a75300e3a17b0c7ef6a224116520c7231ef01c367b1231686886630c28`
+
+### Beyin strict kapanışı
+
+Kanonik Avenox Beyin task:
+
+`tasks/seacraft-net02-spawn-snapshot-replication-20261122.md`
+
+GitHub final readback:
+
+- status: `done`
+- revision: `2`
+- completion_contract: `strict`
+- exact code SHA: `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+- CI run: `44959034942` / #171 / `success`
+- GUT: `316/316`
+- real process: `host=1 clients=2`
+- artifact ID: `14728589326`
+- artifact SHA-256: `3970b606f8a4bbb1177ea6c8eec078607e34e136016ed912bec15f5fbd734a29`
+- Android INTERNET: `verified`
+- physical Android device tests: `not_run`
+- NET-03: `not_started`
+
+Tek kapanış receipt:
+
+`receipts/122f3bc0215bf960a5c98789f9ec9b97ffbe02f2171052bd1b1265e746421f90.md`
+
+Receipt event ID:
+
+`seacraft-net02-complete-8e26aafe3acd3a23a02755b9c58ef719da10d20a`
+
+Beyin kapanış commit:
+
+`c9a43ee8a878e7aea6b3cb1fb5ca37013c775b85`
+
+Task ve receipt bu commit sonrasında `agy-vault/main` üzerinden geri okundu. Resmî Beyin motoru doctor sonucu `task_completion.strict_issue_count=0`, receipt gap `0`, dead instruction ref `0` verdi. Doctor'ın vault-root `.obsidian` uyarısı operasyonel UI/boundary notudur; strict task kapanışına engel değildir.
+
+### Son kapı
+
+NET-02 için host-only stable-ID spawn/despawn, primitive bounded DTO, custom ordered snapshot truth source, host-owned AOI, semantic reliable event replication, bounded interpolation, malicious client outcome-mutation rejection, gerçek ayrı-process `1 host + 2 client` ENet/RPC entegrasyonu, NET-01 + VS/CORE/AI regresyonları, offline/network boundary, Linux/Android export, Android INTERNET permission, exact artifact provenance/readback ve Avenox Beyin strict kapanışı doğrulandı.
+
+**NET-02 tamamlandı. NET-03 başlatılmadı.**
