@@ -5,6 +5,7 @@ const VERSION := 1
 const MAX_ROUTE_SECTORS := 32
 const MAX_SEGMENTS_PER_UPDATE := 32
 const MAX_HAZARD_EVENTS_PER_UPDATE := 8
+const PROGRESS_QUANTUM := 0.000001
 
 
 static func plan_route(graph_snapshot: Dictionary, start_sector: String, destination_sector: String,
@@ -111,7 +112,7 @@ static func advance(state: Dictionary, graph_snapshot: Dictionary, hazard_facts:
 		var effective_budget := budget / (1.0 + delay)
 		var remaining := 1.0 - float(travel["segment_progress"])
 		if effective_budget + 0.000001 < remaining:
-			travel["segment_progress"] = clampf(float(travel["segment_progress"]) + effective_budget, 0.0, 1.0)
+			travel["segment_progress"] = snappedf(clampf(float(travel["segment_progress"]) + effective_budget, 0.0, 1.0), PROGRESS_QUANTUM)
 			budget = 0.0
 			break
 		var consumed := remaining * (1.0 + delay)
@@ -133,6 +134,8 @@ static func advance(state: Dictionary, graph_snapshot: Dictionary, hazard_facts:
 	var arrived := route_index == route.size() - 1
 	if arrived:
 		travel["segment_progress"] = 1.0
+	if not arrived:
+		travel["segment_progress"] = snappedf(float(travel["segment_progress"]), PROGRESS_QUANTUM)
 	result["travel"] = travel
 	result["last_simulation_tick"] = int(result["last_simulation_tick"]) + elapsed_ticks
 	return {"state": result, "arrived": arrived, "events": events}
