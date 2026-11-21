@@ -43,18 +43,20 @@ func configure(actor: Node, handler: Callable) -> bool:
 	_actor = actor
 	_handler_target = weakref(target)
 	_handler_method = method
-	_tree = BeehaveTree.new()
+	_tree = SeaCraftManualBeehaveTree.new()
 	_tree.name = "SeaCraftAiBeehaveTree"
 	_tree.actor = actor
 	_tree.process_thread = BeehaveTree.ProcessThread.MANUAL
-	# Keep the upstream Beehave tree detached. Manual scheduler ticks exercise the
-	# real Beehave lifecycle without enabling its editor/debugger scene hooks.
-	return _tree.process_thread == BeehaveTree.ProcessThread.MANUAL and not _tree.is_inside_tree() and not _tree.is_processing() and not _tree.is_physics_processing()
+	# Manual scheduler ticks remain the only execution source. The tree is attached
+	# to the actor solely for deterministic Node ownership/lifetime; the SeaCraft
+	# subclass suppresses Beehave's runtime debugger/editor hooks.
+	actor.add_child(_tree)
+	return _tree.process_thread == BeehaveTree.ProcessThread.MANUAL and _tree.is_inside_tree() and not _tree.is_processing() and not _tree.is_physics_processing()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		if _tree != null:
+		if _tree != null and is_instance_valid(_tree):
 			_tree.free()
 		_tree = null
 		_leaf = null
