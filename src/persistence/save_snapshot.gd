@@ -229,6 +229,10 @@ static func _validate_authoritative_content(authoritative: Dictionary, registry:
 		var index_error := PersistentEntityIndex.validate(authoritative["entity_index"], registry)
 		if not index_error.is_empty():
 			return index_error
+	if authoritative.has("ai04_world"):
+		var ai04_error := WorldSimulationAuthority.validate_snapshot(authoritative["ai04_world"], registry)
+		if not ai04_error.is_empty():
+			return ai04_error
 	if authoritative.has("combat"):
 		var combat: Variant = authoritative["combat"]
 		if not combat is Dictionary or not combat.get("combatants") is Array:

@@ -123,6 +123,21 @@ static func _payload_valid(value: Variant, registry: DefinitionRegistry) -> bool
 	var refs: Variant = value.get("content_refs", [])
 	if not refs is Array or refs.size() > MAX_CONTENT_REFS:
 		return false
+	if value.has(FarFieldEntityState.PAYLOAD_KEY):
+		var ai04: Variant = value[FarFieldEntityState.PAYLOAD_KEY]
+		if not FarFieldEntityState.valid_semantic(ai04):
+			return false
+		var semantic: Dictionary = ai04
+		var faction_id := str(semantic["faction_id"])
+		if not faction_id.is_empty() and not registry.matches_type(faction_id, "faction"):
+			return false
+		var travel: Dictionary = semantic["travel"]
+		var destination_id := str(travel["destination_id"])
+		if not destination_id.is_empty() and not registry.matches_type(destination_id, "sector"):
+			return false
+		for route_sector_id in travel["route"]:
+			if not registry.matches_type(str(route_sector_id), "sector"):
+				return false
 	var seen: Dictionary = {}
 	for content_id in refs:
 		if not content_id is String or not registry.has_id(content_id) or seen.has(content_id):
