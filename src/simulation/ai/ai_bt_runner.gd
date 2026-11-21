@@ -23,7 +23,8 @@ var interrupt_count: int = 0
 var _tree: BeehaveTree
 var _leaf: SeaCraftBtAction
 var _actor: Node
-var _handler: Callable
+var _handler_target: WeakRef
+var _handler_method: StringName = &""
 var _current_intent_id: int = -1
 var _current_action_kind: String = ""
 var _last_status: int = -1
@@ -35,8 +36,13 @@ func configure(actor: Node, handler: Callable) -> bool:
 		return false
 	if _tree != null:
 		return false
+	var target := handler.get_object()
+	var method := handler.get_method()
+	if target == null or method == StringName():
+		return false
 	_actor = actor
-	_handler = handler
+	_handler_target = weakref(target)
+	_handler_method = method
 	_tree = BeehaveTree.new()
 	_tree.name = "SeaCraftAiBeehaveTree"
 	_tree.actor = actor
@@ -47,10 +53,14 @@ func configure(actor: Node, handler: Callable) -> bool:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE and _tree != null:
-		_tree.free()
+	if what == NOTIFICATION_PREDELETE:
+		if _tree != null:
+			_tree.free()
 		_tree = null
 		_leaf = null
+		_handler_target = null
+		_handler_method = &""
+		_actor = null
 
 
 func tick_intent(intent_id: int, simulation_tick: int, timeout_ticks: int) -> int:
@@ -156,7 +166,7 @@ func _replace_leaf(action_kind: String, intent_id: int, timeout_ticks: int) -> v
 		_leaf.free()
 		_leaf = null
 	_leaf = _make_leaf(action_kind)
-	if _leaf == null or not _leaf.configure(_handler, timeout_ticks):
+	if _leaf == null or not _leaf.configure_target(_handler_target, _handler_method, timeout_ticks):
 		if _leaf != null:
 			_leaf.free()
 			_leaf = null

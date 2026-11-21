@@ -129,7 +129,7 @@ jobs:
           python3 tools/ci/verify_core03_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_core04_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_ai01_suite.py "$RUNNER_TEMP/gut.log"
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|Orphans[[:space:]]+[1-9]' "$RUNNER_TEMP/gut.log"; then
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|([Oo]rphans?[[:space:]]+[1-9][0-9]*|[1-9][0-9]*[[:space:]]+[Oo]rphans?)' "$RUNNER_TEMP/gut.log"; then
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
           fi
