@@ -8,7 +8,7 @@ Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game tar
 - Renderer: Compatibility (`gl_compatibility`) on desktop and mobile.
 - Mobile baseline: 1280×720 landscape, `canvas_items` stretch with `expand`; future UI must respect `DisplayServer.get_display_safe_area()` rather than assuming full-screen safe bounds.
 - Architecture boundaries are tracked under `src/simulation`, `src/presentation`, `src/data`, and `tests`.
-- No autoload is registered yet. FND-01 has no justified global singleton; future autoloads must be introduced only when lifecycle/ownership requires them.
+- FND-01 originally required no autoloads. AI-01 now permits exactly the two pinned Beehave runtime service autoloads (`BeehaveGlobalMetrics` and `BeehaveGlobalDebugger`) required by upstream `BeehaveTree`; they hold no SeaCraft authoritative world state. Any additional autoload remains a validation failure.
 - The simulation boundary must not depend on ENet, RPC, `MultiplayerAPI`, UI, rendering or device input. Offline and later LAN adapters will share the same simulation-facing contracts.
 
 ## FND-02 data contract

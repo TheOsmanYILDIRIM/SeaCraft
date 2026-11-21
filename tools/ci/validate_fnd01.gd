@@ -13,7 +13,7 @@ func _initialize() -> void:
 	_check_setting("display/window/size/viewport_height", 720)
 	_check_setting("display/window/stretch/mode", "canvas_items")
 	_check_setting("display/window/stretch/aspect", "expand")
-	_check_no_autoloads()
+	_check_expected_autoloads()
 	_check_required_paths()
 	_check_bootstrap_scene()
 	_check_export_presets()
@@ -34,11 +34,26 @@ func _check_setting(key: String, expected: Variant) -> void:
 		_failures.append("%s expected %s, got %s" % [key, expected, actual])
 
 
-func _check_no_autoloads() -> void:
+func _check_expected_autoloads() -> void:
+	var expected := {
+		"autoload/BeehaveGlobalMetrics": "*res://addons/beehave/metrics/beehave_global_metrics.gd",
+		"autoload/BeehaveGlobalDebugger": "*res://addons/beehave/debug/global_debugger.gd",
+	}
+	var seen: Dictionary = {}
 	for property in ProjectSettings.get_property_list():
 		var key := str(property.get("name", ""))
-		if key.begins_with("autoload/"):
+		if not key.begins_with("autoload/"):
+			continue
+		if not expected.has(key):
 			_failures.append("unexpected autoload: %s" % key)
+			continue
+		var actual := str(ProjectSettings.get_setting(key, ""))
+		if actual != expected[key]:
+			_failures.append("%s expected %s, got %s" % [key, expected[key], actual])
+		seen[key] = true
+	for key in expected:
+		if not seen.has(key):
+			_failures.append("missing required AI-01 runtime autoload: %s" % key)
 
 
 func _check_required_paths() -> void:
