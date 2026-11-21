@@ -3,7 +3,7 @@ extends GutTest
 const PLAYER := "entity.core02_player"
 const SHIP := "entity.core02_ship"
 const MONSTER := "entity.core02_monster"
-const ROUND_AMMO := "ammo.core02_round"
+const ROUND_AMMO := "ammo.core_round"
 const HARPOON_ITEM := "item.core02_harpoon"
 const MONSTER_ANCHOR := "anchor.core02_monster"
 const CHEST_ANCHOR := "anchor.core02_chest"
@@ -81,7 +81,7 @@ func _setup(spawn_world: bool = true, enabled: bool = true) -> void:
 
 func _build_sector() -> SectorRuntime:
 	var definition := SectorDefinition.new()
-	definition.stable_id = "sector.core02"
+	definition.stable_id = FoundationSector.ID
 	definition.display_name = "CORE-02 Test Sector"
 	definition.label_id = "label.core02"
 	definition.bounds = Rect2(-640, -360, 1280, 720)
@@ -102,7 +102,7 @@ func _build_sector() -> SectorRuntime:
 func _anchor(id: String, category: String, position: Vector2) -> SectorAnchor:
 	var anchor := SectorAnchor.new()
 	anchor.stable_id = id
-	anchor.sector_id = "sector.core02"
+	anchor.sector_id = FoundationSector.ID
 	anchor.category = category
 	anchor.position = position
 	return anchor

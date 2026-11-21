@@ -132,7 +132,7 @@ func test_core04_entity_index_is_bounded_sorted_and_multi_sector() -> void:
 	var raw: Array = [_entity_record(2, FoundationSector.HAVEN_ID), _entity_record(0, FoundationSector.ID), _entity_record(1, FoundationSector.OUTER_ID)]
 	var index := PersistentEntityIndex.build(raw, registry)
 	assert_eq(index["records"].size(), 3)
-	assert_eq(index["records"][0]["instance_id"], "entity.core04.0000")
+	assert_eq(index["records"][0]["instance_id"], "entity.core04.e0000")
 	assert_eq(index["records"][2]["sector_id"], FoundationSector.HAVEN_ID)
 	assert_eq(PersistentEntityIndex.validate(index, registry), "")
 	var duplicate := index.duplicate(true)
@@ -188,7 +188,7 @@ func test_core04_npc_route_cooldown_and_scheduler_resume() -> void:
 	assert_eq(restored_scheduler.snapshot_state(), before_scheduler)
 	assert_eq(restored_brain.persistence_state()["patrol_index"], before_brain["patrol_index"])
 	assert_eq(restored_brain.persistence_state()["destination"], before_brain["destination"])
-	assert_eq(restored_brain.persistence_state()["threat_memory"], before_brain["threat_memory"])
+	assert_eq(restored_brain.persistence_state()["memory"], before_brain["memory"])
 	restored_scene.free()
 	print("CORE04_NPC_RESUME_OK")
 
@@ -331,7 +331,7 @@ func _entity_index(count: int) -> Dictionary:
 
 func _entity_record(index: int, sector_id: String) -> Dictionary:
 	return {
-		"instance_id": "entity.core04.%04d" % index,
+		"instance_id": "entity.core04.e%04d" % index,
 		"definition_id": "ship.vs02_practice",
 		"entity_kind": "npc_ship",
 		"sector_id": sector_id,

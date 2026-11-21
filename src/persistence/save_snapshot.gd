@@ -128,14 +128,8 @@ static func restore(dto: Dictionary, world: SectorWorld, authority: RefCounted, 
 	if world_state is Dictionary:
 		if world_state.get("active_sector") != current["sector_id"]:
 			return "invalid_world_state"
-		error = world.validate_restore_state(world_state, entity_id, Vector2(motion["x"], motion["y"]))
-		if not error.is_empty():
-			return error
 		error = world.restore_state(authority, world_state, entity_id, Vector2(motion["x"], motion["y"]))
 	else:
-		error = world.validate_restore_active(current["sector_id"], entity_id, Vector2(motion["x"], motion["y"]))
-		if not error.is_empty():
-			return error
 		error = world.restore_active(authority, current["sector_id"], entity_id, Vector2(motion["x"], motion["y"]))
 	if not error.is_empty():
 		return error
@@ -242,11 +236,24 @@ static func _validate_authoritative_content(authoritative: Dictionary, registry:
 		for raw in combat["combatants"]:
 			if not raw is Dictionary:
 				return "invalid_authoritative_state"
+			var combat_sector: Variant = raw.get("sector_id", "")
+			if not combat_sector is String or not registry.matches_type(combat_sector, "sector"):
+				return "unknown_sector"
 			var core: Variant = raw.get("core", {})
 			if core is Dictionary:
 				var ammo: Variant = core.get("selected_ammo", "")
 				if ammo is String and not ammo.is_empty() and not registry.matches_type(ammo, "ammo"):
 					return "unknown_content"
+	if authoritative.has("world"):
+		var object_state: Variant = authoritative["world"]
+		if not object_state is Dictionary or not object_state.get("objects", []) is Array:
+			return "invalid_authoritative_state"
+		for raw_object in object_state["objects"]:
+			if not raw_object is Dictionary:
+				return "invalid_authoritative_state"
+			var object_sector: Variant = raw_object.get("sector_id", "")
+			if not object_sector is String or not registry.matches_type(object_sector, "sector"):
+				return "unknown_sector"
 	if authoritative.has("sector_world"):
 		var state: Variant = authoritative["sector_world"]
 		if not state is Dictionary:
