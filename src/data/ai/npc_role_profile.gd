@@ -9,6 +9,11 @@ extends BaseDefinition
 @export var switch_threshold: float = 0.12
 @export var hold_bonus: float = 0.08
 @export var minimum_decision_hold_ticks: int = 20
+@export var tactical_fight_weight: float = 1.0
+@export var tactical_retreat_weight: float = 1.0
+@export var ammo_conservation_weight: float = 1.0
+@export var tactical_boarding_weight: float = 1.0
+@export var tactical_support_weight: float = 1.0
 @export var interested_target_classes: PackedStringArray = PackedStringArray(["ship", "monster"])
 
 
@@ -27,6 +32,11 @@ func valid() -> bool:
 		repair_safety_weight,
 		switch_threshold,
 		hold_bonus,
+		tactical_fight_weight,
+		tactical_retreat_weight,
+		ammo_conservation_weight,
+		tactical_boarding_weight,
+		tactical_support_weight,
 	]:
 		if not is_finite(value) or value < 0.0 or value > 100.0:
 			return false
@@ -63,5 +73,10 @@ func data_snapshot() -> Dictionary:
 		"switch_threshold": switch_threshold,
 		"hold_bonus": hold_bonus,
 		"minimum_decision_hold_ticks": minimum_decision_hold_ticks,
+		"tactical_fight": tactical_fight_weight,
+		"tactical_retreat": tactical_retreat_weight,
+		"ammo_conservation": ammo_conservation_weight,
+		"tactical_boarding": tactical_boarding_weight,
+		"tactical_support": tactical_support_weight,
 		"interested_target_classes": classes,
 	}
