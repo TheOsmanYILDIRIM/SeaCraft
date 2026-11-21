@@ -43,7 +43,7 @@ def main() -> None:
             fail(f"fatal GUT token present: {token}")
     if re.search(r"Failing Tests\s+[1-9][0-9]*", text):
         fail("GUT reports failing tests")
-    if re.search(r"Orphans\s+[1-9][0-9]*", text):
+    if re.search(r"(?:[Oo]rphans?\s+[1-9][0-9]*|[1-9][0-9]*\s+[Oo]rphans?)", text):
         fail("GUT reports orphan nodes")
     for test in EXPECTED_TESTS:
         matches = re.findall(r"^\s*\*\s+" + re.escape(test) + r"\s*$", text, re.M)
