@@ -107,7 +107,7 @@ func test_ai02_scenario_matrix_too_far_bad_broadside_ready_and_blocked() -> void
 	var after_fire := [combat.snapshot_state(), rng.snapshot_state(), loot.snapshot_state()]
 	var cooldown_reject := combat.fire(A, 0.0, CombatAuthority.fire_intent(B))
 	assert_false(cooldown_reject["accepted"])
-	assert_eq(cooldown_reject["reason"], "cooldown")
+	assert_eq(cooldown_reject["reason"], "reloading")
 	assert_eq([combat.snapshot_state(), rng.snapshot_state(), loot.snapshot_state()], after_fire)
 
 
