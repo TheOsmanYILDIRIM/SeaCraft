@@ -350,8 +350,8 @@
 | C-0335 | **Steel Harpoon** | Silah | Harpoon | Genel / ROK | Monsters/harpoonable objects için ammunition/weapon tier. | 500 damage. | [kaynak](https://board-en.seafight.com/threads/harpoons.172246/) | SeaCraft için monster hunting progression. |
 | C-0336 | **Damask Harpoon** | Silah | Harpoon | Genel / ROK | Monsters/harpoonable objects için ammunition/weapon tier. | 1200 damage. | [kaynak](https://board-en.seafight.com/threads/harpoons.172246/) | SeaCraft için monster hunting progression. |
 | C-0337 | **Lava Harpoon** | Silah | Harpoon | Genel / ROK | Monsters/harpoonable objects için ammunition/weapon tier. | 2000 damage. | [kaynak](https://board-en.seafight.com/threads/harpoons.172246/) | SeaCraft için monster hunting progression. |
-| C-0338 | **Wooden Beams** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 1 slot; +400 HP | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) | SeaCraft için structure module referansı. |
-| C-0339 | **Hardwood Beams** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 1 slot; +1200 HP | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) | SeaCraft için structure module referansı. |
+| C-0338 | **Wooden Beams** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 1 slot; +400 HP; TR tarihsel fiyat: 5.000 Altın | [EN kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) · [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için structure module referansı. |
+| C-0339 | **Hardwood Beams** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 1 slot; +1200 HP; TR tarihsel fiyat: 2.500 İnci | [EN kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) · [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için structure module referansı. |
 | C-0340 | **Rowboat** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 25 slots; boarding/crew capacity | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) | SeaCraft için structure module referansı. |
 | C-0341 | **Life Preserver** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 2 slots; healing/repair cannon/max healing | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) | SeaCraft için structure module referansı. |
 | C-0342 | **Reinforced Ribs** | Gemi ekipmanı | Ship Extension | Genel | Structure slot extension; absolute/relative stat modifier. | 15 slots; HP/VP/damage prevention | [kaynak](https://board-en.seafight.com/threads/ship-extensions.171223/) | SeaCraft için structure module referansı. |
@@ -675,6 +675,28 @@
 | C-0660 | **Poseidon's Eye** | Quest / progression item | Quest item | Çeşitli | Atlantis access-related loot for players without access | Source-specific progression item. | [kaynak](https://board-en.seafight.com/threads/npcs.1823/) | SeaCraft için quest inventory/tagged item pattern. |
 | C-0661 | **Dragon Powder** | Quest / progression item | Quest item | Çeşitli | Kalytron/Dragonling reward item | Source-specific progression item. | [kaynak](https://board-en.seafight.com/threads/npcs.1823/) | SeaCraft için quest inventory/tagged item pattern. |
 
+| C-0662 | **Seren Yelken** | Gemi ekipmanı | Yelken | Genel | Ship speed equipment. | +20 hız; 300 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için düşük seviye hız modülü referansı. |
+| C-0663 | **Üçgen Yelken** | Gemi ekipmanı | Yelken | Genel | Ship speed equipment. | +30 hız; 1.500 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için hız progression basamağı. |
+| C-0664 | **Kare Arma** | Gemi ekipmanı | Yelken | Genel | Ship speed equipment. | +38 hız; 2.000 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için hız progression basamağı. |
+| C-0665 | **Zıpkın Yelken** | Gemi ekipmanı | Yelken | Genel | Ship speed equipment. | +45 hız; 3.500 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için hız progression basamağı. |
+| C-0666 | **Bermuda Yelken** | Gemi ekipmanı | Yelken | Genel | Ship speed equipment. | +53 hız; 500 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için premium/yüksek seviye hız modülü referansı. |
+| C-0667 | **Thetis** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead stat bonus. | +40 hız; erişim eşiği 840.000 Savaş Puanı | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için başarı kilitli kozmetik+stat örneği. |
+| C-0668 | **Undine** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead reward bonus. | Canavar altını +5%; NPC altını +5%; deneyim +5%; 20.000 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için ekonomi/XP odaklı figür örneği. |
+| C-0669 | **Rân** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead progression bonus. | Elit Puanı +5%; 5.000 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için progression bonuslu figür örneği. |
+| C-0670 | **Melusine** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead PvP bonus. | Oyunculara karşı hasar +5%; erişim eşiği 468.750 Savaş Puanı | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için PvP/LAN odaklı figür referansı. |
+| C-0671 | **Hiddetli Kraliçe** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead combat bonus. | Kritik isabet olasılığı +0,4% | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için kritik stat modülü referansı. |
+| C-0672 | **Buz Kraliçesi** | Gemi ekipmanı | Gemi figürü | Genel | Figurehead combat bonus. | Kritik hasar +6% | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için kritik hasar modülü referansı. |
+| C-0673 | **Karen** | Gemi ekipmanı | Gemi figürü | Genel / Atlantis | Figurehead evasion bonus. | Kaçınma +5%; torpido ıskalama şansı +5% | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için yüzey+sualtı savunma statı örneği. |
+| C-0674 | **Deri Zırh** | Gemi ekipmanı | Boarding zırhı | Genel | Boarding equipment. | Ele geçirme bonusu +6; koruma +12; 150 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft boarding ekipman tier referansı. |
+| C-0675 | **Zincir Zırhlı Gömlek** | Gemi ekipmanı | Boarding zırhı | Genel | Boarding equipment. | Ele geçirme bonusu +8; koruma +16; 100 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft boarding ekipman tier referansı. |
+| C-0676 | **Fitilli Tüfek** | Gemi ekipmanı | Boarding tabancası | Genel | Boarding equipment. | Ele geçirme bonusu +14; koruma +7; 200 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft saldırı ağırlıklı boarding ekipmanı referansı. |
+| C-0677 | **Filinta** | Gemi ekipmanı | Boarding tabancası | Genel | Boarding equipment. | Ele geçirme bonusu +24; koruma +14; 150 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft saldırı ağırlıklı boarding ekipmanı referansı. |
+| C-0678 | **Hançer** | Gemi ekipmanı | Boarding pala | Genel | Boarding equipment. | Ele geçirme bonusu +8; koruma +8; 100 Altın | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft dengeli boarding ekipmanı referansı. |
+| C-0679 | **Tahta Kaplama Balta** | Gemi ekipmanı | Boarding pala | Genel | Boarding equipment. | Ele geçirme bonusu +12; koruma +12; 50 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft dengeli boarding ekipmanı referansı. |
+| C-0680 | **Sandık Anahtarı** | Consumable / action item | Anahtar | Genel | Normal kilitli sandığı açar; kullanımda 1 adet tüketilir. | 1.500 İnci | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için tüketilebilir loot-key referansı. |
+| C-0681 | **Etkinlik Anahtarı** | Consumable / action item | Anahtar | Event | Etkinlik sandığını açar; kullanımda 1 adet tüketilir. | 1.000 İnci; indirim fiyatı düşürmez | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft handcrafted event chest key referansı. |
+| C-0682 | **Aslan Başlı Anahtar** | Consumable / action item | Anahtar | Özel / PvP | Aslan başlı kilitli sandığı açar; kullanımda tüketilir. | 250 Taç; belirli dönem satışı | [TR değer](https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/) | SeaCraft için özel erişim anahtarı referansı. |
+
 ## İçerik sınıfı kapsama matrisi
 
 | Sınıf | Durum | Ana kaynak |
@@ -700,6 +722,27 @@
 | Bonus/raid/boss/event maps | Zodiac/legacy bonus maps, raids, Map of Forever portals ve 2026 event maps | [kaynak](https://board-en.seafight.com/threads/index.2506/) |
 | Factions/reputations | Vovoi/Commonwealth/Fenghuang elemental reputation lines | [kaynak](https://board-en.seafight.com/threads/reputation-points.47453/) |
 | Quest givers/world entities | Erken quest giver örnekleri + Safe Haven service roles | [kaynak](https://board-en.seafight.com/threads/quests-level-3-4.1916/) |
+
+## Resmî Seafight TR indeks eşlemesi
+
+Bu katalog için **TR İndeks** ikinci resmî kapsam kontrolüdür. Değer çakışırsa güncel İngilizce/2026 resmî kayıt önceliklidir; TR sayfalarındaki eski değerler tarihsel referans olarak işaretlenir.
+
+| İçerik sınıfı | TR resmî kaynak | Katalog kullanımı |
+|---|---|---|
+| Ana indeks | https://board-tr.seafight.com/threads/indeks.87468/ | Eksik kategori/kaynak kontrolü. |
+| Gemi tasarımları | https://board-tr.seafight.com/threads/oyunda-bulunan-gemi-tasarimlari.87469/ | 23 sayfalık tarihsel design arşivi; görsel + özellik referansı. |
+| Sistem gemileri / NPC | https://board-tr.seafight.com/threads/oyunda-bulunan-sistem-gemileri.80295/ | HP, boarding, ödül, harita, element, zayıf cephane ve admiral spawn koşulları. |
+| Canavarlar | https://board-tr.seafight.com/threads/oyunda-bulunan-canavarlar.87431/ | HP, ödül ve harita değerleri. |
+| Gemi aksesuarları/donanımları | https://board-tr.seafight.com/threads/gemi-aksesuarlari-ve-donanimlari.87474/ | Zıpkın, yelken, kiriş, figür, boarding gear ve anahtar değerleri/fiyatları. |
+| Cephaneler | https://board-tr.seafight.com/threads/oyunda-bulunan-cephaneler.87941/ | Hasar, gizli hasar, VP tahliyesi, elite-point ve elemental bonuslar. |
+| Genişletme/silah yuvaları | https://board-tr.seafight.com/threads/genisletme-ve-silah-yerleri-yuvalari.83327/ | Slot progression ve genişletme değerleri. |
+| Mürettebat | https://board-tr.seafight.com/threads/muerettebatlar.87486/ | Seviye bazlı HP/VP, slot, isabet/kaçınma, kritik ve progression bonusları. |
+| Mücevher/taş sistemi | https://board-tr.seafight.com/threads/muecevher-islemecisi.87483/ | Ship/pet gem seviyeleri ve stat bonusları. |
+| Petler/eğitimciler | https://board-tr.seafight.com/threads/oyunda-bulunan-evcil-hayvanlar-ve-egitimcilier.87942/ | Pet ve trainer özellikleri. |
+| Nesne ve bufflar | https://board-tr.seafight.com/threads/oyunda-bulunan-nesne-ve-bufflar.87471/ | Action item etkileri, süreler ve cooldown'lar. |
+| Haritalar | https://board-tr.seafight.com/threads/seafight-haritalari.87472/ | Normal/safe-haven/özel/tılsım haritaları ve erişim referansı. |
+| Maksimum değerler | https://board-tr.seafight.com/threads/oyundaki-maksimum-degerler.87473/ | Build üst sınırları için tarihli doğrulama kaynağı; SeaCraft denge değeri olarak doğrudan kopyalanmaz. |
+| Atlantis | https://board-tr.seafight.com/threads/atlantis.97372/ | Atlantis sistemleri ve alt içeriklere resmi giriş noktası. |
 
 ## Görsel referansları — URL-only
 
