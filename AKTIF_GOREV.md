@@ -1,987 +1,922 @@
-# AKTİF GÖREV — NET-02
+# AKTİF GÖREV — NET-03
 
 > Bu dosya SeaCraft'ın kanonik aktif uygulama briefidir. Sohbette uzun brief tekrarlanmaz.
 >
-> Görev tamamlandığında ayrıntılı doğrulama sonucu **yalnız** `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir NET-02 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
+> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir NET-03 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
 ## Kimlik
 
-- Sohbet etiketi: `[SOHBET-29 | SeaCraft NET-02 — Spawn, Snapshot ve Temel State Replikasyonu]`
+- Sohbet etiketi: `[SOHBET-30 | SeaCraft NET-03 — Vertical Slice LAN Parity]`
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
 - Dal: yalnız `main`
-- Başlangıç HEAD: `ffb26ca62aa7e17ac82e0a6329bcb131f5ca6bd8`
-- NET-01 exact gameplay close: `180282bdc00fca5d40af40943c1fe59d949d7f23`
+- Başlangıç HEAD: `8f7e2c5510d79f6cc9dce29acc1317039a2dc94a`
+- NET-02 exact kod kapanışı: `8e26aafe3acd3a23a02755b9c58ef719da10d20a`
 - Godot: `4.7.2-stable`
-- Bağımlılık: NET-01 tamamlandı
-- Sonraki göreve geçme: **NET-03'e başlama**
+- Bağımlılık: NET-02 tamamlandı
+- Sonraki göreve geçme: **NET-04'e başlama**
 
-Başlangıç HEAD, NET-01 exact close'un iki commit ilerisindedir. Aradaki değişiklikler `GOREV_RAPORU.md` kapanış raporu ve `SC08_SUPPORT_ANCHOR_FINAL.zip` görsel paketiyle sınırlıdır; bunları ezme veya silme.
+Başlangıç HEAD, NET-02 exact code SHA'nın yalnız rapor commit'i kadar ilerisindedir. `GOREV_RAPORU.md` geçmişini koru.
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 
 ## Yürütme
 
-İşi aynı oturumda uygula → doğrula → hata varsa kök nedeni düzelt → yeniden doğrula → exact-commit Actions → export → artifact readback → Beyin kapanışı → `GOREV_RAPORU.md` NET-02 bölümü şeklinde tamamla.
+İşi aynı oturumda uygula → doğrula → hatayı kök nedeninden düzelt → exact-commit Actions → export → artifact readback → Beyin kapanışı → `GOREV_RAPORU.md` NET-03 bölümü şeklinde tamamla.
 
-Başlamadan güncel `main` HEAD'i ve diff'i yeniden doğrula. Başka sohbetin değişikliğini ezme.
+Başlamadan güncel `main` HEAD'i yeniden doğrula. Başka sohbetin değişikliğini ezme.
 
-Avenox Beyin'de NET-02 görevi varsa onu kullan; yoksa tek kanonik task aç. Mükerrer task/receipt oluşturma.
+Avenox Beyin'de NET-03 görevi varsa onu kullan; yoksa tek kanonik task aç. Mükerrer task/receipt oluşturma.
 
 ---
 
-# 1. HIZ PROTOKOLÜ — ZORUNLU
+# 1. Hız protokolü
 
-NET-01'de 6 Actions run / 5 failure oluştu. NET-02 hedefi:
+NET-02'de 4 Actions run / 3 failure oluştu. NET-03 hedefi:
 
 **1 implementation commit + 1 successful Actions run.**
 
-Gerçek zorunluluk çıkarsa tüm kök nedenleri tek correction commit'inde çöz.
+Gerçek hata çıkarsa tüm kök nedenleri mümkün olduğunca tek correction commit'inde çöz.
 
-İlk committen önce gerçek diff üzerinde local/statik preflight yap. Özellikle NET-01'de yaşanan hataları tekrar etme:
+İlk committen önce gerçek diff üzerinde statik/preflight doğrulama yap. Özellikle önceki zincirlerde çıkan hataları tekrar etme:
 
+- Godot 4.7 API imzaları; özellikle `var_to_bytes`
 - native/built-in method isim çakışmaları
-- custom MainLoop altında `Node.multiplayer` varsayımı
-- SceneTree gerektiren RPC'yi script-only harness'ta çalıştırma
-- bare `quit()` / parser hatası
-- explicit GDScript type eksikleri
-- Variant→typed Array/Dictionary dönüşümü
-- int/float JSON normalization
-- exact DTO field count
-- ANSI log normalization/verifier uyuşmazlığı
-- test fixture marker sayısı
-- process timeout/readiness cleanup
+- SceneTree gerektiren multiplayer/RPC kodunu custom MainLoop'ta çalıştırma
+- `get_tree().quit(code)` yerine bare `quit()`
+- typed `Array[String]` / Dictionary assignment uyumsuzluğu
+- numeric-ending stable event ID contract
+- snapshot/event sequence int/float normalization
+- exact DTO shape
+- ANSI normalization/verifier marker sayıları
+- process readiness/timeout/PID cleanup
+- test assertion ile production reason string uyuşması
 
-Network process harness normal SceneTree yolunu kullansın; kanıtlanmış NET-01 harness yapısını mümkün olduğunca reuse et.
-
-Dosya/test/verifier/README/CI için ayrı ayrı commit yapma.
-
-CI fail olursa ilk hataya göre commit atma. İlgili parse/GUT/process/verifier/export loglarının tamamını incele, tek correction patch hazırla.
+NET-01/02'nin çalışan normal SceneTree process harness yaklaşımını reuse et. Diagnostic commit üretme.
 
 ---
 
-# 2. KANONİK AMAÇ
+# 2. Kanonik amaç
 
 Plan:
 
-**NET-02 — Spawn, snapshot ve temel state replikasyonu**
+**NET-03 — Vertical slice LAN parity**
 
 Amaç:
 
-Host authoritative world state'i clientlara stable ID ile replike etmek:
+Mevcut VS-04 offline playable vertical slice davranışını gerçek LAN host+client akışında host-authoritative olarak kanıtlamak.
 
-- player
-- NPC ship
-- monster
-- loot/world pickup
+Mekanik kapsam:
 
-Minimum sistemler:
+- hareket
+- hedef seçimi
+- top ateşi
+- HP/batma
+- loot/drop
+- loot claim
+- NPC AI state progression
+- host/client state parity
 
-- `NetworkEntityRegistry`
-- host-only spawn/despawn
-- stable-ID proxy lifecycle
-- transform/state snapshot
-- bounded interpolation buffer
-- combat/loot event replication
-- sector/AOI visibility
-- snapshot ordering/loss guard
-- payload byte/frequency telemetry
+Ana sistem:
+
+`NetworkVerticalSliceScenario` veya eşdeğer test/adapter katmanı.
 
 Kabul:
 
-- host tek spawn/despawn kaynağı
-- late-spawned entity iki clientta aynı stable ID ile görünür
-- despawn clientlarda ghost bırakmaz
-- client authored spawn/HP/state mutasyonu reddedilir
-- stale/out-of-order snapshot authoritative state'i geri sarmaz
-- AOI dışı entity görünmez
-- Resource/Object/RID ağ şemasına girmez
+- host ve client aynı authoritative NPC sonucunu görür
+- AI yalnız hostta karar verir
+- client target/fire intent gönderir; host doğrular ve uygular
+- loot hostta bir kez claim edilir
+- unauthorized damage/loot outcome reddedilir
+- combat sırasında client disconnect host simulation'ı bozmaz
+- offline VS-04 davranışı regress etmez
 
-NET-03'e başlama.
+**NET-04'e başlama.**
 
 ---
 
-# 3. NET-01 CONTRACT'I KORU
+# 3. VS-04'ü yeniden yazma
 
-Mevcut production network katmanı:
+Mevcut:
+
+`tests/fixtures/vertical_slice/vertical_slice_scenario.gd`
+
+offline kanonik senaryodur.
+
+Bunu kopyalayıp ikinci gameplay sistemi oluşturma.
+
+NET-03 test/harness:
+
+- aynı foundation sector
+- aynı stable player/NPC kimlikleri
+- aynı AI tuning
+- aynı loot table/item
+- aynı combat/ShipMotor/CombatAuthority/LootAuthority
+- aynı seed/fixture mantığı
+
+üzerinden host authority'yi kurmalı.
+
+Network katmanı yalnız intent + replication adapter'dır.
+
+Offline VS-04 production/simulation davranışını networking için değiştirme.
+
+---
+
+# 4. Parity tanımı
+
+LAN parity, clientın kendi simulation'ını lockstep çalıştırması değildir.
+
+Client authoritative simulation çalıştırmaz.
+
+Parity şu semantik sonuçlarda kanıtlanmalı:
+
+- player movement hostta geçerli
+- NPC patrol gerçek host AI tarafından ilerliyor
+- target lock hostta geçerli
+- range/reload/broadside kuralları bypass edilmiyor
+- client ateşi gerçek `CombatAuthority.fire()` yoluna gidiyor
+- NPC damage/alive/hull state client mirror'ına geliyor
+- NPC AI transitionları client presentation state'inde görülüyor
+- NPC tam bir kez batıyor
+- loot tam bir kez oluşuyor
+- loot claim tam bir kez reward üretiyor
+- loot proxy claim sonrası kayboluyor
+- duplicate/unauthorized sonuç ikinci mutation oluşturmuyor
+
+Aynı seed + aynı host-side fixed simulation progression altında kanonik semantic digest üret.
+
+Cross-platform floating-physics lockstep iddiası yapma.
+
+---
+
+# 5. NET-01/02 sözleşmelerini koru
+
+Korunacak:
 
 - `SessionProtocol`
 - `SessionHost`
 - `SessionClient`
 - `SessionRpcBridge`
+- `NetworkEntityRegistry`
+- `NetworkEntityProxy`
+- `NetworkReplicationPeer`
 
-korunacak.
+NET-01:
 
-NET-01'in:
+- handshake
+- peer→player host mapping
+- replay/spoof guard
 
-- protocol/content handshake
-- host-owned peer→player mapping
-- replay guard
-- spoof rejection
-- manual IPv4
-- offline boot
-- simulation/network boundary
+NET-02:
 
-kurallarını zayıflatma.
+- stable-ID lifecycle
+- AOI
+- snapshot sequencing
+- reliable semantic eventler
+- client mutation rejection
 
-Client hâlâ outcome authority değildir.
+zayıflatılmayacak.
 
 ---
 
-# 4. NETWORK / SIMULATION SINIRI
+# 6. Simulation network bağımsızlığı
 
 `src/simulation/**`, `src/data/**`, `src/persistence/**` network API'siz kalmalı.
 
-Networking yalnız `src/network/**` boundary altında.
+Combat/loot/AI simulation classes:
 
-Simulation gerekirse readonly primitive snapshot API sağlayabilir; ancak:
-
-- RPC bilmez
 - peer ID bilmez
+- RPC bilmez
 - MultiplayerAPI bilmez
-- replication cadence bilmez
+- client bilmez
 
-Network adapter mevcut simulation state'ini **okur**, mutation authority olmaz.
-
----
-
-# 5. NETWORK ENTITY REGISTRY
-
-Authority-owned/mirror-aware `NetworkEntityRegistry` veya eşdeğer oluştur.
-
-Her replicated entity için minimum:
-
-- stable `entity_id`
-- `entity_kind`
-- `sector_id`
-- definition/reference ID gerekiyorsa
-- spawn generation / lifecycle sequence
-- active/despawn state
-- host snapshot source/adaptor
-- client proxy reference yalnız network/presentation boundary içinde
-
-Entity kinds minimum:
-
-- `player`
-- `npc`
-- `monster`
-- `loot`
-
-Gerekirse wreck/world-object aynı primitive category/tag ile temsil edilebilir; ikinci world-object truth oluşturma.
-
-Registry stable ID'nin tek network lifecycle kaynağı olsun.
+Network gameplay adapter hostta mevcut authority API'lerini çağırır.
 
 ---
 
-# 6. HOST TEK SPAWN KAYNAĞI
+# 7. Yeni remote gameplay intentleri
 
-Client spawn isteği kabul edilmez.
+NET-03'te yalnız gerçek gameplay intentleri ekle.
 
-Host:
+Minimum:
 
-- authoritative entity mevcut/eligible olduğunda
-- stable ID doğrulanınca
-- registry duplicate guard geçince
+- `select_combat_target`
+- `fire_weapon`
+- `pickup_loot`
 
-network proxy spawn eder.
+Mevcut movement intentleri korunur.
 
-Client yalnız hosttan gelen lifecycle'ı mirror eder.
+Client outcome göndermez.
 
-Client tarafında local `add_child` ile authoritative network entity yaratıp registry'ye yazma yolu olmamalı.
+### select_combat_target payload
 
----
+Yalnız:
 
-# 7. MULTIPLAYERSPAWNER
+- `target_id`
 
-Godot 4.7 built-in `MultiplayerSpawner` kullan.
+Host actor ID'yi peer→player mapping'den türetir.
 
-Spawner network boundary içindeki dedicated replicated root'u yönetebilir.
+### fire_weapon payload
 
-Spawn data primitive-safe olsun.
+Yalnız:
 
-Spawn payload minimum:
-
-- entity_id
-- entity_kind
-- sector_id
-- initial transform/state sequence
-- readonly visual/definition reference ID gerekiyorsa
-
-Resource/Object/Node/RID payload içinde gönderilmez.
-
-Custom `spawn_function` kullanılıyorsa Godot 4.7 gerçek API/syntaxını committen önce doğrula.
-
-Stable entity ID node name'e kör bağımlılık olmasın; explicit property/registry key olsun.
-
----
-
-# 8. MULTIPLAYERSYNCHRONIZER + CUSTOM SNAPSHOT SINIRI
-
-T03 gereği built-in `MultiplayerSynchronizer` kullanılabilir; fakat authority contract net olsun.
-
-Tercih edilen model:
-
-- `MultiplayerSpawner`: lifecycle/spawn/despawn
-- `MultiplayerSynchronizer`: yalnız güvenli düşük maliyetli primitive proxy alanları gerekiyorsa
-- custom bounded snapshot DTO: transform/state stream, sequence, AOI ve telemetry
-
-Aynı property için iki bağımsız replication truth yaratma.
-
-Eğer custom snapshot bir alanın tek kaynağıysa Synchronizer aynı alanı ayrıca yazmasın.
-
-README'de hangi alanın hangi kanaldan geldiği açık olsun.
-
----
-
-# 9. NETWORK ENTITY PROXY
-
-Client tarafındaki proxy presentation/mirror nesnesidir.
-
-Authoritative simulation entity değildir.
-
-Minimum primitive state:
-
-- entity_id
-- entity_kind
-- sector_id
-- x/y
-- heading
-- velocity gerekiyorsa
-- hull_ratio
-- alive
-- state/snapshot sequence
-- target/status gibi minimum okunabilir semantic state gerekiyorsa
-
-Proxy:
-
-- CombatAuthority'ye damage yazamaz
-- ShipMotor authority yazamaz
-- LootAuthority mutate edemez
-- simulation registry'ye authoritative entity ekleyemez
-
----
-
-# 10. AUTHORITATIVE SNAPSHOT SOURCE
-
-Network katmanı private simulation internals'a doğrudan erişmesin.
-
-Mevcut readonly/presentation snapshot API'lerini reuse et:
-
-- ShipMotor motion/position state
-- NpcBrain/NpcStatePresenter için primitive AI snapshot
-- CombatAuthority için readonly combat facts
-- WorldObjectAuthority presentation snapshot
-- LootAuthority readonly drop snapshot
-
-Gerekli eksik bilgi varsa simulation'a network-agnostic readonly primitive snapshot metodu eklemek serbest.
-
-Private `_roster`, `_drops`, `_objects` gibi alanları network katmanından hack'leme.
-
----
-
-# 11. SNAPSHOT DTO
-
-Tek versioned snapshot schema oluştur.
-
-Minimum top-level:
-
-- protocol version
-- snapshot sequence
-- server tick
-- sector/AOI identifier
-- entity rows
-
-Entity rows stable ID'ye göre deterministic sıralansın.
-
-Row minimum:
-
-- entity_id
-- entity_kind
-- sector_id
-- x
-- y
-- heading
-- hull_ratio
-- alive
-
-Kind'e özel ekstra alanlar açık bounded alt sözleşmeyle eklenebilir.
-
-DTO primitive-safe ve object-free olmalı.
-
----
-
-# 12. SNAPSHOT SEQUENCE
-
-Host monotonic snapshot sequence üretir.
+- `target_id`
 
 Client:
 
-- yeni sequence → kabul
-- aynı sequence → ignore
-- eski sequence → ignore
+- heading
+- hit
+- crit
+- damage
+- remaining_hull
+- ammo sonucu
+- transaction sequence
 
-Stale packet entity state'i geri saramaz.
+gönderemez.
 
-Sequence overflow policy explicit olsun.
+Host heading'i authoritative `ShipMotor.current_heading()` üzerinden alır.
 
-Wall-clock authority kullanma.
+### pickup_loot payload
 
----
+Yalnız:
 
-# 13. SNAPSHOT CHANNEL
-
-NET-01'de ayrılmış:
-
-`SessionProtocol.CHANNEL_SNAPSHOT = 2`
-
-kullan.
-
-Snapshot RPC:
-
-**authority → clients**
-
-ve:
-
-**unreliable ordered**
-
-olmalı.
-
-Godot 4.7 RPC annotation/channel syntaxını gerçek API ile doğrula.
-
-Client→host snapshot RPC yolu oluşturma.
-
----
-
-# 14. SNAPSHOT CADENCE
-
-Mobile-first explicit cadence/budget belirle.
-
-Örneğin fixed simulation tick'e bağlı tunable `SNAPSHOT_INTERVAL_TICKS`.
-
-Her physics frame ağ snapshotı zorunlu değil.
-
-Telemetry:
-
-- snapshots sent
-- snapshots received
-- snapshot entities
-- payload bytes
-- max payload bytes
-- dropped/stale snapshots
-- update interval
-
-tutmalı.
-
-CI bu sayıları gerçek Android performansı diye raporlamamalı.
-
----
-
-# 15. PAYLOAD BYTE BUDGET
-
-Snapshot DTO serialize edilmeden önce bounded.
-
-Object encoding kapalı primitive Variant bytes veya eşdeğer güvenli ölçüm kullanılabilir.
-
-Açık limits:
-
-- max entities/snapshot
-- max snapshot bytes
-- max string length
-- max nested fields
-
-Budget aşılırsa:
-
-- sınırsız packet gönderme
-- sessiz truncate ile lifecycle bozma
-
-yerine deterministic batching/AOI reduction/rejection policy kullan.
-
----
-
-# 16. AOI
-
-NET-02 minimum AOI sector-aware olmalı.
-
-Peer mapping'den host player's authoritative sector/position türetilir.
-
-Minimum visibility:
-
-- same active sector
-- bounded local radius veya açık sector visibility policy
-- own player her zaman visible
-
-Mevcut `SectorSpatialHash` varsa candidate discovery için reuse et.
-
-Bütün dünya entity listesini her peer için her snapshotta full scan etme.
-
-Far-field AI-04 records doğrudan clientta instantiate edilmemeli.
-
----
-
-# 17. AOI STABLE VISIBILITY
-
-AOI enter:
-
-- host lifecycle/snapshot yoluyla entity görünür olur
-
-AOI exit:
-
-- client proxy despawn/hide edilir
-
-Bu semantic death değildir.
-
-AOI çıkışı world entity'yi authority'de silmez.
-
-Gerçek entity despawn ile AOI visibility loss ayrımını açık tut.
-
----
-
-# 18. SPAWN / DESPAWN LIFECYCLE
-
-Host registry lifecycle sequence/idempotency kullan.
-
-Duplicate same stable ID spawn:
-
-- ikinci proxy oluşturmaz
-
-Despawn:
-
-- exact stable ID
-- generation/sequence doğrulaması
-- registry cleanup
-- proxy cleanup
-
-Client despawn sonrası ghost node/registry row bırakmamalı.
-
----
-
-# 19. LATE SPAWN
-
-İki client READY iken host yeni authoritative entity spawn etsin.
-
-Her iki client:
-
-- aynı stable entity ID
-- aynı kind
-- aynı initial state
-
-görmeli.
-
-Bu **late join** değildir.
-
-Clientlar zaten oturumdadır; yalnız entity sonradan doğar.
-
-Late join baseline NET-04 kapsamıdır.
-
----
-
-# 20. PLAYER REPLICATION
-
-Player proxy host ShipMotor'dan transform snapshot alır.
-
-Client kendi player'ı için de authoritative snapshotı mirror eder.
-
-NET-02'de prediction/reconciliation yazma.
-
-Local input:
-
-client intent → host authority → authoritative snapshot → client proxy.
-
----
-
-# 21. NPC REPLICATION
-
-NpcBrain yalnız hostta tick eder.
-
-Client NPC brain oluşturmaz/çalıştırmaz.
+- `drop_id`
 
 Client:
 
-- stable NPC ID
-- transform
-- hull/alive
-- gerekirse detached intent/state telegraph
+- item_id
+- quantity
+- reward
+- inventory delta
+- claimed=true
 
-okur.
-
-AI-01/02/03/04 clientta authority olarak çalıştırılmaz.
-
----
-
-# 22. MONSTER REPLICATION
-
-Monster actual CombatAuthority/sector state'inden host snapshot ile gelir.
-
-Client monster HP/position yazamaz.
-
-Monster kind/tag canonical `TargetingService.MONSTER` contract ile uyumlu olsun.
+gönderemez.
 
 ---
 
-# 23. LOOT REPLICATION
+# 8. Remote intent authority adapter
 
-Loot/drop stable IDs mevcut authority kaynaklarından gelir.
+Network boundary içinde tek adapter oluştur veya mevcut SessionHost'u temiz biçimde genişlet.
 
-Host:
+Host akışı:
 
-- loot spawn event/lifecycle
-- loot claim/despawn event
+client envelope
+→ real remote sender
+→ peer→player mapping
+→ exact payload validation
+→ visibility/AOI validation
+→ authoritative simulation method
+→ bounded semantic result
+→ replication/event
 
-replike eder.
-
-Client loot miktarı/reward sonucu uyduramaz.
-
-Claim authority hâlâ `LootAuthority` / `WorldObjectAuthority`.
-
-NET-02 remote loot-claim gameplay intent eklemek zorunda değil; NET-03 full slice işi.
+Actor identity hiçbir zaman payload'dan alınmaz.
 
 ---
 
-# 24. COMBAT EVENT REPLICATION
+# 9. Target selection
 
-Mevcut `CombatAuthority` signals, özellikle:
+Remote target select:
 
-- `hull_damaged`
-- `ship_sunk`
-- `monster_defeated`
-- `wreck_destroyed`
+`CombatAuthority.select(mapped_player_id, target_id)`
 
-network adapter tarafından primitive reliable event'e dönüştürülebilir.
+ve mevcut TargetingService validation'ını kullanmalı.
 
-Client event state'i authority değildir.
+Host doğrulasın:
 
-Event minimum:
+- target stable ID valid
+- target authoritative roster'da
+- same applicable sector
+- selectable
+- hostile/valid class
+- peer AOI'de görünür
 
-- event_id / sequence
-- event_type
-- source_id
+Client görünmeyen/başka sector hedefini stable ID bilse bile lock alamamalı.
+
+---
+
+# 10. Remote fire
+
+Remote fire:
+
+- actor = host peer mapping
+- heading = host ShipMotor
+- target = payload target_id
+- command = `CombatAuthority.fire_intent(target_id)`
+- execution = gerçek `CombatAuthority.fire()`
+
+Host mevcut kuralları bypass etmez:
+
+- target lock
+- range
+- broadside arc
+- reload
+- ammo
+- safe zone
+- hit/dodge
+- crit
+- hull
+- sunk
+
+Client sonucu uyduramaz.
+
+---
+
+# 11. Fire result
+
+Clienta bounded reliable semantic intent-result dönmek gerekiyorsa tek exact schema kullan.
+
+Minimum güvenli alanlar:
+
+- client_sequence
+- intent_type
+- accepted
+- reason
+- transaction/event sequence gerekiyorsa
 - target_id
-- amount/remaining hull gerekiyorsa
 
-Reliable gameplay/control channel kullan.
+World state'in gerçeği yine NET-02 replication snapshot/eventlerinden gelir.
 
-Duplicate event clientta ikinci kez uygulanmamalı.
+Fire result ikinci authority truth değildir.
 
 ---
 
-# 25. LOOT EVENT REPLICATION
+# 12. Loot claim
 
-Mevcut LootAuthority signals:
+Remote loot claim:
+
+- actor = host mapping
+- drop_id = bounded payload
+- AOI/visibility = host
+- range = host
+- ownership/inventory = host
+- claim = gerçek `LootAuthority.pickup()` veya mevcut world-object authority yolu
+
+Claim kabul edilirse:
+
+- reward host inventory'ye bir kez girer
+- reliable loot event gönderilir
+- network entity despawn olur
+- client proxy kalkar
+
+Duplicate claim ikinci reward üretmemeli.
+
+---
+
+# 13. Unauthorized damage/loot negatif kapı
+
+Clientın şu outcome iddiaları hâlâ unsupported/rejected:
+
+- `set_hull`
+- `damage_entity`
+- `sink_entity`
+- `spawn_loot`
+- `create_loot`
+- `claim_result`
+- `set_inventory`
+- `grant_item`
+- `despawn_entity`
+
+Malicious real-process test:
+
+- NPC hull değişmemeli
+- loot ledger değişmemeli
+- inventory artmamalı
+- registry lifecycle değişmemeli
+
+---
+
+# 14. Host-only AI
+
+NPC için:
+
+- `NpcBrain`
+- `AiDecisionScheduler`
+- Beehave execution
+- tactical decision
+
+yalnız hostta çalışmalı.
+
+Clientta NpcBrain/scheduler instantiate etme.
+
+Client yalnız replicated semantic AI presentation state alır.
+
+Kanıt:
+
+- host `decision_count > 0`
+- client AI decision count = 0 / AI executor yok
+- host NPC transition trace gerçek AI state'lerinden gelir
+- client aynı transitionların mirror/presentation bilgisini görür
+
+---
+
+# 15. NPC semantic replication
+
+NET-02 proxy state'ini minimum gerekli alanlarla genişlet.
+
+NPC için bounded semantic state:
+
+- `ai_state_id`
+- `ai_intent_id`
+- gerekirse `target_entity_id`
+
+Yalnız primitive.
+
+Client bu değerlerden karar üretmez; sadece görüntüler.
+
+Host AI state'i authoritative source.
+
+---
+
+# 16. NetworkVerticalSliceScenario aşamaları
+
+Gerçek process senaryo minimum şu aşamalardan geçsin:
+
+### A — Boot / handshake
+
+- 1 host
+- 1 client
+- manual localhost
+- NET-01 handshake READY
+- mapped player doğrulanır
+
+### B — Baseline replication
+
+- player stable ID
+- NPC stable ID
+- client mirror'ları oluşur
+- NPC host AI patrol eder
+- client NPC hareketini snapshotta görür
+
+### C — Remote movement
+
+Client gerçek `move_to_world_position` intent gönderir.
+
+Host ShipMotor hareket eder.
+
+Client authoritative hareket snapshotını görür.
+
+### D — Out-of-range / target
+
+Client NPC target intent gönderir.
+
+Host target selection doğrular.
+
+Out-of-range fire denemesi mevcut combat reason ile reddedilir veya accepted=false olur.
+
+### E — Broadside + first damage
+
+Client hareket intentleriyle host player'ı uygun konuma taşır.
+
+Client target/fire gönderir.
+
+Host gerçek fire transaction ile NPC'yi hasarlar.
+
+Client yeni hull state + damage event görür.
+
+### F — AI reaction
+
+Host AI gerçek:
+
+- PATROL
+- ALERT
+- RETREAT
+- REPAIR
+- RESUME
+
+semantic transition zincirini üretir.
+
+Client mirror bu geçişleri gözlemler.
+
+### G — Final combat
+
+Client remote fire intentlerle NPC'yi batırır.
+
+Host:
+
+- sunk exactly once
+- drop exactly once
+
+üretir.
+
+Client:
+
+- NPC dead/sunk state
+- loot proxy
+
+görür.
+
+### H — Remote loot claim
+
+Client host player'ı loot range içine hareket ettirir.
+
+Client `pickup_loot` intent gönderir.
+
+Host gerçek LootAuthority claim yapar.
+
+- inventory > 0
+- claim count = 1
+- loot proxy despawn
+
+### I — Duplicate guard
+
+Yeni sequence ile aynı drop tekrar claim edilmeye çalışılır.
+
+İkinci reward yok.
+
+### J — Complete
+
+Host ve client semantic digest karşılaştırılır.
+
+---
+
+# 17. Offline parity
+
+Mevcut VS-04 offline fixture exact committe aynen geçmeli.
+
+NET-03 verifier şu offline semantic kapıları da kontrol etsin:
+
+- `VS04_SCENARIO_COMPLETE`
+- `VS04_CHECKPOINT_REPLAY_OK`
+- `VS04_SOAK_OK`
+
+LAN scenario'nun semantic sonuçlarını offline contract ile kıyasla:
+
+- AI transition set/order
+- single sunk
+- single drop
+- single pickup
+- accepted fire path
+- final inventory positive
+- authoritative stable IDs
+
+Checkpoint/reload'u LAN clienta taşımaya çalışma.
+
+Reconnect/late-join restore NET-04 kapsamıdır.
+
+---
+
+# 18. Disconnect during combat
+
+Ayrı gerçek process negatif senaryo veya aynı harness içinde kontrollü faz:
+
+1. client READY
+2. player/NPC combat başlar
+3. ilk authoritative damage oluşur
+4. client disconnect eder
+5. host mapping/session state temizlenir
+6. gameplay entity otomatik silinmez
+7. NPC host AI tick etmeye devam eder
+8. host authoritative state valid kalır
+9. duplicate reward/drop oluşmaz
+10. host clean exit
+
+Reconnect yapma.
+
+NET-04 kapsamına girmez.
+
+---
+
+# 19. Disconnect authority kuralı
+
+Network disconnect:
+
+- player gameplay entity = otomatik destroy değil
+- CombatAuthority state = hostta korunur
+- AI tick = hostta devam edebilir
+- peer mapping = temizlenir
+
+Rejoin/reconnect token yok.
+
+---
+
+# 20. AOI / hidden target guard
+
+Remote target/fire/loot intents host AOI visibility ile çapraz kontrol edilmeli.
+
+Client stable ID tahmin ederek:
+
+- başka sector NPC'ye ateş edemez
+- görünmeyen loot'u claim edemez
+
+Bu yalnız UI filtresi değildir; authority validation olmalı.
+
+---
+
+# 21. Combat event replication
+
+NET-02 reliable/idempotent event sistemi reuse edilir.
+
+Gerçek host events:
+
+- hull_damaged
+- ship_sunk
+
+clienta ulaşmalı.
+
+Duplicate reliable event client presentation state'ini ikinci kez mutate etmemeli.
+
+Snapshot final hull/alive truth kaynağıdır.
+
+---
+
+# 22. Loot event replication
+
+NET-02 loot event lifecycle reuse edilir.
+
+Minimum semantic events:
 
 - drop_created
 - drop_claimed
 
-ve world-object semantic lifecycle kullanılabilir.
+Client:
 
-Reliable idempotent event ID kullan.
+- duplicate drop yaratmaz
+- claim sonrası proxy ghost bırakmaz
 
-Client duplicate event ile ikinci loot proxy yaratmamalı.
-
----
-
-# 26. EVENT / SNAPSHOT AYRIMI
-
-Snapshot:
-
-- sık
-- current state
-- unreliable ordered
-- stale ignore
-
-Event:
-
-- seyrek
-- semantic one-shot
-- reliable
-- idempotent/event sequence
-
-Damage event kaybolmamalı; transform snapshot için reliable spam yapma.
+Final inventory authority hosttadır.
 
 ---
 
-# 27. INTERPOLATION BUFFER
+# 23. Presentation-only client
 
-Client presentation proxy için bounded interpolation buffer ekle.
+Client proxy/interpolation:
+
+- simulation ShipMotor değildir
+- CombatAuthority değildir
+- LootAuthority değildir
+- NpcBrain değildir
+
+Client presentation smoothing authoritative state'i geri yazmaz.
+
+---
+
+# 24. Scenario determinism
+
+Host scenario fixed-step progression kullansın.
+
+Arbitrary wall-clock combat kararlarıyla flaky test oluşturma.
+
+Process harness readiness wall-clock timeout olabilir; **gameplay simulation progression fixed host ticks** ile kontrol edilmeli.
+
+Seed explicit.
+
+---
+
+# 25. Replay / intent sequence
+
+NET-01 sequence guard korunacak.
+
+Combat/loot intentleri de aynı monotonic client sequence sözleşmesini kullanmalı.
+
+Duplicate sequence → replay reject.
+
+Aynı loot drop için yeni sequence → simulation duplicate claim guard tarafından no second reward.
+
+İki farklı korumayı ayrı test et.
+
+---
+
+# 26. Result DTO bounds
+
+Intent-result/transaction summary eklenirse:
+
+- primitive-safe
+- exact shape
+- bounded strings
+- finite numbers
+- stable IDs
+- max byte/entity budget
+
+Resource/Object/Node/RID/Callable yok.
+
+---
+
+# 27. SessionProtocol allowlist
+
+`NETWORK_INTENTS` yalnız gerekli yeni intentlerle genişlet.
+
+Her intent için ayrı exact payload validator.
+
+Generic arbitrary dictionary gameplay execution ekleme.
+
+Presentation camera intentleri hâlâ network dışı.
+
+---
+
+# 28. Process harness
+
+NET-02 normal SceneTree harness yapısını reuse et.
+
+NET-03 gerçek:
+
+- 1 host process
+- 1 client process
+
+çalıştırmalı.
+
+Host process gerçek vertical slice runtime'ı kurmalı; client gerçek SessionClient kullanmalı.
+
+Mock RPC/multiplayer ile success üretme.
+
+---
+
+# 29. Process cleanup
+
+Zorunlu:
+
+- port collision check
+- host-ready marker
+- client-ready marker
+- bounded wait
+- per-stage timeout
+- trap
+- PID cleanup
+- nonzero exit propagation
+- clean host stop
+- client disconnect scenario için explicit expected exit
+
+Timeout ile öldürülmüş process success değildir.
+
+---
+
+# 30. NET-03 markerları
+
+En az:
+
+- `NET03_REMOTE_MOVE_OK`
+- `NET03_REMOTE_TARGET_OK`
+- `NET03_REMOTE_FIRE_OK`
+- `NET03_HOST_AI_ONLY_OK`
+- `NET03_AI_PARITY_OK`
+- `NET03_COMBAT_REPLICATION_OK`
+- `NET03_LOOT_CLAIM_ONCE_OK`
+- `NET03_AUTHORITY_REJECTION_OK`
+- `NET03_DISCONNECT_COMBAT_OK`
+- `NET03_OFFLINE_PARITY_OK`
+- `NET03_PROCESS_INTEGRATION_OK`
+
+Verifier ayrıca tek summary marker üretsin:
+
+`NET03_VERIFIER_OK ...`
+
+---
+
+# 31. Test stratejisi
+
+Mevcut **316 test korunmalı**.
+
+NET-03 için 8–12 güçlü yeni test tercih et.
 
 Minimum:
 
-- last accepted 2–4 transform samples
-- server tick/sequence
-- finite positions
-- bounded max samples
+1. combat target intent exact payload
+2. fire intent actor/heading host-derived
+3. hidden target rejection
+4. loot claim host-only / once
+5. duplicate sequence vs duplicate claim ayrımı
+6. client outcome mutation rejection
+7. host-only AI
+8. NPC semantic state replication
+9. disconnect preserves host authority
+10. offline semantic parity
+11. real process full scenario
 
-Stale/out-of-order sample buffer'ı geri sarmasın.
-
-Interpolation client visual only.
-
-Simulation state'e yazma.
-
-Extrapolation gerekiyorsa bounded; zorunlu değil.
-
----
-
-# 28. SNAPSHOT LOSS / ORDER TEST
-
-Unit fixture gerçek UDP paket kaybına güvenmek zorunda değil.
-
-Client snapshot consumer'a sıralı/sırasız sequence besle:
-
-- 10 accepted
-- 12 accepted
-- 11 ignored
-- 12 duplicate ignored
-- 13 accepted
-
-Final state sequence 13.
-
-Buffer bound aşılmamalı.
+Test sayısı hedef değil; gereksiz mikro-test ekleme.
 
 ---
 
-# 29. CLIENT MUTATION REJECTION
+# 32. Existing regression
 
-NET-02 kritik negatif kapı.
+Exact NET-03 code commit:
 
-Client şunları authoritative olarak gönderemez:
-
-- spawn entity
-- despawn entity
-- set HP
-- set hull
-- set position
-- set NPC state
-- create loot
-- claim result
-
-Production network bridge'de client→host bu RPC'ler hiç bulunmamalı veya authority-only contract nedeniyle reddedilmeli.
-
-Real process malicious fixture client-authored spawn ve HP mutation denesin; host state değişmemeli.
-
-NET-01 command envelope'a outcome type ekleme.
-
----
-
-# 30. NETWORK ENTITY OWNERSHIP
-
-Multiplayer authority ID ile gameplay owner ID'yi karıştırma.
-
-Network proxy'nin Godot multiplayer authority'si host olabilir.
-
-Gameplay player identity hâlâ SessionHost peer→player mapping'dir.
-
-Client proxy authority almak için `set_multiplayer_authority(peer_id)` ile gameplay ownership devri yapma.
-
----
-
-# 31. RESOURCES AĞDAN GİTMEZ
-
-Network schema'da yasak:
-
-- Resource
-- Object
-- Node
-- RID
-- Callable
-- PackedScene object
-- raw Definition Resource
-
-Yalnız stable definition/content ID.
-
-Client kendi local ContentManifest/DefinitionRegistry'den readonly asset tanımını çözebilir.
-
-Handshake content hash zaten eşleşmeyi garanti eder.
-
----
-
-# 32. ENTITY KIND / CONTENT VALIDATION
-
-Spawn payload:
-
-- stable ID valid
-- kind allowlist
-- sector stable ID
-- definition/content ID gerekiyorsa canonical registry doğrulaması
-
-Unknown kind/content reject.
-
-Client malformed spawn ile crash olmamalı.
-
----
-
-# 33. REAL PROCESS INTEGRATION
-
-NET-01 normal SceneTree process harness'ını reuse et.
-
-NET-02 Actions gerçek ENet/RPC process integration çalıştırsın.
-
-Minimum:
-
-- 1 host
-- 2 clients
-- localhost
-- ikisi de NET-01 handshake READY
-- host authoritative entity registry aktif
-
-Arbitrary sleep yerine readiness marker/deadline.
-
-PID/trap cleanup korunmalı.
-
----
-
-# 34. REAL PROCESS SCENARIO
-
-Minimum gerçek süreç akışı:
-
-1. host starts
-2. client A connects
-3. client B connects
-4. ikisi READY
-5. host player/NPC/monster/loot proxy setini spawn eder
-6. iki client aynı stable IDs görür
-7. host entity transform/hull snapshot yollar
-8. clientlar aynı newer sequence state'i görür
-9. host session sırasında yeni entity spawn eder
-10. iki client aynı late-spawn ID görür
-11. host bir entity despawn eder
-12. iki client registry/proxy'den temizler
-13. malicious client spawn/HP mutation denemesi yapar
-14. host authoritative state değişmez
-15. clean shutdown
-
----
-
-# 35. AOI PROCESS/UNIT FIXTURE
-
-En az iki sector/AOI grubu kullan.
-
-Client A player sector A'da.
-
-Entity:
-
-- same sector + near → visible
-- same sector + outside radius → policy'ye göre invisible
-- other sector → invisible
-
-Client B farklı authoritative position/sector ile farklı visibility set alabilsin.
-
-AOI filtering host source'dur.
-
-Client “beni şu sectordayım” diye visibility seçemez.
-
----
-
-# 36. SNAPSHOT BYTE/FREQUENCY FIXTURE
-
-CI fixture bounded entity set ile loglasın:
-
-- peers
-- replicated entities
-- spawned
-- despawned
-- snapshots sent
-- max entities/snapshot
-- max snapshot bytes
-- snapshot interval ticks
-- stale ignored
-- interpolation max samples
-- reliable combat events
-- reliable loot events
-- rejected client mutations
-
-Bu gerçek cihaz bandwidth benchmark değildir.
-
----
-
-# 37. MULTIPLAYERSPAWNER NEGATİF KAPI
-
-Spawner'ın spawn yolu yalnız hostta çağrılmalı.
-
-Client local registry API ile spawn üretse bile bu authoritative host registry'yi etkilememeli ve diğer peer'lere yayılmamalı.
-
-Gerçek process test bunu mümkün olduğunca doğrulasın.
-
----
-
-# 38. MULTIPLAYERSYNCHRONIZER GÜVENLİĞİ
-
-Synchronizer kullanılıyorsa root path/properties yalnız network proxy presentation state'i olmalı.
-
-Simulation/CombatAuthority private state'i doğrudan synchronize etme.
-
-Client property write authority olmamalı.
-
-`public_visibility` / visibility filter kullanılıyorsa AOI hostta kontrol edilmeli.
-
----
-
-# 39. OFFLINE REGRESSION
-
-Default boot hâlâ:
-
-- SessionHost başlatmaz
-- SessionClient başlatmaz
-- NetworkEntityRegistry socket açmaz
-- MultiplayerSpawner session oluşturmaz
-
-Offline VS-04 davranışı değişmemeli.
-
----
-
-# 40. LAN SINIRI
-
-NET-02'de henüz:
-
-- prediction
-- reconciliation
-- reconnect
-- late join baseline
-- discovery
-- transaction replay recovery
-- full remote combat/loot input parity
-
-yok.
-
-Bunlar NET-03/NET-04.
-
----
-
-# 41. TEST STRATEJİSİ
-
-Mevcut **305 test korunmalı**.
-
-NET-02 için tercihen 10–14 güçlü test.
-
-Minimum:
-
-1. entity registry stable ID/idempotency
-2. spawn DTO primitive/content validation
-3. host-only spawn/despawn
-4. snapshot ordering/stale rejection
-5. interpolation bounded buffer
-6. AOI visibility
-7. combat event idempotency
-8. loot lifecycle/event idempotency
-9. client mutation rejection
-10. payload byte/entity budget
-11. offline/network boundary
-12. real host + 2 clients integration
-
-Mikro-test sayısı şişirme.
-
----
-
-# 42. CI MARKERLARI
-
-Açık marker üret:
-
-- `NET02_ENTITY_REGISTRY_OK`
-- `NET02_HOST_SPAWN_OK`
-- `NET02_SNAPSHOT_ORDER_OK`
-- `NET02_INTERPOLATION_OK`
-- `NET02_AOI_OK`
-- `NET02_COMBAT_EVENT_OK`
-- `NET02_LOOT_EVENT_OK`
-- `NET02_CLIENT_MUTATION_REJECT_OK`
-- `NET02_BUDGET_OK`
-- `NET02_PROCESS_INTEGRATION_OK`
-
-NET-02 verifier:
-
-- tek GUT logunu
-- gerçek process integration logunu
-
-birlikte doğrulasın.
-
-NET-01'de çalışan ANSI normalization/harness parser kodunu aynen reuse et.
-
----
-
-# 43. REGRESSION
-
-Exact NET-02 committe:
-
-- NET-01 10/10 + real process integration
+- NET-02 11/11 + real host/2-client regression
+- NET-01 10/10 + real ENet regression
 - AI-04 10/10
 - AI-03 10/10
 - AI-02 11/11
 - AI-01 10/10
 - CORE-04/03/02/01
-- VS-04 checkpoint/replay/soak
+- VS-04 25 test + replay + soak
 
 geçmeli.
 
 Beehave orphan = 0.
 
-NET-01 spoof/replay/content/protocol mismatch kapıları kaybolmamalı.
+---
+
+# 33. CI verimliliği
+
+Full GUT yalnız bir kez.
+
+NET-01/02/03 verifier mümkün olduğunca aynı GUT logunu kullansın.
+
+NET-03 real-process full scenario tek host/client lifecycle'ında ana parity akışını çalıştırsın.
+
+Disconnect alt senaryosu ayrı process gerekiyorsa yalnız bir kez çalıştır.
+
+Eski NET-01/02 process regressionlarını tamamen silme; gerekiyorsa aynı kanıtlanmış harness'i çağır.
 
 ---
 
-# 44. CI NETWORK GUARD
+# 34. CI preflight
 
-Mevcut network boundary guard korunacak.
+İlk implementation committen önce doğrula:
 
-Ek olarak static guard mümkünse şunları yakalasın:
+- Godot 4.7 RPC annotation gerçek syntax
+- SessionProtocol new intent payload exact shapes
+- actor identity payload'dan alınmıyor
+- fire heading clienttan alınmıyor
+- target/loot AOI host-validation
+- `CombatAuthority.select/fire` gerçek method signature
+- `LootAuthority.pickup` gerçek method signature
+- combat clock/tick progression gerçek hostta ilerliyor
+- AI scheduler yalnız host
+- clientta NpcBrain oluşturulmuyor
+- NPC semantic fields snapshot row validatorla uyumlu
+- event stable IDs SectorIds contract ile uyumlu
+- typed arrays explicit
+- var_to_bytes Godot 4.7 signature doğru
+- process SceneTree kullanıyor
+- process args doğru
+- cleanup/trap doğru
+- expected markers exact
+- ANSI parser mevcut proven yaklaşım
+- artifact adı NET03
+- README NET-04 özelliklerini yapılmış göstermiyor
 
-- `@rpc("any_peer"` ile state/spawn mutation handler
-- network boundary dışı MultiplayerSpawner/MultiplayerSynchronizer
-- client-side simulation authority write
-- Resource/Object network DTO kullanımı
-
-Yanlış pozitif üretip normal simulation kodunu bozma.
-
----
-
-# 45. CI SÜRE / COMMIT OPTİMİZASYONU
-
-NET-01 process harness ve export setup'ını yeniden icat etme.
-
-Full GUT tek kez çalışsın.
-
-NET-01 + NET-02 verifier aynı GUT logunu kullansın.
-
-Process integration mümkünse tek host process lifecycle'ında ilgili NET-02 scenario'ları çalıştırsın; her assertion için yeni host başlatma.
-
-Mismatch/spoof NET-01 regressions ayrı process başlatmayı gerektiriyorsa mevcut kanıtlanmış harness'i koru ama gereksiz tekrar ekleme.
-
----
-
-# 46. COMMIT ÖNCESİ PREFLIGHT
-
-İlk implementation committen önce gerçek diff üzerinde tek tek doğrula:
-
-- current HEAD hâlâ doğru
-- NET-01 files üzerine güvenli extension yapılmış
-- native method/class name collision yok
-- bütün yeni RPC Nodes normal SceneTree altında
-- MultiplayerSpawner spawn path gerçek NodePath
-- custom spawn_function signature Godot 4.7.2 ile doğru
-- MultiplayerSynchronizer API/property names Godot 4.7.2 ile doğru
-- channel 2 gerçekten unreliable ordered
-- authority→client RPC annotation doğru
-- client→host state mutation RPC yok
-- snapshot exact schema testle aynı
-- sequence types explicit int
-- JSON/Variant roundtrip numeric normalization
-- stable entity IDs SectorIds contract ile uyumlu
-- AOI fixture authoritative sector/position kullanıyor
-- process harness 1 host + 2 clients için port/readiness doğru
-- client process args parse ediliyor
-- all process exits use SceneTree-safe `get_tree().quit(code)` veya kanıtlanmış eşdeğer
-- shell trap bütün PID'leri temizliyor
-- verifier ANSI normalization NET-01 çalışan yöntemle aynı
-- GUT expected total doğru
-- CI markers exact
-- artifact adı NET02
-- README NET-03/04 özelliklerini yapılmış göstermiyor
-
-Belirsiz bir madde varsa commit atma; önce düzelt.
+Bu listede belirsizlik varsa commit atma.
 
 ---
 
-# 47. ARTIFACT
+# 35. Authority negative tests
+
+Real process veya güçlü integration testte doğrula:
+
+- client direct set_hull → reject
+- client damage outcome → reject
+- client loot reward → reject
+- client hidden target → reject
+- client hidden loot claim → reject
+- client identity spoof → NET-01 guard
+- replay sequence → NET-01 guard
+
+Host state mutation yok.
+
+---
+
+# 36. Offline boot
+
+Default bootstrap hâlâ:
+
+- host başlatmaz
+- client başlatmaz
+- RPC session açmaz
+- LAN beklemez
+
+Offline VS-04 aynı şekilde çalışır.
+
+---
+
+# 37. NET-04 kapsam dışı
+
+Yapma:
+
+- discovery beacon
+- reconnect token
+- late join baseline recovery
+- session resume
+- reconnect transaction replay
+- background/foreground reconnect
+- UDP discovery fuzz
+- host migration
+
+Bunlar NET-04.
+
+---
+
+# 38. README
+
+Yalnız gerçekten uygulanan NET-03'ü belge:
+
+- VS-04 LAN parity
+- remote move/target/fire/loot intents
+- actor/heading host-derived authority
+- host-only AI
+- semantic NPC state replication
+- combat/loot event path
+- once-only loot claim
+- AOI target/loot validation
+- disconnect-during-combat behavior
+- offline parity
+- no prediction/lockstep claim
+- NET-04 not implemented
+
+---
+
+# 39. Artifact
 
 Artifact adı:
 
-`SeaCraft-NET02-<exact SHA>`
+`SeaCraft-NET03-<exact SHA>`
 
 İçerik:
 
@@ -993,173 +928,150 @@ Artifact adı:
 
 Upload sonrası authenticated readback yap.
 
-ZIP, APK, Linux ve PCK hashlerini tekrar doğrula.
+ZIP/APK/Linux/PCK SHA-256 exact commit için doğrula.
 
 ---
 
-# 48. ANDROID
+# 40. Android gerçek cihaz
 
-Mevcut INTERNET permission korunmalı.
+Bu görevde gerçek cihaz plan kapısı vardır fakat CI fiziksel cihaz değildir.
 
-Gerçek cihaz kapıları `not_run`:
+Mevcut araçlarla fiziksel cihaz erişimi yoksa açıkça `not_run`:
 
-- Android client Wi-Fi snapshot jitter
-- Android host 2 clients
-- interpolation frame pacing
-- 20+ replicated entities
-- snapshot bandwidth/CPU
-- spawn/despawn burst
-- network loss
-- background/foreground
+- Android client ↔ desktop host same Wi-Fi
+- desktop client ↔ Android host
+- mümkünse Android ↔ Android
+- 10+ dakika session
+- combat + loot
+- Wi-Fi jitter
+- interpolation okunabilirliği
 
-CI bunları passed diye raporlamaz.
+Bunları CI passed diye yazma.
 
----
-
-# 49. README
-
-Yalnız gerçekten uygulanan NET-02'yi belge:
-
-- host-only NetworkEntityRegistry
-- MultiplayerSpawner lifecycle
-- Synchronizer/custom snapshot field ownership
-- stable IDs
-- player/NPC/monster/loot proxy model
-- unreliable ordered snapshots
-- reliable combat/loot events
-- AOI
-- interpolation
-- payload telemetry
-- client mutation rejection
-- offline behavior
-- NET-03/04 kapsam dışı
+NET-03 kod/CI kapanışı gerçek cihaz `not_run` ile kaydedilebilir; fiziksel cihaz kanıtını ayrı tut.
 
 ---
 
-# 50. BEYİN KAPANIŞI
+# 41. Beyin kapanışı
 
-NET-02 task başlangıçta bir kez açılır.
+NET-03 task bir kez açılır.
 
-Ara CI failure için Beyin update yapma.
+Ara CI fail'leri için Beyin update yapma.
 
-Final exact commit + successful Actions + artifact readback sonrası:
+Exact successful code SHA + Actions + artifact readback sonrası:
 
-- task final update
+- task revision → done
 - tek receipt
 - geri okuma
 
-yap.
+Facts minimum:
 
-Task facts minimum:
-
-- exact main SHA
+- exact code SHA
 - implementation/correction commits
 - Actions run counts
-- total tests / NET-02 tests
-- host+2 clients integration
-- stable spawn/despawn
-- late spawn same ID
-- stale snapshot rejection
-- interpolation bound
-- AOI
-- combat/loot events
-- client spawn/HP mutation rejection
-- snapshot budget metrics
-- NET-01 regression
+- total tests / NET-03 tests
+- full 1 host + 1 client process integration
+- offline parity
+- remote move/target/fire
+- host-only AI
+- AI transitions observed
+- combat replication
+- single sunk/drop/loot claim
+- duplicate claim blocked
+- unauthorized mutation rejected
+- disconnect-combat result
+- NET-02/01 regressions
 - AI/CORE/VS regressions
-- orphan count
+- orphan
 - artifact ID/name/hashes
-- real Android `not_run`
-- NET-03 `not_started`
+- Android physical test status
+- NET-04 not_started
 
 ---
 
-# 51. GOREV_RAPORU.md
+# 42. GOREV_RAPORU.md
 
-Görev bitince mevcut rapor geçmişini **koru**.
+Görev bitince mevcut geçmişi koru.
 
 Aynı dosyaya yeni:
 
-`## NET-02 — ...`
+`## SOHBET-30 — SeaCraft NET-03 — Vertical Slice LAN Parity`
 
 bölümü ekle.
 
 Yeni rapor dosyası oluşturma.
 
-Bölümde yalnız doğrulanmış kanıtlar:
+Yalnız doğrulanmış:
 
 - exact SHA
-- commit/run sayıları
+- run/commit sayıları
 - tests
-- process integration
-- registry/spawn/despawn
-- snapshot ordering
-- interpolation
-- AOI
-- events
-- mutation rejection
-- byte/frequency telemetry
+- process scenario
+- parity
+- remote intents
+- AI host-only
+- combat/loot
+- duplicate guards
+- negative authority
+- disconnect
 - regressions
-- orphan
 - export
-- artifact hashes
-- Beyin closure
-- Android `not_run`
+- artifact
+- Beyin
+- Android not_run/passed
 
-olsun.
+kanıtlarını yaz.
 
-Sohbet cevabına bu uzun raporu kopyalama.
+Sohbete uzun raporu kopyalama.
 
 ---
 
-# SON KAPI
+# Son kapı
 
-NET-02 ancak gerçek kanıtla tamamdır:
+NET-03 ancak şunların tamamı doğrulanırsa bitmiş sayılır:
 
-- NET-01 authority sınırı korunmuş
-- host tek spawn/despawn kaynağı
-- player/NPC/monster/loot stable ID ile replike
-- lifecycle duplicate spawn üretmiyor
-- late-spawn entity iki hazır clientta aynı ID
-- despawn ghost bırakmıyor
-- snapshot sequence monotonic
-- stale/out-of-order snapshot geri saramıyor
-- snapshot channel unreliable ordered
-- semantic combat/loot eventleri reliable ve idempotent
-- interpolation bounded ve presentation-only
-- AOI host authoritative
-- AOI dışı entity görünmüyor
-- far-field dünya clientta full instantiate edilmiyor
-- Resource/Object/RID network DTO yok
-- client spawn/HP/position/state outcome yazamıyor
-- malicious client mutation host state'i değiştirmiyor
-- snapshot payload/entity/frequency budget bounded
-- gerçek 1 host + 2 client process integration geçiyor
-- NET-01 regressions geçiyor
-- AI-04/03/02/01 geçiyor
-- CORE-04/03/02/01 geçiyor
-- VS-04 geçiyor
+- gerçek 1 host + 1 client ENet/RPC vertical slice çalışıyor
+- client movement intent host ShipMotor'a gidiyor
+- client target intent host CombatAuthority select'e gidiyor
+- client fire intent actor/heading spoof edemiyor
+- fire gerçek CombatAuthority range/reload/broadside kurallarından geçiyor
+- client authoritative NPC hull/alive mirror'ını görüyor
+- AI yalnız hostta karar veriyor
+- host NPC PATROL→ALERT→RETREAT→REPAIR→RESUME zinciri gerçek
+- client semantic AI mirror aynı zinciri gözlemliyor
+- NPC tam bir kez batıyor
+- loot tam bir kez spawn oluyor
+- client loot claim hostta doğrulanıyor
+- inventory reward tam bir kez
+- duplicate claim ikinci reward üretmiyor
+- loot proxy despawn ghost bırakmıyor
+- hidden target/loot authority'de reddediliyor
+- unauthorized damage/loot outcome state değiştirmiyor
+- disconnect sırasında host combat/AI state bozulmuyor
+- offline VS-04 replay/soak ve semantic davranış geçiyor
+- NET-02/NET-01 regressions geçiyor
+- AI/CORE regressions geçiyor
 - orphan=0
 - offline boot ağsız çalışıyor
 - Linux export/boot geçiyor
-- Android arm64 export ve INTERNET permission geçiyor
+- Android arm64 export + INTERNET permission geçiyor
 - exact artifact readback geçiyor
-- Beyin task+receipt geri okunuyor
-- `GOREV_RAPORU.md` NET-02 kanıtlarıyla güncel
+- Beyin strict kapanışı geri okunuyor
+- `GOREV_RAPORU.md` NET-03 bölümü güncel
 
 Eksikse düzeltmeye devam et.
 
-**NET-03'e başlama.**
+**NET-04'e başlama.**
 
 ## Nihai sohbet cevabı
 
 Yalnız kısa söyle:
 
-- NET-02 tamamlandı / engel
+- NET-03 tamamlandı / gerçek engel
 - exact SHA
-- Actions success run
+- successful Actions run
 - test total
 - artifact
-- ayrıntılı raporun `GOREV_RAPORU.md` dosyasında olduğu
+- ayrıntılı raporun `GOREV_RAPORU.md` içinde olduğu
 
 Uzun kapanış raporunu sohbete yazma.
