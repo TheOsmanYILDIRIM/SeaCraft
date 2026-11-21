@@ -329,7 +329,7 @@ func restore_state(value: Variant) -> bool:
 	var role_id := str(state.get("role_profile_id", role_profile_id()))
 	if role_id != role_profile_id():
 		return false
-	var transition_trace: Dictionary = state.get("last_transition_trace", {
+	var transition_source: Variant = state.get("last_transition_trace", {
 		"accepted": true,
 		"changed": false,
 		"previous_state": int(state["state_id"]),
@@ -337,8 +337,24 @@ func restore_state(value: Variant) -> bool:
 		"reason": str(state["last_transition_reason"]),
 		"tick": int(state["last_decision_tick"]),
 	})
-	if not DtoContract.is_primitive_safe(transition_trace):
+	if not transition_source is Dictionary or not DtoContract.is_primitive_safe(transition_source):
 		return false
+	var transition_raw: Dictionary = transition_source
+	if not transition_raw.get("accepted") is bool or not transition_raw.get("changed") is bool:
+		return false
+	for key in ["previous_state", "next_state", "tick"]:
+		if not _state_integer(transition_raw.get(key)):
+			return false
+	if not transition_raw.get("reason") is String:
+		return false
+	var transition_trace := {
+		"accepted": bool(transition_raw["accepted"]),
+		"changed": bool(transition_raw["changed"]),
+		"previous_state": int(transition_raw["previous_state"]),
+		"next_state": int(transition_raw["next_state"]),
+		"reason": str(transition_raw["reason"]),
+		"tick": int(transition_raw["tick"]),
+	}
 	var last_sense_tick := int(state.get("last_sense_query_tick", -1))
 	if last_sense_tick < -1:
 		return false

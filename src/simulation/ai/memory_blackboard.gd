@@ -188,7 +188,16 @@ func restore_state(value: Variant) -> bool:
 				return false
 		if float(entry["distance"]) < 0.0:
 			return false
-		planned[stable_id] = entry.duplicate(true)
+		planned[stable_id] = {
+			"stable_id": str(stable_id),
+			"threat": int(entry["threat"]),
+			"last_seen_tick": int(entry["last_seen_tick"]),
+			"last_threat_tick": int(entry["last_threat_tick"]),
+			"last_decay_tick": int(entry["last_decay_tick"]),
+			"x": float(entry["x"]),
+			"y": float(entry["y"]),
+			"distance": float(entry["distance"]),
+		}
 	var selected: Variant = state.get("selected_target_id")
 	if not selected is String or (not selected.is_empty() and not planned.has(selected)):
 		return false
@@ -207,7 +216,12 @@ func restore_state(value: Variant) -> bool:
 	_selected_target_id = selected
 	_recent_intent_id = int(state["recent_intent_id"])
 	_recent_decision_tick = int(state["recent_decision_tick"])
-	_hysteresis = (hysteresis as Dictionary).duplicate(true)
+	_hysteresis = {
+		"intent_id": int(hysteresis["intent_id"]),
+		"target_id": str(hysteresis["target_id"]),
+		"score": float(hysteresis["score"]),
+		"hold_until_tick": int(hysteresis["hold_until_tick"]),
+	}
 	return true
 
 

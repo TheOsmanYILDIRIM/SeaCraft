@@ -137,7 +137,7 @@ func test_ai01_real_beehave_bt_lifecycle_success_failure_timeout_interrupt_and_r
 	assert_eq(runner.tick_action_kind(AiBtRunner.ACTION_WAIT_OBSERVE, 11, 2, 5), BeehaveNode.FAILURE)
 	_bt_mode = "running"
 	assert_eq(runner.tick_action_kind(AiBtRunner.ACTION_TARGET, 12, 3, 3), BeehaveNode.RUNNING)
-	assert_eq(runner.tick_action_kind(AiBtRunner.ACTION_TARGET, 15, 3, 3), BeehaveNode.FAILURE)
+	assert_eq(runner.tick_action_kind(AiBtRunner.ACTION_TARGET, 12, 6, 3), BeehaveNode.FAILURE)
 	assert_eq(runner.telemetry()["timeout_count"], 1)
 	assert_eq(runner.tick_action_kind(AiBtRunner.ACTION_DESTINATION, 20, 4, 10), BeehaveNode.RUNNING)
 	runner.interrupt()
@@ -323,7 +323,7 @@ func _tuning() -> NpcAiTuning:
 	value.perception_query_cadence_ticks = 10
 	value.memory_max_entries = 8
 	value.memory_expiry_ticks = 120
-	value.bt_timeout_ticks = 90
+	value.bt_timeout_ticks = 300
 	value.max_threat = 1000
 	value.threat_per_damage = 20.0
 	value.threat_decay_interval_ticks = 30

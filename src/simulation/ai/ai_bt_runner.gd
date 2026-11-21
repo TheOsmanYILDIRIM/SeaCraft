@@ -121,7 +121,12 @@ func restore_state(value: Variant) -> bool:
 		return false
 	if not _integer(state.get("last_status")) or int(state["last_status"]) not in [-1, BeehaveNode.SUCCESS, BeehaveNode.FAILURE, BeehaveNode.RUNNING]:
 		return false
-	_pending_restore = state.duplicate(true)
+	_pending_restore = {
+		"intent_id": int(state["intent_id"]),
+		"action_kind": str(state["action_kind"]),
+		"started_tick": int(state["started_tick"]),
+		"last_status": int(state["last_status"]),
+	}
 	_current_intent_id = -1
 	_current_action_kind = ""
 	_last_status = int(state["last_status"])
