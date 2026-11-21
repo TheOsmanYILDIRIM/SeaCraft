@@ -168,7 +168,7 @@ func test_core03_save_load_in_b_then_return_a_preserves_state_and_rng() -> void:
 	assert_eq(world2.active().sector_id, FoundationSector.OUTER_ID)
 	assert_eq(rng2.snapshot_state(), expected_rng)
 	var loot2 := LootAuthority.new(world2.active(), rng2, LOOT_TABLE as LootTable, ITEM_DEFINITION as ItemDefinition)
-	assert_true(loot2.bind_inventory_owner(PLAYER, {CoreCombatRules.STOWED: 12}))
+	assert_true(loot2.bind_inventory_owner(PLAYER, {CoreCombatRules.STOWED: 12, CoreCombatRules.ROUND: 12}))
 	assert_true(loot2.restore_state(SaveSnapshot.loot_state(loaded)))
 	var combat2 := CombatAuthority.new(world2.active(), rng2, 1)
 	assert_true(combat2.register(PLAYER, "faction.core03_player", 100.0))
@@ -324,6 +324,8 @@ func test_core03_map_gestures_do_not_leak_world_input() -> void:
 	assert_eq(graph.presentation_snapshot(), before)
 	overlay.set_world_view(false)
 	assert_false(overlay.apply_pan(Vector2.ONE))
+	controller.free()
+	camera.free()
 
 
 func _basic_bound_world() -> Dictionary:

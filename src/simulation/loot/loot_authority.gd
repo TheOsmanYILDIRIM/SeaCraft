@@ -234,7 +234,12 @@ func restore_state(value: Variant) -> bool:
 		var id: String = drop["drop_id"]
 		_drops[id] = drop
 		if _sector != null and drop["sector_id"] == _sector.sector_id:
-			if not _sector.register_entity(id, Vector2(drop["x"], drop["y"])):
+			var restored_position := Vector2(float(drop["x"]), float(drop["y"]))
+			var current_position := _sector.entity_position(id)
+			if current_position.is_finite():
+				if current_position != restored_position:
+					return false
+			elif not _sector.register_entity(id, restored_position):
 				return false
 	return true
 

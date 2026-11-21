@@ -225,8 +225,14 @@ func restore_state(value: Variant) -> bool:
 		var object: Dictionary = raw.duplicate(true)
 		object["slot"] = int(object["slot"])
 		var id: String = object["entity_id"]
-		if object["sector_id"] == _sector.sector_id and not _sector.register_entity(id, Vector2(float(object["x"]), float(object["y"]))):
-			return false
+		if object["sector_id"] == _sector.sector_id:
+			var restored_position := Vector2(float(object["x"]), float(object["y"]))
+			var current_position := _sector.entity_position(id)
+			if current_position.is_finite():
+				if current_position != restored_position:
+					return false
+			elif not _sector.register_entity(id, restored_position):
+				return false
 		if object["archetype"] == WRECK:
 			if _combat == null:
 				return false
