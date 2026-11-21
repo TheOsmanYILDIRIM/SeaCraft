@@ -582,7 +582,7 @@ func _execute_bt_action(action_kind: String, simulation_tick: int) -> int:
 		AiBtRunner.ACTION_DESTINATION, AiBtRunner.ACTION_TARGET:
 			if not position.is_finite() or not _destination.is_finite():
 				return BeehaveNode.FAILURE
-			if _executor.arrived(position, _tuning.arrival_radius):
+			if _executor.goal() == _destination and _executor.arrived(position, _tuning.arrival_radius):
 				return BeehaveNode.SUCCESS
 			return BeehaveNode.RUNNING if _executor.request_destination(position, _destination) else BeehaveNode.FAILURE
 		AiBtRunner.ACTION_REPAIR:

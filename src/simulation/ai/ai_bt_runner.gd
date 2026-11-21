@@ -41,8 +41,16 @@ func configure(actor: Node, handler: Callable) -> bool:
 	_tree.name = "SeaCraftAiBeehaveTree"
 	_tree.actor = actor
 	_tree.process_thread = BeehaveTree.ProcessThread.MANUAL
-	actor.add_child(_tree)
-	return _tree.process_thread == BeehaveTree.ProcessThread.MANUAL and not _tree.is_processing() and not _tree.is_physics_processing()
+	# Keep the upstream Beehave tree detached. Manual scheduler ticks exercise the
+	# real Beehave lifecycle without enabling its editor/debugger scene hooks.
+	return _tree.process_thread == BeehaveTree.ProcessThread.MANUAL and not _tree.is_inside_tree() and not _tree.is_processing() and not _tree.is_physics_processing()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _tree != null:
+		_tree.free()
+		_tree = null
+		_leaf = null
 
 
 func tick_intent(intent_id: int, simulation_tick: int, timeout_ticks: int) -> int:

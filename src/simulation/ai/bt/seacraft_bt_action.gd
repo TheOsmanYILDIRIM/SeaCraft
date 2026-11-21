@@ -42,13 +42,15 @@ func tick(_actor: Node, _blackboard: Blackboard) -> int:
 	return int(response)
 
 
-func interrupt(actor: Node, blackboard: Blackboard) -> void:
+func interrupt(_actor: Node, _blackboard: Blackboard) -> void:
 	interrupted = true
 	if handler.is_valid():
 		handler.call("interrupt:%s" % action_kind, current_tick)
 	_started_tick = -1
 	_restored_started_tick = -1
-	super(actor, blackboard)
+	# Do not call BeehaveNode.interrupt(): upstream's debugger message helper
+	# assumes an active editor debugger. SeaCraft runs this detached/manual tree
+	# in headless authority as well as exported runtime.
 
 
 func after_run(_actor: Node, _blackboard: Blackboard) -> void:

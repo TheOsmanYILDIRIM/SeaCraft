@@ -6,7 +6,7 @@ const MAX_CANDIDATES := 64
 
 
 static func build(observer_id: String, simulation_tick: int, sector_id: String, observer_position: Vector2,
-		observer_hull_ratio: float, candidates: Array[Dictionary], inspected_count: int) -> Dictionary:
+		observer_hull_ratio: float, candidates: Array, inspected_count: int) -> Dictionary:
 	if not SectorIds.valid(observer_id) or simulation_tick < 0 or not SectorIds.valid(sector_id):
 		return {}
 	if not observer_position.is_finite() or not is_finite(observer_hull_ratio) or observer_hull_ratio < 0.0 or observer_hull_ratio > 1.0:

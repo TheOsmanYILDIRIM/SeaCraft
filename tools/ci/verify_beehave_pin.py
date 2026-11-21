@@ -42,12 +42,8 @@ def main() -> None:
         if actual != expected_sha:
             fail(f"upstream blob mismatch for {path}: {actual} != {expected_sha}")
     project = Path("project.godot").read_text(encoding="utf-8")
-    for token in [
-        'BeehaveGlobalMetrics="*res://addons/beehave/metrics/beehave_global_metrics.gd"',
-        'BeehaveGlobalDebugger="*res://addons/beehave/debug/global_debugger.gd"',
-    ]:
-        if token not in project:
-            fail(f"missing runtime autoload: {token}")
+    if "[autoload]" in project or "BeehaveGlobalMetrics" in project or "BeehaveGlobalDebugger" in project:
+        fail("Beehave must stay detached/manual; project autoloads are not allowed")
     presets = Path("export_presets.cfg").read_text(encoding="utf-8")
     if 'exclude_filter="tests/**,tools/**,addons/**"' in presets:
         fail("export still strips all addons")
@@ -56,6 +52,8 @@ def main() -> None:
     runner = Path("src/simulation/ai/ai_bt_runner.gd").read_text(encoding="utf-8")
     if "BeehaveTree.ProcessThread.MANUAL" not in runner or "_tree.tick()" not in runner:
         fail("SeaCraft runner is not manual Beehave execution")
+    if "not _tree.is_inside_tree()" not in runner or "actor.add_child(_tree)" in runner:
+        fail("Beehave runtime tree must remain detached from SceneTree")
     print(
         f"AI01_BEEHAVE_PIN_OK tag={TAG} commit={COMMIT} upstream={UPSTREAM} runtime_files={len(EXPECTED)}"
     )
