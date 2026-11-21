@@ -160,7 +160,7 @@ func decision_tick(simulation_tick: int) -> bool:
 	_last_utility = decision.duplicate(true)
 	var tactical := _evaluate_tactical(decision, simulation_tick)
 	var tactical_forced_retreat := false
-	if not tactical.is_empty() and str(tactical.get("tactical_intent", "")) == TacticalDecision.RETREAT and _state in [State.PATROL, State.ALERT, State.RESUME]:
+	if not tactical.is_empty() and str(tactical.get("tactical_intent", "")) == TacticalDecision.RETREAT and _state == State.ALERT:
 		var tactical_target := str(tactical.get("target_id", _decision_target(decision)))
 		if _transition(State.RETREAT, "tactical_disadvantage"):
 			_start_retreat(tactical_target)
