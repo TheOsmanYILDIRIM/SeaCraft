@@ -187,7 +187,7 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		push_error("VS-02 player combat roster setup failed")
 		return
 	if practice_active:
-		if not _combat.register(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, null, 4.0, 0.05):
+		if not _combat.register(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, cannon, 4.0, 0.05):
 			push_error("VS-02 combat roster setup failed")
 			return
 	elif not _combat.register_dormant(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, FoundationSector.ID, PRACTICE_POSITION):
