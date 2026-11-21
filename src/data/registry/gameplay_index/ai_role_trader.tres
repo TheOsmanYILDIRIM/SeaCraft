@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="DefinitionIndexEntry" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/registry/definition_index_entry.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "ai_role.trader"
+definition_type = "ai_role"
+definition_path = "res://src/data/ai/roles/trader.tres"
+referenced_ids = PackedStringArray()

@@ -3,7 +3,7 @@ extends RefCounted
 
 const VALID_DEFINITION_TYPES := [
 	"ship", "weapon", "item", "faction", "sector",
-	"ammo", "monster", "harpoon", "safe_zone", "loot_table",
+	"ammo", "monster", "harpoon", "safe_zone", "loot_table", "ai_role",
 ]
 
 var last_error: String = ""
@@ -167,6 +167,9 @@ func _load_entry(stable_id: String) -> Resource:
 		var definition := loaded as BaseDefinition
 		if definition.stable_id != stable_id:
 			_fail("stable ID/index mismatch: %s != %s" % [definition.stable_id, stable_id], ERR_INVALID_DATA)
+			return null
+		if definition is NpcRoleProfile and not (definition as NpcRoleProfile).valid():
+			_fail("invalid AI role profile: %s" % stable_id, ERR_INVALID_DATA)
 			return null
 		actual_type = definition.definition_type()
 		actual_refs = definition.referenced_stable_ids()

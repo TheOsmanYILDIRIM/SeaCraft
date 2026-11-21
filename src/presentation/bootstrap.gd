@@ -6,6 +6,7 @@ const CHECKPOINT_INTERVAL_MS := 20000
 const PRACTICE_TARGET := "entity.vs02_sc03"
 const PRACTICE_POSITION := Vector2(-520, 260)
 const NPC_TUNING := preload("res://src/data/ai/vs02_sc03_tuning.tres")
+const NPC_ROLE := preload("res://src/data/ai/roles/trader.tres")
 const VS03_LOOT_TABLE := preload("res://src/data/loot/vs03_sc03_loot_table.tres")
 const VS03_LOOT_ITEM := preload("res://src/data/items/vs03_salvage_scrap.tres")
 const PLAYER_SHIP_DEF := preload("res://src/data/content/ship_foundation_player.tres")
@@ -218,7 +219,7 @@ func _setup_combat(sector: SectorRuntime) -> void:
 
 	_npc_presenter = NpcStatePresenter.new()
 	_npc_motor.add_child(_npc_presenter)
-	_npc_brain = NpcBrain.create(PRACTICE_TARGET, sector, _combat, _npc_motor, NPC_TUNING as NpcAiTuning, true)
+	_npc_brain = NpcBrain.create(PRACTICE_TARGET, sector, _combat, _npc_motor, NPC_TUNING as NpcAiTuning, true, NPC_ROLE as NpcRoleProfile)
 	if _npc_brain == null:
 		push_error("VS-02 AI setup failed")
 		return
@@ -685,7 +686,7 @@ func _capture_entity_index(combat_state: Dictionary, npc_state: Dictionary, loot
 			"route": {"goal": npc_destination.duplicate(true), "patrol_index": int(npc_state["patrol_index"]), "intent_id": int(npc_state["intent_id"])},
 			"cooldowns": npc_cooldowns,
 			"inventory": {},
-			"payload": {"content_refs": []},
+			"payload": {"content_refs": [(NPC_ROLE as NpcRoleProfile).stable_id]},
 		},
 	]
 	return PersistentEntityIndex.build(records, registry)

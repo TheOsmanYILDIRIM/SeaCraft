@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="NpcRoleProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/ai/npc_role_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "ai_role.raider"
+patrol_travel_weight = 0.6
+avoid_threat_weight = 0.25
+investigate_protect_weight = 0.2
+pursue_aggression_weight = 1.95
+repair_safety_weight = 0.55
+switch_threshold = 0.1
+hold_bonus = 0.07
+minimum_decision_hold_ticks = 14
+interested_target_classes = PackedStringArray("ship", "monster")

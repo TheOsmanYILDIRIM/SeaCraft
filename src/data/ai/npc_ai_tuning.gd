@@ -3,6 +3,11 @@ extends Resource
 
 @export var decision_interval_ticks: int = 10
 @export var perception_radius: float = 280.0
+@export var perception_candidate_cap: int = 16
+@export var perception_query_cadence_ticks: int = 10
+@export var memory_max_entries: int = 8
+@export var memory_expiry_ticks: int = 300
+@export var bt_timeout_ticks: int = 90
 @export var max_threat: int = 1000
 @export var threat_per_damage: float = 20.0
 @export var threat_decay_interval_ticks: int = 30
@@ -30,6 +35,16 @@ func valid() -> bool:
 	if decision_interval_ticks < 6 or decision_interval_ticks > 15:
 		return false
 	if not _positive_finite(perception_radius) or perception_radius > SectorSpatialHash.MAX_RADIUS:
+		return false
+	if perception_candidate_cap <= 0 or perception_candidate_cap > SenseSnapshot.MAX_CANDIDATES:
+		return false
+	if perception_query_cadence_ticks <= 0 or perception_query_cadence_ticks > decision_interval_ticks:
+		return false
+	if memory_max_entries <= 0 or memory_max_entries > MemoryBlackboard.MAX_ENTRIES_LIMIT:
+		return false
+	if memory_expiry_ticks <= 0 or memory_expiry_ticks > CoreCombatRules.MAX_CLOCK:
+		return false
+	if bt_timeout_ticks <= 0 or bt_timeout_ticks > CoreCombatRules.MAX_DURATION:
 		return false
 	if max_threat <= 0 or max_threat > 100000 or not _positive_finite(threat_per_damage):
 		return false

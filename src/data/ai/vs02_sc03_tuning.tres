@@ -6,6 +6,11 @@
 script = ExtResource("1_tuning")
 decision_interval_ticks = 10
 perception_radius = 280.0
+perception_candidate_cap = 16
+perception_query_cadence_ticks = 10
+memory_max_entries = 8
+memory_expiry_ticks = 300
+bt_timeout_ticks = 90
 max_threat = 1000
 threat_per_damage = 20.0
 threat_decay_interval_ticks = 30

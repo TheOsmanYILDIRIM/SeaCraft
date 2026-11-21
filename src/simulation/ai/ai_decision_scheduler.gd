@@ -2,6 +2,9 @@ class_name AiDecisionScheduler
 extends RefCounted
 
 var decision_count: int = 0
+var last_tick_decisions: int = 0
+var max_decisions_observed: int = 0
+var due_checks: int = 0
 
 var _physics_tick: int = 0
 var _max_decisions_per_tick: int = 8
@@ -34,6 +37,7 @@ func register_brain(brain: NpcBrain, interval_ticks: int, stagger_offset: int = 
 
 func advance_physics_tick() -> int:
 	_physics_tick += 1
+	last_tick_decisions = 0
 	if _brains.is_empty():
 		return 0
 	var ran := 0
@@ -43,6 +47,7 @@ func advance_physics_tick() -> int:
 		if ran >= _max_decisions_per_tick:
 			break
 		var index := (_cursor + offset) % size
+		due_checks += 1
 		if _physics_tick < _next_due[index]:
 			continue
 		if _brains[index].decision_tick(_physics_tick):
@@ -51,6 +56,8 @@ func advance_physics_tick() -> int:
 		_next_due[index] = _physics_tick + _intervals[index]
 		last_index = index
 	_cursor = (last_index + 1) % size
+	last_tick_decisions = ran
+	max_decisions_observed = maxi(max_decisions_observed, ran)
 	return ran
 
 
@@ -60,6 +67,22 @@ func current_tick() -> int:
 
 func brain_count() -> int:
 	return _brains.size()
+
+
+func max_decisions_per_tick() -> int:
+	return _max_decisions_per_tick
+
+
+func telemetry() -> Dictionary:
+	return {
+		"physics_tick": _physics_tick,
+		"decision_count": decision_count,
+		"brain_count": _brains.size(),
+		"last_tick_decisions": last_tick_decisions,
+		"max_decisions_observed": max_decisions_observed,
+		"max_decisions_per_tick": _max_decisions_per_tick,
+		"due_checks": due_checks,
+	}
 
 
 func snapshot_state() -> Dictionary:
@@ -92,6 +115,9 @@ func restore_state(value: Variant) -> bool:
 	decision_count = int(state["decision_count"])
 	_pending_due_by_id = pending
 	_cursor = 0
+	last_tick_decisions = 0
+	max_decisions_observed = 0
+	due_checks = 0
 	return true
 
 

@@ -254,6 +254,13 @@ static func _validate_authoritative_content(authoritative: Dictionary, registry:
 			var object_sector: Variant = raw_object.get("sector_id", "")
 			if not object_sector is String or not registry.matches_type(object_sector, "sector"):
 				return "unknown_sector"
+	if authoritative.has("npc_ai"):
+		var npc_ai: Variant = authoritative["npc_ai"]
+		if not npc_ai is Dictionary:
+			return "invalid_authoritative_state"
+		var role_profile: Variant = npc_ai.get("role_profile_id", "")
+		if not role_profile is String or (not role_profile.is_empty() and not registry.matches_type(role_profile, "ai_role")):
+			return "unknown_content"
 	if authoritative.has("sector_world"):
 		var state: Variant = authoritative["sector_world"]
 		if not state is Dictionary:

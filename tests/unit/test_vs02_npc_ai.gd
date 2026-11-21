@@ -146,7 +146,7 @@ func test_waypoint_arrival_selects_next_waypoint() -> void:
 
 
 func test_perception_uses_spatial_hash() -> void:
-	var source := FileAccess.get_file_as_string("res://src/simulation/ai/npc_brain.gd")
+	var source := FileAccess.get_file_as_string("res://src/simulation/ai/perception_service.gd")
 	assert_true(source.contains("spatial.query_radius"))
 	assert_false(source.contains("_entities"))
 
@@ -430,10 +430,14 @@ func test_state_changes_are_centralized() -> void:
 	assert_eq(source.count("_state = next_state"), 1)
 
 
-func test_beehave_is_not_installed_for_small_vertical_slice() -> void:
-	assert_false(DirAccess.dir_exists_absolute("res://addons/beehave"))
+func test_beehave_is_pinned_and_manual_for_ai01() -> void:
+	assert_true(DirAccess.dir_exists_absolute("res://addons/beehave"))
+	var runner := FileAccess.get_file_as_string("res://src/simulation/ai/ai_bt_runner.gd")
+	assert_true(runner.contains("BeehaveTree.ProcessThread.MANUAL"))
+	assert_true(runner.contains("_tree.tick()"))
 	var readme := FileAccess.get_file_as_string("res://README.md")
-	assert_true(readme.contains("Beehave"))
+	assert_true(readme.contains("v2.9.3"))
+	assert_true(readme.contains("773a5f6dd9b3433cdb8735ab35e9043d4cd60674"))
 	assert_true(readme.contains("custom FSM"))
 
 
