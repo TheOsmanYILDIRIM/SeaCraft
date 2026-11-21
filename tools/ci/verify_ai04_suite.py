@@ -36,7 +36,7 @@ def main() -> None:
     path = Path(sys.argv[1])
     if not path.is_file():
         fail(f"missing log: {path}")
-    text = re.sub(r"\\x1b\\[[0-9;]*m", "", path.read_text(encoding="utf-8", errors="replace"))
+    text = re.sub(r"\x1b\[[0-9;]*m", "", path.read_text(encoding="utf-8", errors="replace"))
     if SCRIPT not in text:
         fail(f"missing suite {SCRIPT}")
     for needle in FATAL:
