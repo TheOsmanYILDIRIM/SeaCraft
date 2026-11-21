@@ -33,7 +33,10 @@ def fail(message: str) -> None:
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: verify_ai04_suite.py <gut.log>")
-    text = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
+    path = Path(sys.argv[1])
+    if not path.is_file():
+        fail(f"missing log: {path}")
+    text = re.sub(r"\\x1b\\[[0-9;]*m", "", path.read_text(encoding="utf-8", errors="replace"))
     if SCRIPT not in text:
         fail(f"missing suite {SCRIPT}")
     for needle in FATAL:
