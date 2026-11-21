@@ -174,6 +174,23 @@ func restore_hazard_state(value: Variant) -> bool:
 	return true
 
 
+func route_cost(route: PackedVector2Array) -> float:
+	if route.size() < 2:
+		return INF
+	var total := 0.0
+	for index in range(1, route.size()):
+		var segment := route[index - 1].distance_to(route[index])
+		if not is_finite(segment):
+			return INF
+		var weight := 1.0
+		for point_index in _point_count:
+			if _astar.get_point_position(point_index).is_equal_approx(route[index]):
+				weight = _astar.get_point_weight_scale(point_index)
+				break
+		total += segment * weight
+	return total if is_finite(total) else INF
+
+
 static func hazard_weight(storm: float, shallows: float, area: float, faction: float) -> float:
 	if not is_finite(storm) or not is_finite(shallows) or not is_finite(area) or not is_finite(faction):
 		return 0.0
