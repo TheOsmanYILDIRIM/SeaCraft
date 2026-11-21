@@ -5,7 +5,7 @@ extends RefCounted
 static func build(index: int, sector_id: String) -> Dictionary:
 	if index < 0 or index > 99 or not SectorIds.valid(sector_id):
 		return {}
-	var suffix := "%02d" % index
+	var suffix := "c%02d" % index
 	var fleet_id := "fleet.ai03.convoy.%s" % suffix
 	var leader := "entity.ai03.merchant.%s" % suffix
 	var escort_a := "entity.ai03.escort.%s.a" % suffix

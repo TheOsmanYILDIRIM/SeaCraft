@@ -218,7 +218,7 @@ func support_request() -> Dictionary:
 	if str(_last_tactical.get("tactical_intent", "")) != TacticalDecision.SUPPORT:
 		return {}
 	return {
-		"support_id": "support.%s.%d" % [_entity_id, _decision_sequence],
+		"support_id": "support.%s.s%d" % [_entity_id, _decision_sequence],
 		"requester_id": _entity_id,
 		"target_id": str(_last_tactical.get("target_id", "")),
 		"decision_sequence": _decision_sequence,

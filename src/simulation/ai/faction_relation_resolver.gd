@@ -28,7 +28,8 @@ func set_relation(faction_a: String, faction_b: String, value: String) -> bool:
 		return true
 	if not _relations.has(key) and _relations.size() >= MAX_RELATIONS:
 		return false
-	_relations[key] = {"a": min(faction_a, faction_b), "b": max(faction_a, faction_b), "relation": value}
+	var ordered := _ordered(faction_a, faction_b)
+	_relations[key] = {"a": ordered[0], "b": ordered[1], "relation": value}
 	return true
 
 
@@ -75,10 +76,18 @@ func restore_state(value: Variant) -> bool:
 		var key := _key(a, b)
 		if planned.has(key):
 			return false
-		planned[key] = {"a": min(a, b), "b": max(a, b), "relation": rel}
+		var ordered := _ordered(a, b)
+		planned[key] = {"a": ordered[0], "b": ordered[1], "relation": rel}
 	_relations = planned
 	return true
 
 
+static func _ordered(a: String, b: String) -> Array[String]:
+	var ordered: Array[String] = [a, b]
+	ordered.sort()
+	return ordered
+
+
 static func _key(a: String, b: String) -> String:
-	return "%s|%s" % [min(a, b), max(a, b)]
+	var ordered := _ordered(a, b)
+	return "%s|%s" % [ordered[0], ordered[1]]

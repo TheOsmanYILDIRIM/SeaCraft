@@ -12,16 +12,18 @@ func test_ai03_formation_slots_deterministic_insertion_independent_and_hystereti
 	var b := FleetCoordinator.new(true)
 	assert_true(a.register_fleet(fixture))
 	assert_true(b.register_fleet(reversed))
-	for formation in [FleetCoordinator.COLUMN, FleetCoordinator.LINE, FleetCoordinator.WEDGE]:
+	var formations := [FleetCoordinator.COLUMN, FleetCoordinator.LINE, FleetCoordinator.WEDGE]
+	for index in formations.size():
+		var formation: String = formations[index]
+		var base_tick := 10 + index * 40
 		assert_true(a.set_formation(fixture["fleet_id"], formation))
 		assert_true(b.set_formation(fixture["fleet_id"], formation))
 		assert_eq(a.formation_slots(fixture["fleet_id"]), b.formation_slots(fixture["fleet_id"]), formation)
-		var first := a.formation_commands(fixture["fleet_id"], Vector2(100, 100), 0.0, 10)
+		var first := a.formation_commands(fixture["fleet_id"], Vector2(100, 100), 0.0, base_tick)
 		assert_true(DtoContract.is_primitive_safe(first))
 		assert_gt(first.size(), 0)
-		var jitter := a.formation_commands(fixture["fleet_id"], Vector2(101, 100), 0.0, 11)
+		var jitter := a.formation_commands(fixture["fleet_id"], Vector2(101, 100), 0.0, base_tick + 1)
 		assert_eq(jitter.size(), 0)
-		a.begin_tick(40)
 	assert_eq((a.formation_slots(fixture["fleet_id"]) as Array).size(), 3)
 	print("AI03_FORMATION_SLOTS_OK")
 
@@ -41,7 +43,10 @@ func test_ai03_convoy_ambush_break_preserves_local_tactical_ai_then_regroups() -
 	var hostile_id := "entity.ai03.ambush.hostile"
 	assert_true(sector.register_entity(escort_id, Vector2(-420, 120)))
 	assert_true(sector.register_entity(hostile_id, Vector2(-220, 120)))
+	var relations := FactionRelationResolver.new(true)
+	assert_true(relations.set_relation("faction.ai03.convoy", "faction.ai03.hostile", FactionRelationResolver.HOSTILE))
 	var combat := CombatAuthority.new(sector, SeedStreams.new(9301), 60)
+	assert_true(combat.bind_relation_resolver(relations))
 	assert_true(combat.register(escort_id, "faction.ai03.convoy", 200.0, _weapon()))
 	assert_true(combat.register(hostile_id, "faction.ai03.hostile", 200.0))
 	var motor := ShipMotor.new()
@@ -50,13 +55,27 @@ func test_ai03_convoy_ambush_break_preserves_local_tactical_ai_then_regroups() -
 	motor.global_position = sector.entity_position(escort_id)
 	var brain := NpcBrain.create(escort_id, sector, combat, motor, TUNING as NpcAiTuning, true, ESCORT_PROFILE as NpcRoleProfile)
 	assert_not_null(brain)
-	var slot_command := FleetCommand.create(fleet_id, fixture["leader_id"], escort_id, "command.ai03.local.1", FleetCommand.OCCUPY_SLOT, fixture["leader_id"], Vector2(-300, 120), {}, 1, 1, "formation_slot")
+	var slot_command := FleetCommand.create(fleet_id, fixture["leader_id"], escort_id, "command.ai03.local.s1", FleetCommand.OCCUPY_SLOT, fixture["leader_id"], Vector2(-300, 120), {}, 1, 1, "formation_slot")
 	assert_true(brain.set_fleet_command(slot_command))
 	assert_true(brain.decision_tick(10))
 	assert_eq(brain.state_id(), NpcBrain.State.ALERT)
 	assert_gt(int(brain.telemetry()["tactical_evaluation_count"]), 0)
+	assert_true(relations.set_relation("faction.ai03.convoy", "faction.ai03.hostile", FactionRelationResolver.NEUTRAL))
 	assert_true(coordinator.set_threat(fleet_id, false, false))
 	assert_eq(coordinator.fleet_snapshot(fleet_id)["fleet_state"], FleetCoordinator.REGROUP)
+	var regroup_commands := coordinator.formation_commands(fleet_id, Vector2(-520, 160), 0.0, 20)
+	var regroup_command: Dictionary = {}
+	for command in regroup_commands:
+		if command["member_id"] == escort_id:
+			regroup_command = command
+			break
+	assert_false(regroup_command.is_empty())
+	assert_true(brain.set_fleet_command(regroup_command))
+	var path_before := int(brain.telemetry()["path_request_count"])
+	assert_true(brain.decision_tick(20))
+	assert_eq(brain.state_id(), NpcBrain.State.PATROL)
+	assert_gt(int(brain.telemetry()["path_request_count"]), path_before)
+	assert_true(motor.has_target())
 	assert_true(coordinator.complete_regroup(fleet_id))
 	assert_eq(coordinator.fleet_snapshot(fleet_id)["fleet_state"], FleetCoordinator.FORMATION)
 	print("AI03_CONVOY_AMBUSH_OK")
@@ -71,7 +90,7 @@ func test_ai03_leader_loss_selects_deterministic_successor_and_preserves_fleet_j
 	assert_true(coordinator.mark_member_status(fleet_id, fixture["leader_id"], false, false, FoundationSector.ID))
 	var fleet := coordinator.fleet_snapshot(fleet_id)
 	assert_eq(fleet["fleet_id"], fleet_id)
-	assert_eq(fleet["leader_id"], "entity.ai03.escort.02.a")
+	assert_eq(fleet["leader_id"], "entity.ai03.escort.c02.a")
 	assert_eq(fleet["world_job"], before_job)
 	assert_eq(fleet["fleet_state"], FleetCoordinator.REGROUP)
 	assert_eq(int(coordinator.telemetry()["succession_count"]), 1)
@@ -182,12 +201,21 @@ func test_ai03_support_intent_dispatch_is_existing_member_bounded_and_loop_guard
 	var coordinator := FleetCoordinator.new(true)
 	assert_true(coordinator.register_fleet(fixture))
 	var before_members := coordinator.member_count()
-	var first := coordinator.dispatch_support(fixture["fleet_id"], "support.ai03.4.1", fixture["leader_id"], "entity.ai03.support.target", 20, 0)
+	var request := {
+		"support_id": "support.ai03.c04.s01",
+		"requester_id": fixture["leader_id"],
+		"target_id": "entity.ai03.support.target",
+		"decision_sequence": 1,
+	}
+	var first := coordinator.consume_support_request(fixture["fleet_id"], request, 20, 0)
 	assert_eq(first.size(), 2)
 	for command in first:
 		assert_eq(command["kind"], FleetCommand.SUPPORT_RESPONSE)
-	assert_eq(coordinator.dispatch_support(fixture["fleet_id"], "support.ai03.4.1", fixture["leader_id"], "entity.ai03.support.target", 21, 1).size(), 0)
-	assert_eq(coordinator.dispatch_support(fixture["fleet_id"], "support.ai03.4.2", fixture["leader_id"], "entity.ai03.support.target", 22, 3).size(), 0)
+	assert_eq(coordinator.consume_support_request(fixture["fleet_id"], request, 21, 1).size(), 0)
+	var over_hop := request.duplicate(true)
+	over_hop["support_id"] = "support.ai03.c04.s02"
+	over_hop["decision_sequence"] = 2
+	assert_eq(coordinator.consume_support_request(fixture["fleet_id"], over_hop, 22, 3).size(), 0)
 	assert_eq(coordinator.member_count(), before_members)
 	print("AI03_SUPPORT_RESPONSE_OK")
 
@@ -227,6 +255,13 @@ func test_ai03_fleet_persistence_roundtrip_ambush_and_restore_succession() -> vo
 	var dto := SaveSnapshot.capture(sector, "entity.ai03.persist.player", ship, SeedStreams.new(9304), SaveSnapshot.LOCAL, "", SaveSnapshot.empty_loot_state(), {"fleet": saved})
 	assert_false(dto.is_empty())
 	assert_eq(SaveSnapshot.authoritative_state(dto)["fleet"], saved)
+	var disabled_fleet := FleetCoordinator.new(false)
+	assert_false(disabled_fleet.register_fleet(fixture))
+	assert_eq(disabled_fleet.fleet_count(), 0)
+	var disabled_dock := DockAuthority.new(false)
+	assert_false(disabled_dock.register_dock("dock.ai03.disabled", FoundationSector.ID, 1, Vector2.ZERO))
+	var disabled_relations := FactionRelationResolver.new(false)
+	assert_false(disabled_relations.set_relation("faction.ai03.alpha", "faction.ai03.beta", FactionRelationResolver.HOSTILE))
 	print("AI03_PERSISTENCE_OK")
 
 
@@ -256,7 +291,7 @@ func test_ai03_24_ship_fixture_respects_formation_path_and_queue_budgets() -> vo
 	var dock := DockAuthority.new(true)
 	assert_true(dock.register_dock("dock.ai03.budget", FoundationSector.ID, 2, Vector2.ZERO))
 	for i in 24:
-		assert_true(dock.request("dock.ai03.budget", "entity.ai03.queue.%02d" % i, i))
+		assert_true(dock.request("dock.ai03.budget", "entity.ai03.queue.q%02d" % i, i))
 	var metrics := coordinator.telemetry()
 	print("AI03_FLEET_BUDGET_OK fleet_count=%d ship_count=%d formation_updates=%d max_formation_updates_per_tick=%d path_requests=%d max_path_jobs_per_tick=%d dock_queue_max=%d succession_count=%d break_reform_count=%d support_dispatch_count=%d bt_failures=0 bt_timeouts=0" % [
 		coordinator.fleet_count(), coordinator.member_count(), int(metrics["formation_updates"]),

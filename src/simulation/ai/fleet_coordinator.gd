@@ -176,7 +176,7 @@ func formation_commands(fleet_id: String, leader_position: Vector2, leader_headi
 		var reason := "regroup_to_slot" if fleet["fleet_state"] == REGROUP else "formation_slot"
 		var command := FleetCommand.create(
 			fleet_id, str(fleet["leader_id"]), str(member["member_id"]),
-			"command.%s.%d" % [fleet_id, sequence], kind, str(fleet["fleet_goal_id"]),
+			"command.%s.s%06d" % [fleet_id, sequence], kind, str(fleet["fleet_goal_id"]),
 			destination, slot, tick, sequence, reason
 		)
 		if command.is_empty():
@@ -271,6 +271,22 @@ func advance_world_job(fleet_id: String, phase: String, progress: float) -> bool
 	return true
 
 
+func consume_support_request(fleet_id: String, request: Dictionary, tick: int, hop_count: int = 0) -> Array:
+	if not DtoContract.is_primitive_safe(request):
+		return []
+	var support_id := str(request.get("support_id", ""))
+	var requester_id := str(request.get("requester_id", ""))
+	var target_id := str(request.get("target_id", ""))
+	var decision_sequence: Variant = request.get("decision_sequence", -1)
+	if not SectorIds.valid(support_id) or not SectorIds.valid(requester_id):
+		return []
+	if not target_id.is_empty() and not SectorIds.valid(target_id):
+		return []
+	if typeof(decision_sequence) not in [TYPE_INT, TYPE_FLOAT] or int(decision_sequence) < 0 or float(decision_sequence) != float(int(decision_sequence)):
+		return []
+	return dispatch_support(fleet_id, support_id, requester_id, target_id, tick, hop_count)
+
+
 func dispatch_support(fleet_id: String, support_id: String, requester_id: String, target_id: String,
 		tick: int, hop_count: int = 0) -> Array:
 	var commands: Array = []
@@ -298,7 +314,7 @@ func dispatch_support(fleet_id: String, support_id: String, requester_id: String
 		var sequence := int(fleet["commander_sequence"])
 		var command := FleetCommand.create(
 			fleet_id, str(fleet["leader_id"]), str(raw["member_id"]),
-			"command.%s.%d" % [fleet_id, sequence], FleetCommand.SUPPORT_RESPONSE,
+			"command.%s.s%06d" % [fleet_id, sequence], FleetCommand.SUPPORT_RESPONSE,
 			target_id, Vector2.INF, {}, tick, sequence, "bounded_existing_fleet_support"
 		)
 		if not command.is_empty():
@@ -407,7 +423,7 @@ func _assign_slots(fleet: Dictionary) -> void:
 	var candidates: Array = []
 	for raw in fleet["members"]:
 		raw["slot_index"] = -1
-		if raw["member_id"] != leader_id:
+		if raw["member_id"] != leader_id and bool(raw["alive"]) and bool(raw["available"]) and str(raw["sector_id"]) == str(fleet["sector_id"]):
 			candidates.append(raw)
 	candidates.sort_custom(_member_before)
 	var slots := _slot_definitions(str(fleet["formation_type"]), candidates.size())
