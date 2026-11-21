@@ -24,6 +24,15 @@ var decision_count: int = 0
 var perception_query_count: int = 0
 var perception_candidate_count: int = 0
 var utility_evaluation_count: int = 0
+var tactical_evaluation_count: int = 0
+var tactical_fire_transactions: int = 0
+var tactical_boarding_attempts: int = 0
+var tactical_support_intents: int = 0
+var tactical_ammo_selects: int = 0
+var max_tactical_targets_evaluated: int = 0
+var max_tactical_ammo_evaluated: int = 0
+var max_tactical_escape_evaluated: int = 0
+var max_tactical_line_of_fire_inspected: int = 0
 
 var _valid := false
 var _authority_enabled := true
@@ -63,6 +72,14 @@ var _last_sense_query_tick := -1
 var _sense_snapshot: Dictionary = {}
 var _last_utility: Dictionary = {}
 var _last_bt_status := -1
+var _last_tactical: Dictionary = {}
+var _tactical_state := {
+	"range_band": "",
+	"desired_side": 0,
+	"next_support_tick": 0,
+	"last_intent": TacticalDecision.NONE,
+	"last_target_id": "",
+}
 
 
 static func create(entity_id: String, sector: SectorRuntime, combat: CombatAuthority, motor: ShipMotor,
@@ -141,17 +158,28 @@ func decision_tick(simulation_tick: int) -> bool:
 		return false
 	utility_evaluation_count += 1
 	_last_utility = decision.duplicate(true)
-	match _state:
-		State.PATROL:
-			_decide_patrol(hull_ratio, decision)
-		State.ALERT:
-			_decide_alert(hull_ratio, decision)
-		State.RETREAT:
-			_decide_retreat(hull_ratio)
-		State.REPAIR:
-			_decide_repair(hull_ratio)
-		State.RESUME:
-			_decide_resume(hull_ratio, decision)
+	var tactical := _evaluate_tactical(decision, simulation_tick)
+	var tactical_forced_retreat := false
+	if not tactical.is_empty() and str(tactical.get("tactical_intent", "")) == TacticalDecision.RETREAT and _state in [State.PATROL, State.ALERT, State.RESUME]:
+		var tactical_target := str(tactical.get("target_id", _decision_target(decision)))
+		if _transition(State.RETREAT, "tactical_disadvantage"):
+			_start_retreat(tactical_target)
+			_apply_tactical_maneuver(tactical)
+			tactical_forced_retreat = true
+	if not tactical_forced_retreat:
+		match _state:
+			State.PATROL:
+				_decide_patrol(hull_ratio, decision)
+			State.ALERT:
+				_decide_alert(hull_ratio, decision)
+			State.RETREAT:
+				_decide_retreat(hull_ratio)
+			State.REPAIR:
+				_decide_repair(hull_ratio)
+			State.RESUME:
+				_decide_resume(hull_ratio, decision)
+	if not tactical.is_empty() and _state in [State.ALERT, State.RETREAT]:
+		_apply_tactical_maneuver(tactical)
 	var actual_hysteresis: Dictionary = decision["hysteresis_state"].duplicate(true)
 	if int(decision["selected_intent_id"]) != _intent or str(decision["selected_target_id"]) != _target_entity_id:
 		actual_hysteresis = {
@@ -162,6 +190,7 @@ func decision_tick(simulation_tick: int) -> bool:
 		}
 	_memory.commit_decision(_intent, str(actual_hysteresis["target_id"]), float(decision["score"]), simulation_tick, actual_hysteresis)
 	_last_bt_status = _bt.tick_intent(_intent, simulation_tick, _tuning.bt_timeout_ticks)
+	_execute_tactical_authority(tactical)
 	return true
 
 
@@ -241,6 +270,11 @@ func snapshot() -> Dictionary:
 		"decision_sequence": _decision_sequence,
 		"decision_tick": _last_decision_tick,
 		"bt_status": _last_bt_status,
+		"tactical_intent": str(_last_tactical.get("tactical_intent", TacticalDecision.NONE)),
+		"tactical_maneuver": str(_last_tactical.get("maneuver_id", "")),
+		"tactical_ammo_id": str(_last_tactical.get("selected_ammo_id", "")),
+		"tactical_boarding": str(_last_tactical.get("tactical_intent", "")) == TacticalDecision.BOARD,
+		"tactical_support": str(_last_tactical.get("tactical_intent", "")) == TacticalDecision.SUPPORT,
 	}
 
 
@@ -261,6 +295,15 @@ func telemetry() -> Dictionary:
 		"bt_tree_tick_count": int(bt_data["tree_tick_count"]),
 		"bt_failure_count": int(bt_data["failure_count"]),
 		"bt_timeout_count": int(bt_data["timeout_count"]),
+		"tactical_evaluation_count": tactical_evaluation_count,
+		"max_tactical_targets_evaluated": max_tactical_targets_evaluated,
+		"max_tactical_ammo_evaluated": max_tactical_ammo_evaluated,
+		"max_tactical_escape_evaluated": max_tactical_escape_evaluated,
+		"max_tactical_line_of_fire_inspected": max_tactical_line_of_fire_inspected,
+		"tactical_fire_transactions": tactical_fire_transactions,
+		"tactical_boarding_attempts": tactical_boarding_attempts,
+		"tactical_support_intents": tactical_support_intents,
+		"tactical_ammo_selects": tactical_ammo_selects,
 	}
 
 
@@ -285,6 +328,7 @@ func persistence_state() -> Dictionary:
 		"memory": _memory.snapshot_state(),
 		"bt": _bt.persistence_state(),
 		"last_sense_query_tick": _last_sense_query_tick,
+		"tactical_state": _tactical_state.duplicate(true),
 	}
 
 
@@ -292,7 +336,7 @@ func restore_state(value: Variant) -> bool:
 	if not _valid or not value is Dictionary or not DtoContract.is_primitive_safe(value):
 		return false
 	var state: Dictionary = value
-	if state.size() not in [15, 19]:
+	if state.size() not in [15, 19, 20]:
 		return false
 	if state.get("npc_stable_id") != _entity_id or not state.get("sunk") is bool:
 		return false
@@ -358,6 +402,15 @@ func restore_state(value: Variant) -> bool:
 	var last_sense_tick := int(state.get("last_sense_query_tick", -1))
 	if last_sense_tick < -1:
 		return false
+	var tactical_source: Variant = state.get("tactical_state", {
+		"range_band": "",
+		"desired_side": 0,
+		"next_support_tick": 0,
+		"last_intent": TacticalDecision.NONE,
+		"last_target_id": "",
+	})
+	if not TacticalDecision.valid_persistent_state(tactical_source):
+		return false
 	var bt_state: Dictionary = state.get("bt", {"intent_id": -1, "action_kind": "", "started_tick": -1, "last_status": -1})
 	if not _bt.restore_state(bt_state):
 		return false
@@ -376,12 +429,102 @@ func restore_state(value: Variant) -> bool:
 	_next_repair_tick = int(state["next_repair_tick"])
 	_last_damage_sequence = int(state["last_damage_sequence"])
 	_last_sense_query_tick = last_sense_tick
+	_tactical_state = (tactical_source as Dictionary).duplicate(true)
+	_last_tactical.clear()
 	_memory = memory_probe
 	_sense_snapshot.clear()
 	if _sunk:
 		_bt.interrupt()
 		_executor.stop()
 	return true
+
+
+func _evaluate_tactical(high_level_decision: Dictionary, simulation_tick: int) -> Dictionary:
+	var preferred_target := _decision_target(high_level_decision)
+	var previous := _tactical_state.duplicate(true)
+	if not preferred_target.is_empty():
+		previous["last_target_id"] = preferred_target
+	var context := TacticalContext.capture(
+		_entity_id,
+		simulation_tick,
+		_sector,
+		_combat,
+		_motor.current_heading(),
+		_motor.velocity.length(),
+		_state,
+		_intent,
+		_sense_snapshot,
+		_memory.snapshot_state(),
+		_tuning,
+		_role,
+		previous
+	)
+	if context.is_empty():
+		_last_tactical.clear()
+		return {}
+	var tactical := TacticalDecision.evaluate(context, _decision_sequence)
+	if tactical.is_empty():
+		_last_tactical.clear()
+		return {}
+	tactical_evaluation_count += 1
+	max_tactical_targets_evaluated = maxi(max_tactical_targets_evaluated, (context.get("targets", []) as Array).size())
+	var actor: Dictionary = context.get("actor", {})
+	max_tactical_ammo_evaluated = maxi(max_tactical_ammo_evaluated, (actor.get("ammo_candidates", []) as Array).size())
+	max_tactical_escape_evaluated = maxi(max_tactical_escape_evaluated, (context.get("escape_candidates", []) as Array).size())
+	for raw in context.get("targets", []):
+		if raw is Dictionary:
+			max_tactical_line_of_fire_inspected = maxi(max_tactical_line_of_fire_inspected, int(raw.get("line_of_fire_inspected", 0)))
+	_last_tactical = tactical.duplicate(true)
+	_tactical_state = TacticalDecision.persistent_state(tactical, _tactical_state, _tuning.support_cooldown_ticks)
+	return tactical
+
+
+func _apply_tactical_maneuver(tactical: Dictionary) -> void:
+	var destination: Variant = tactical.get("destination")
+	if not destination is Dictionary:
+		return
+	var point := Vector2(float(destination.get("x", INF)), float(destination.get("y", INF)))
+	if not point.is_finite():
+		return
+	var maneuver := str(tactical.get("maneuver_id", ""))
+	if maneuver == TacticalDecision.RETREAT_MANEUVER:
+		_selected_safe_id = str((tactical.get("factors", {}) as Dictionary).get("escape_id", _selected_safe_id))
+	if maneuver in [TacticalDecision.CLOSE_RANGE, TacticalDecision.OPEN_RANGE, TacticalDecision.ALIGN_BROADSIDE, TacticalDecision.RETREAT_MANEUVER]:
+		if _sector.navigation.accessible(point):
+			_destination = point
+	elif maneuver in [TacticalDecision.HOLD_RANGE, TacticalDecision.REPAIR_WINDOW]:
+		_destination = _sector.entity_position(_entity_id)
+
+
+func _execute_tactical_authority(tactical: Dictionary) -> void:
+	if tactical.is_empty() or not _authority_enabled or _sunk:
+		return
+	var target_id := str(tactical.get("target_id", ""))
+	var intent := str(tactical.get("tactical_intent", TacticalDecision.NONE))
+	if intent == TacticalDecision.SUPPORT:
+		tactical_support_intents += 1
+		return
+	if target_id.is_empty() or not _combat.has_combatant(target_id):
+		return
+	if intent == TacticalDecision.ACQUIRE_TARGET:
+		_combat.select(_entity_id, target_id)
+		return
+	var selected_ammo := str(tactical.get("selected_ammo_id", ""))
+	var combat_snapshot := _combat.tactical_snapshot(_entity_id, [target_id], _motor.current_heading(), _tuning.perception_radius, 1, _tuning.max_ammo_candidates, _tuning.max_line_of_fire_inspected)
+	var actor: Dictionary = combat_snapshot.get("actor", {})
+	if bool(actor.get("requires_ammo", false)) and not selected_ammo.is_empty() and selected_ammo != str(actor.get("selected_ammo_id", "")):
+		var ammo_result := _combat.transact(_entity_id, CombatAuthority.intent(CombatAuthority.AMMO_SELECT, selected_ammo))
+		if bool(ammo_result.get("accepted", false)):
+			tactical_ammo_selects += 1
+		return
+	if intent == TacticalDecision.BOARD:
+		tactical_boarding_attempts += 1
+		_combat.transact(_entity_id, CombatAuthority.intent(CombatAuthority.BOARD, target_id))
+		return
+	if intent == TacticalDecision.FIRE and bool(tactical.get("fire_allowed", false)):
+		var fire_result := _combat.fire(_entity_id, _motor.current_heading(), CombatAuthority.fire_intent(target_id))
+		if bool(fire_result.get("accepted", false)):
+			tactical_fire_transactions += 1
 
 
 func _capture_sense(simulation_tick: int) -> bool:
