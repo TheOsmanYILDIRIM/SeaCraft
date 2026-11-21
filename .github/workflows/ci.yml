@@ -24,7 +24,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 + NET-01 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -46,7 +46,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${api}" \
-            -d "{\"state\":\"pending\",\"context\":\"seacraft-ai04-evidence\",\"description\":\"AI-04 CI run ${GITHUB_RUN_ID}\",\"target_url\":\"${target}\"}"
+            -d "{\"state\":\"pending\",\"context\":\"seacraft-net01-evidence\",\"description\":\"NET-01 CI run ${GITHUB_RUN_ID}\",\"target_url\":\"${target}\"}"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -106,7 +106,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT full suite through AI-04
+      - name: GUT full suite through NET-01
         shell: bash
         run: |
           set -euo pipefail
@@ -123,6 +123,7 @@ jobs:
           grep -Fq "test_ai02_tactical_combat.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_ai03_fleet_world.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_ai04_world_lod.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_net01_session.gd" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"
@@ -139,6 +140,14 @@ jobs:
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
           fi
+
+      - name: NET-01 real ENet process integration
+        shell: bash
+        run: ./tools/ci/run_net01_process_integration.sh "$RUNNER_TEMP/net01-process.log"
+
+      - name: Verify NET-01 contract and real process execution
+        shell: bash
+        run: python3 tools/ci/verify_net01_suite.py "$RUNNER_TEMP/gut.log" "$RUNNER_TEMP/net01-process.log"
 
       - name: Verify VS-04 full integration execution
         shell: bash
@@ -266,8 +275,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --include='*.gd' 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|@rpc|rpc\(' src; then
-            echo "Foundation source unexpectedly contains network/internet API usage." >&2
+          if grep -RInE --include='*.gd' 'HTTPRequest|HTTPClient|WebSocketPeer|ENetMultiplayerPeer|MultiplayerAPI|SceneMultiplayer|@rpc|rpc\(|multiplayer_peer|get_remote_sender_id' src/simulation src/data src/persistence src/presentation; then
+            echo "Offline-authority source unexpectedly contains network API usage outside src/network." >&2
             exit 1
           fi
           if grep -RInE --include='*.gd' 'get_tree\(\)\.multiplayer|multiplayer_peer' src/simulation; then
@@ -364,6 +373,8 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-badging.txt"
           grep -q "package: name='com.osmanyildirim.seacraft'" "$RUNNER_TEMP/apk-badging.txt"
           grep -Fx "native-code: 'arm64-v8a'" "$RUNNER_TEMP/apk-badging.txt"
+          "$ANDROID_HOME/build-tools/35.0.1/aapt" dump permissions build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-permissions.txt"
+          grep -Fq "uses-permission: name='android.permission.INTERNET'" "$RUNNER_TEMP/apk-permissions.txt"
 
       - name: Record artifact provenance
         shell: bash
@@ -378,7 +389,7 @@ jobs:
         id: build_artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-AI04-${{ github.sha }}
+          name: SeaCraft-NET01-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -401,7 +412,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          archive="$RUNNER_TEMP/ai04-artifact.zip"
+          archive="$RUNNER_TEMP/net01-artifact.zip"
           api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
           ok=0
           for attempt in {1..12}; do
@@ -421,14 +432,14 @@ jobs:
           [[ "$ok" == "1" ]]
           zip_sha="$(sha256sum "$archive" | awk '{print $1}')"
           [[ "$zip_sha" =~ ^[a-f0-9]{64}$ ]]
-          unpack="$RUNNER_TEMP/ai04-readback"
+          unpack="$RUNNER_TEMP/net01-readback"
           rm -rf "$unpack"
           mkdir -p "$unpack"
           unzip -q "$archive" -d "$unpack"
           printf '%s\n' "$GITHUB_SHA" | cmp - "$unpack/COMMIT_SHA.txt"
           cmp build/SHA256SUMS.txt "$unpack/SHA256SUMS.txt"
           (cd "$unpack" && sha256sum -c SHA256SUMS.txt)
-          echo "AI04_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
+          echo "NET01_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
 
       - name: Publish final CI status
         if: always()
@@ -450,4 +461,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${api}" \
-            -d "{\"state\":\"${state}\",\"context\":\"seacraft-ai04-evidence\",\"description\":\"AI-04 CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"
+            -d "{\"state\":\"${state}\",\"context\":\"seacraft-net01-evidence\",\"description\":\"NET-01 CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"

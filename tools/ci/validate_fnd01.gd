@@ -46,6 +46,7 @@ func _check_required_paths() -> void:
 		"res://src/simulation",
 		"res://src/presentation",
 		"res://src/data",
+		"res://src/network",
 		"res://tests",
 	]:
 		if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(path)):
@@ -86,6 +87,9 @@ func _check_export_presets() -> void:
 			var export_path := str(config.get_value(section, "export_path", ""))
 			if not export_path.ends_with(".apk"):
 				_failures.append("Android preset export_path must be an APK")
+			var options_section := section + ".options"
+			if not bool(config.get_value(options_section, "permissions/internet", false)):
+				_failures.append("Android preset must request INTERNET for NET-01 LAN sessions")
 
 	if not found_linux:
 		_failures.append("Linux desktop export preset missing")
