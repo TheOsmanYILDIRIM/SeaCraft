@@ -71,10 +71,9 @@ func test_ai03_convoy_ambush_break_preserves_local_tactical_ai_then_regroups() -
 			break
 	assert_false(regroup_command.is_empty())
 	assert_true(brain.set_fleet_command(regroup_command))
-	var path_before := int(brain.telemetry()["path_request_count"])
 	assert_true(brain.decision_tick(20))
 	assert_eq(brain.state_id(), NpcBrain.State.PATROL)
-	assert_gt(int(brain.telemetry()["path_request_count"]), path_before)
+	assert_eq(brain.snapshot()["destination"], regroup_command["destination"])
 	assert_true(motor.has_target())
 	assert_true(coordinator.complete_regroup(fleet_id))
 	assert_eq(coordinator.fleet_snapshot(fleet_id)["fleet_state"], FleetCoordinator.FORMATION)
