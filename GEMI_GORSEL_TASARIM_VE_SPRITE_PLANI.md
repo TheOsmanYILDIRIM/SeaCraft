@@ -212,6 +212,10 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ## 8. GPT Image hattı
 
+**Zorunlu çıktı kuralı:** GPT Image ile üretilen her master, hero, concept/reference, tek yön ve 8-yön radial pano **STRICT 1:1 SQUARE IMAGE** olmalıdır. Width = height şartı promptun başında ve sonunda açıkça yazılır. Kare olmayan 4×2 atlaslar GPT Image içinde üretilmez; harici kodla monte edilir.
+
+**İlk master promptu düzenleme değildir:** İlk gemi masterında henüz görsel referans yoksa `attached reference`, `same vessel as attached`, `edit`, `modify` veya benzeri referans/düzenleme dili kullanma. Doğrudan `Create ... in a STRICT 1:1 SQUARE FORMAT.` ile sıfırdan üretim iste. Referans dili yalnız gerçek referans görseli eklendiği sonraki aşamalarda kullanılır.
+
 | Yaklaşım | Karar |
 |---|---|
 | Tek istekle 8 yön sheet | Hayır: sıra, perspektif, ölçek, parça sayısı ve kenar kalitesi aynı anda kayar. Tek kareyi düzeltmek zorlaşır. |

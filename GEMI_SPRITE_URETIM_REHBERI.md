@@ -470,3 +470,24 @@ Bu nedenle kanonik final kabul sırası:
 SC-03 üzerinde ayrıca boy/en ekseni ve elle landmark işaretleme deneyleri yapıldı. Bunlar veri analizinde yararlı olsa da görsel sonucu support-anchor yönteminden güvenilir biçimde daha iyi yapmadı ve manuel iş yükü ekledi; bu nedenle varsayılan üretim hattına alınmadı.
 
 **Kural:** direk tepesi, yelken bbox'ı veya full-alpha merkezi final anchor değildir. Ana anchor gövdenin denize oturan yoğun destek yapısıdır. Manuel landmark/JSON normal üretim girdisi değildir.
+
+
+## 15. GPT Image prompt ve 1:1 kare çıktı kuralı
+
+Tüm GPT Image üretim isteklerinde **ABSOLUTE OUTPUT REQUIREMENT = STRICT 1:1 SQUARE IMAGE** yazılır. Bu kural master/hero, tek yön sprite, concept/reference ve 8-yön radial referans panosu için aynıdır. Genişlik ve yükseklik eşit olmalıdır. 4×2 final atlas gibi kare olmayan paketler GPT Image içinde üretilmez; ayrı kod/normalizasyon aşamasında monte edilir.
+
+İlk master/hero görseli **sıfırdan üretim** olarak istenir. İlk promptta “attached reference”, “same vessel as attached”, “edit”, “modify”, “use reference 1/2” gibi düzenleme çağrıştıran dil kullanılmaz. Önce gemi doğrudan tarif edilerek tek 1:1 master üretilir. Referans kullanan dil yalnız ikinci ve sonraki aşamalarda, gerçekten görsel referans eklendiğinde kullanılır.
+
+İlk master promptunun zorunlu iskeleti:
+
+- ilk cümlede `Create ... in a STRICT 1:1 SQUARE FORMAT.`
+- tüm gemi kare içine rahatça sığmalı; direk, yelken, pruva, kıç ve arma kırpılmamalı;
+- fiziksel gövde, direk/yelken, port ve malzeme kimliği açık tarif edilmeli;
+- ortografik/yüksek açı yaklaşık 55° belirtilmeli;
+- düz koyu mavi-gri stüdyo fonu;
+- deniz/su/wake/sis/duman/yazı/UI/frame yok;
+- prompt sonunda tekrar `ABSOLUTE OUTPUT REQUIREMENT: 1:1 SQUARE IMAGE. Width and height must be identical.` denmeli.
+
+8-yön radial referans aşamasında iki referans kullanılır: gemi kimliği için onaylı tekli master ve yalnız yerleşim/kamera düzeni için kodla hazırlanmış radial pano örneği. Radial pano da **strict 1:1 square** üretilir. Örnek panodaki gemi tasarımı kopyalanmaz.
+
+**Kural:** GPT Image üretim promptlarında 1:1 kare şartı hiçbir aşamada varsayılmaz; prompt içinde açıkça iki kez yazılır.
