@@ -323,9 +323,9 @@ J. final 4×2 atlas ve Android düşük-zoom kontrolü
 Bu hat, SC-02 pilotunda yaşanan kamera, ölçek, renk ve merkezleme tekrarlarını azaltmak için sonraki tüm gemilerde varsayılan üretim prosedürüdür.
 
 
-## 11. Mobil manuel hizalama aracı
+## 11. Mobil manuel hizalama aracı — isteğe bağlı QA/debug
 
-Otomatik pivot/anchor hizalama iyi bir ilk tahmin üretir; ancak final kabulte birkaç piksellik yönler-arası hareket insan gözüyle hâlâ fark edilebilir. Bu nedenle final üretim kapısında mobil manuel hizalama aracı kullanılır:
+Kanonik üretim akışı artık manuel hizalama gerektirmez. `tools/sprite_normalize.py` içindeki su/gövde support-anchor sistemi varsayılan final hizalamayı üretir. Mobil manuel araç yalnız görsel QA, hata ayıklama veya olağan dışı bir gemide birkaç piksellik residual ince ayar gerektiğinde kullanılır:
 
 `tools/sprite_manual_aligner_template.html`
 
@@ -339,15 +339,15 @@ Araç tek dosyalık, internetsiz çalışan bir HTML'dir. Kullanım:
 6. Ayarları JSON olarak indir; böylece manuel karar tekrar üretilebilir.
 7. Atlas düğmesiyle 4×2 master atlası dışa aktar.
 
-Final merkezleme kuralı:
+Kullanım kuralı:
 
-- otomatik anchor = başlangıç tahmini
-- manuel HTML hizalama = final görsel kabul kapısı
-- kaydedilen JSON = yeniden üretilebilir düzeltme kaydı
+- otomatik support-anchor = varsayılan final hizalama
+- rotation/contact-sheet = zorunlu görsel QA
+- manuel HTML = yalnız isteğe bağlı residual düzeltme/debug
+- kaydedilen JSON = yalnız manuel araca gerçekten başvurulduysa yeniden üretilebilir düzeltme kaydı
 - PNG'lerdeki ölçek ve LUT işlemleri HTML'e girmeden önce tamamlanmış olmalı
-- mümkünse scale = 1 bırakılır; araç esas olarak X/Y pivot ince ayarı içindir
 
-SC-02 pilotunda final kabul edilen manuel kayıt, otomatik hizalamanın üzerine frame bazlı X/Y düzeltmeleri uyguladı. Bu nedenle sonraki gemilerde de final paketlemeden önce aynı araçla bir tam 360° dönüş kontrolü yapılmalıdır.
+SC-02 manuel pilot tarihsel bir ara adımdır. SC-03 doğrulamasından sonra normal üretimde her gemi için manuel işaretleme veya manuel X/Y/scale ayarı zorunlu değildir.
 
 
 ## 12. Kanonik otomatik normalizasyon aracı
@@ -358,7 +358,7 @@ Tek kanonik araç:
 
 `tools/sprite_normalize.py`
 
-Bu araç final manuel HTML aşamasından **önce** çalıştırılır.
+Bu araç normal üretimde **final normalize paketi** üretir. Manuel HTML aşaması zorunlu değildir.
 
 Örnek:
 
@@ -407,19 +407,18 @@ Araç şu işlemleri tek akışta yapar:
 Ham 8 yön
 → tools/sprite_normalize.py
 → contact sheet / rotation GIF kontrolü
-→ tools/sprite_manual_aligner_template.html
-→ manuel X/Y/scale ince ayarı
-→ JSON kayıt
-→ final atlas
+→ final PNG paketi / atlas
 ```
+
+Yalnız QA'da belirgin residual sıçrama görülürse isteğe bağlı olarak `tools/sprite_manual_aligner_template.html` açılır. Bu istisna normal üretim bağımlılığı değildir.
 
 **Kural:** Normalizasyon/LUT/pivot için sohbet içinde her seferinde yeni ad-hoc script yazma. Önce bu kanonik aracı kullan. Araçta eksik veya hata bulunursa yeni geçici script üretmek yerine bu dosyayı düzelt, aynı test setinde yeniden doğrula ve rehberi güncel tut.
 
 SC-03 sırasında tespit edilen kritik hata: normalize edilmiş kareler 1024×1024 olsa bile negatif compositing offset alfa içeriğini tuval dışında bırakabiliyordu. Kare dosya olmak tek başına kırpılmadığı anlamına gelmez. Bu nedenle `compose_no_crop()` güvenlik kapısı kanonik aracın zorunlu parçasıdır.
 
-## 13. Manuel hizalama template'i — tek kanonik HTML
+## 13. Manuel hizalama template'i — isteğe bağlı tek QA aracı
 
-Tekrar kullanılacak tek HTML:
+Manuel müdahale gerekirse kullanılacak tek HTML:
 
 `tools/sprite_manual_aligner_template.html`
 
@@ -438,7 +437,7 @@ Template kuralları:
 - final 4×2 atlas dışa aktarır;
 - kaynak alfa ekran kenarına değiyorsa `KAYNAK KENARA DEĞİYOR` uyarısı verir. Bu uyarı HTML'in kırptığı anlamına gelmez; PNG'nin kendisinin daha önce kesilmiş olabileceğini bildirir.
 
-**Kural:** Gemiden gemiye yeni HTML üretme. Yeni işlev gerekiyorsa bu tek template'i geliştir ve GitHub'daki dosyayı güncelle.
+**Kural:** Normal üretimde HTML açmak zorunlu değildir. Manuel QA gerekirse gemiden gemiye yeni HTML üretme; yalnız bu tek template'i kullan/geliştir ve GitHub'daki dosyayı güncelle.
 
 
 ## 14. Su temaslı destek anchor sistemi
@@ -464,8 +463,10 @@ SC-03 test setinde elde edilen doğrulama:
 - karşı yönlerde küçük insan ayarı farkları bilerek tamamen ezberlenmedi
 - N/S, NE/SW, E/W, SE/NW fiziksel çiftleri yumuşatılmış ortak scale ile tutuldu
 
-Bu nedenle final kabul sırası değişmez:
+Bu nedenle kanonik final kabul sırası:
 
-`sprite_normalize.py → rotation/contact-sheet kontrolü → sprite_manual_aligner_template.html → gerekirse birkaç piksellik manuel residual`
+`sprite_normalize.py → rotation/contact-sheet kontrolü → final PNG paketi / atlas`
 
-**Kural:** direk tepesi, yelken bbox'ı veya full-alpha merkezi final anchor değildir. Ana anchor gövdenin denize oturan yoğun destek yapısıdır.
+SC-03 üzerinde ayrıca boy/en ekseni ve elle landmark işaretleme deneyleri yapıldı. Bunlar veri analizinde yararlı olsa da görsel sonucu support-anchor yönteminden güvenilir biçimde daha iyi yapmadı ve manuel iş yükü ekledi; bu nedenle varsayılan üretim hattına alınmadı.
+
+**Kural:** direk tepesi, yelken bbox'ı veya full-alpha merkezi final anchor değildir. Ana anchor gövdenin denize oturan yoğun destek yapısıdır. Manuel landmark/JSON normal üretim girdisi değildir.

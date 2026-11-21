@@ -9,6 +9,9 @@ Canonical pipeline:
 5) Lab/LUT-like color match to a canonical direction (default N)
 6) no-crop safety fit + QA outputs
 
+Production default: tolerant water-contact/support-anchor alignment. The normal
+production path requires no manual landmark marking or manual alignment JSON.
+
 Dependencies: pillow, numpy, opencv-python, scikit-image
 
 Input filenames must contain one of: N, NE, E, SE, S, SW, W, NW.
@@ -34,9 +37,10 @@ HEADING = {"N": -90, "NE": -45, "E": 0, "SE": 45, "S": 90, "SW": 135, "W": 180, 
 PAIR = {"S": "N", "SW": "NE", "W": "E", "NW": "SE"}
 PAIR_GROUPS = [("N","S"),("NE","SW"),("E","W"),("SE","NW")]
 
-# Learned once from SC-03 manual alignment, intentionally softened so the
-# normalizer does not overfit one ship. Values are residual fractions of the
-# canonical broadside span after water-contact/support-anchor alignment.
+# SC-03 manual alignment was used only as QA/calibration evidence. The runtime
+# does not require manual landmarks or alignment JSON. Values are softened
+# residual fractions of the canonical broadside span so one ship is not copied
+# frame-for-frame.
 SUPPORT_PROFILE = {
     "global_target_offset_frac": (13.84/790.0, -30.11/790.0),
     "family_residual_frac": {
@@ -64,7 +68,7 @@ def parse_args():
     p.add_argument("--gif-fps", type=float, default=6.0)
     p.add_argument("--no-pair-lock", action="store_true")
     p.add_argument("--support-anchor", dest="support_anchor", action="store_true", default=True,
-                   help="Use tolerant water-contact/support-anchor refinement (default on)")
+                   help="Production default: tolerant water-contact/support-anchor refinement; no manual alignment data required")
     p.add_argument("--no-support-anchor", dest="support_anchor", action="store_false",
                    help="Disable support-anchor refinement")
     return p.parse_args()
@@ -212,10 +216,11 @@ def support_family_key(d: str):
     return "SENW"
 
 def refine_with_support_anchor(stage, ratio, broadside_px, canvas, padding):
-    """Tolerant ship-on-water alignment calibrated against manual SC-03 QA.
+    """Tolerant ship-on-water alignment validated against SC-03 manual QA.
 
-    It deliberately fits opposite direction families together instead of
-    reproducing every hand-tuned frame exactly.
+    Production use is fully automatic: no manual landmarks or alignment JSON
+    are consumed. Opposite direction families are fitted together instead of
+    reproducing any hand-tuned frame exactly.
     """
     center=np.array([canvas*.5,canvas*.5],float)
     spans={d:support_hull_span(stage[d],HEADING[d]) for d in ORDER}
