@@ -53,7 +53,7 @@ func _process(_delta: float) -> void:
 			return
 		_host.stop()
 		print("NET01_HOST_CLEAN_EXIT_OK")
-		quit(0)
+		get_tree().quit(0)
 	return
 
 
