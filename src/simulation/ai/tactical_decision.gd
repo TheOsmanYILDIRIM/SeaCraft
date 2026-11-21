@@ -187,7 +187,7 @@ static func expected_damage_and_dps(weapon: Dictionary, ammo: Dictionary, target
 
 static func persistent_state(decision: Dictionary, previous: Dictionary, support_cooldown_ticks: int) -> Dictionary:
 	var next_support := int(previous.get("next_support_tick", 0))
-	if bool(decision.get("support_requested", false)):
+	if str(decision.get("tactical_intent", NONE)) == SUPPORT:
 		next_support = int(decision.get("decision_tick", 0)) + maxi(1, support_cooldown_ticks)
 	return {
 		"range_band": str(decision.get("range_band", previous.get("range_band", ""))),
