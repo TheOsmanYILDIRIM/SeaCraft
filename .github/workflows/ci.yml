@@ -120,6 +120,7 @@ jobs:
           grep -Fq "test_core03_sector_map.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_core04_persistence.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_ai01_framework.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_ai02_tactical_combat.gd" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"
@@ -129,6 +130,7 @@ jobs:
           python3 tools/ci/verify_core03_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_core04_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_ai01_suite.py "$RUNNER_TEMP/gut.log"
+          python3 tools/ci/verify_ai02_suite.py "$RUNNER_TEMP/gut.log"
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|([Oo]rphans?[[:space:]]+[1-9][0-9]*|[1-9][0-9]*[[:space:]]+[Oo]rphans?)' "$RUNNER_TEMP/gut.log"; then
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
@@ -199,6 +201,24 @@ jobs:
             AI01_FSM_REGRESSION_OK \
             AI01_SCHEDULER_BUDGET_OK \
             AI01_PERSISTENCE_OK; do
+            grep -Fq "$marker" "$RUNNER_TEMP/gut.log"
+          done
+
+      - name: Verify AI-02 tactical execution markers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for marker in \
+            AI02_TACTICAL_CONTEXT_OK \
+            AI02_EXPECTED_DPS_OK \
+            AI02_RANGE_BROADSIDE_OK \
+            AI02_AMMO_ECONOMY_OK \
+            AI02_RETREAT_REPAIR_OK \
+            AI02_LINE_OF_FIRE_OK \
+            AI02_BOARDING_OK \
+            AI02_SUPPORT_INTENT_OK \
+            AI02_PERSISTENCE_OK \
+            AI02_SCHEDULER_BUDGET_OK; do
             grep -Fq "$marker" "$RUNNER_TEMP/gut.log"
           done
 
@@ -318,7 +338,7 @@ jobs:
         id: build_artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-AI01-${{ github.sha }}
+          name: SeaCraft-AI02-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -341,7 +361,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          archive="$RUNNER_TEMP/ai01-artifact.zip"
+          archive="$RUNNER_TEMP/ai02-artifact.zip"
           api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
           ok=0
           for attempt in {1..12}; do
@@ -361,14 +381,14 @@ jobs:
           [[ "$ok" == "1" ]]
           zip_sha="$(sha256sum "$archive" | awk '{print $1}')"
           [[ "$zip_sha" =~ ^[a-f0-9]{64}$ ]]
-          unpack="$RUNNER_TEMP/ai01-readback"
+          unpack="$RUNNER_TEMP/ai02-readback"
           rm -rf "$unpack"
           mkdir -p "$unpack"
           unzip -q "$archive" -d "$unpack"
           printf '%s\n' "$GITHUB_SHA" | cmp - "$unpack/COMMIT_SHA.txt"
           cmp build/SHA256SUMS.txt "$unpack/SHA256SUMS.txt"
           (cd "$unpack" && sha256sum -c SHA256SUMS.txt)
-          echo "AI01_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
+          echo "AI02_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
 
       - name: Publish final CI status
         if: always()
