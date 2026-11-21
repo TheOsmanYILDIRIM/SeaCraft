@@ -73,6 +73,43 @@ func test_ai02_scenario_matrix_too_far_bad_broadside_ready_and_blocked() -> void
 	assert_false(blocked["fire_allowed"])
 	assert_ne(blocked["tactical_intent"], TacticalDecision.FIRE)
 
+	var sector := SectorRuntime.new()
+	sector.bounds = Rect2(-640, -360, 1280, 720)
+	sector.sector_id = FoundationSector.ID
+	assert_true(sector.register_entity(A, Vector2.ZERO))
+	assert_true(sector.register_entity(B, Vector2(0, 200)))
+	var rng := SeedStreams.new(7107)
+	var loot := LootAuthority.new(sector, rng, LOOT_TABLE as LootTable, LOOT_ITEM as ItemDefinition)
+	assert_true(loot.bind_inventory_owner(A, {CoreCombatRules.ROUND: 2}))
+	loot.initialize_missing_stock({CoreCombatRules.ROUND: 2})
+	var combat := CombatAuthority.new(sector, rng, 60)
+	var live_weapon := _weapon()
+	live_weapon.accuracy = 1.0
+	live_weapon.crit_chance = 0.0
+	assert_true(combat.register(A, "faction.ai02_a", 200.0, live_weapon))
+	assert_true(combat.register(B, "faction.ai02_b", 200.0))
+	assert_true(combat.attach_inventory(loot))
+	var round_profile := CoreCombatRules.ammo("ammo.ai02_round", CoreCombatRules.ROUND, CoreCombatRules.NEUTRAL, 1.0)
+	assert_true(combat.register_ammo(round_profile))
+	assert_true(combat.mount_ammo(A, PackedStringArray(["ammo.ai02_round"])))
+	assert_true(combat.select(A, B))
+	var live_snapshot := combat.tactical_snapshot(A, [B], 0.0, 300.0, 1, 8, 8)
+	var live_context := _context_from_snapshot(live_snapshot)
+	var live_decision := TacticalDecision.evaluate(live_context, 5)
+	assert_eq(live_decision["tactical_intent"], TacticalDecision.FIRE)
+	assert_true(live_decision["fire_allowed"])
+	var before_stock := loot.inventory_quantity(CoreCombatRules.ROUND)
+	var before_hull := combat.hull(B)
+	var fired := combat.fire(A, 0.0, CombatAuthority.fire_intent(B))
+	assert_true(fired["accepted"])
+	assert_eq(loot.inventory_quantity(CoreCombatRules.ROUND), before_stock - 1)
+	assert_lt(combat.hull(B), before_hull)
+	var after_fire := [combat.snapshot_state(), rng.snapshot_state(), loot.snapshot_state()]
+	var cooldown_reject := combat.fire(A, 0.0, CombatAuthority.fire_intent(B))
+	assert_false(cooldown_reject["accepted"])
+	assert_eq(cooldown_reject["reason"], "cooldown")
+	assert_eq([combat.snapshot_state(), rng.snapshot_state(), loot.snapshot_state()], after_fire)
+
 
 func test_ai02_range_band_hysteresis_and_port_starboard_are_deterministic() -> void:
 	var far_context := _manual_context(Vector2(0, 250), 0.0, true, true, 1.0, 1, 1)
