@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/weapon_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "weapon.vs01_practice_cannon"
+display_name = "Practice Cannon"
+base_damage = 25.0
+range_meters = 360.0
+min_range_meters = 35.0
+reload_seconds = 1.25
+accuracy = 0.92
+crit_chance = 0.15

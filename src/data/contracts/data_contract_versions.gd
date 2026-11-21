@@ -1,8 +1,8 @@
 class_name DataContractVersions
 extends RefCounted
 
-const SCHEMA_VERSION: int = 1
-const CONTENT_VERSION: String = "fnd02-fixture-1"
+const SCHEMA_VERSION: int = 2
+const CONTENT_VERSION: String = "core04-registry-1"
 const RNG_STREAM_VERSION: int = 1
 
 

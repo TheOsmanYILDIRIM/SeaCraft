@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MonsterDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/monster_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "monster.core02_practice"
+display_name = "CORE-02 Practice Monster"
+max_health = 120.0
+faction_id = "faction.monster"
+target_class = "monster"
+loot_table_id = "loot_table.vs03_sc03"
+territory_radius = 256.0

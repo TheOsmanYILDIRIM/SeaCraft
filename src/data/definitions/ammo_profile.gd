@@ -17,3 +17,7 @@ func valid() -> bool:
 		and is_finite(damage_add) and absf(damage_add) <= 100000.0 \
 		and is_finite(damage_scale) and damage_scale >= 0.0 and damage_scale <= 8.0 \
 		and (status_id.is_empty() or SectorIds.valid(status_id))
+
+
+func referenced_stable_ids() -> PackedStringArray:
+	return PackedStringArray([item_id]) if not item_id.is_empty() else PackedStringArray()

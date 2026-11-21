@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ShipDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/ship_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "ship.foundation_player"
+display_name = "Foundation Player Ship"
+faction_id = "faction.player"
+weapon_ids = PackedStringArray("weapon.vs01_practice_cannon")
+base_hull_hp = 100.0

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="FactionDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/faction_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "faction.monster"
+display_name = "Monster"

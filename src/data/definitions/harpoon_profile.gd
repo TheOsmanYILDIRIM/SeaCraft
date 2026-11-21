@@ -37,3 +37,7 @@ func valid() -> bool:
 
 func accepts(target_class: String) -> bool:
 	return valid() and target_classes.has(target_class)
+
+
+func referenced_stable_ids() -> PackedStringArray:
+	return PackedStringArray([item_id]) if not item_id.is_empty() else PackedStringArray()

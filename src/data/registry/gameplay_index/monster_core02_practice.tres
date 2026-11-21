@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="DefinitionIndexEntry" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/registry/definition_index_entry.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "monster.core02_practice"
+definition_type = "monster"
+definition_path = "res://src/data/content/monster_core02_practice.tres"
+referenced_ids = PackedStringArray("faction.monster", "loot_table.vs03_sc03")

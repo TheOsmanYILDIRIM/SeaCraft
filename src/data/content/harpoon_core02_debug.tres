@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="HarpoonProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/harpoon_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "harpoon.core02_debug"
+display_name = "Debug Harpoon"
+base_damage = 18.0
+range_meters = 320.0
+reload_seconds = 1.25
+element_id = "element.neutral"
+target_classes = PackedStringArray("monster", "wreck")

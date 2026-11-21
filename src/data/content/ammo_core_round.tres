@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="AmmoProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/ammo_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+stable_id = "ammo.core_round"
+item_id = "item.core_round"
+damage_scale = 1.0
+element_id = "element.neutral"
