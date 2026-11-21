@@ -17,6 +17,9 @@ const EMBER_AMMO_PROFILE := preload("res://src/data/content/ammo_core_ember.tres
 const HARPOON_PROFILE := preload("res://src/data/content/harpoon_core02_debug.tres")
 
 var _combat: CombatAuthority
+var _relations := FactionRelationResolver.new(true)
+var _fleet_coordinator := FleetCoordinator.new(true)
+var _dock_authority := DockAuthority.new(true)
 var _practice_marker: Polygon2D
 var _target_ring: Line2D
 var _fire_control: CombatFireButton
@@ -175,6 +178,13 @@ func _on_gameplay_command(command: Dictionary) -> void:
 
 func _setup_combat(sector: SectorRuntime) -> void:
 	_combat = CombatAuthority.new(sector, _streams, Engine.physics_ticks_per_second)
+	if _pending_combat.has("relations"):
+		if not _relations.restore_state(_pending_combat["relations"]):
+			return
+	else:
+		_relations.set_relation((PLAYER_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, FactionRelationResolver.HOSTILE)
+	if not _combat.bind_relation_resolver(_relations):
+		return
 	var cannon := PRACTICE_CANNON as WeaponDefinition
 	var practice_active := sector.sector_id == FoundationSector.ID
 	var practice_position := sector.entity_position(PRACTICE_TARGET)
@@ -257,6 +267,10 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if _pending_combat.has("npc_ai") and not _npc_brain.restore_state(_pending_combat["npc_ai"]):
 		return
 	if _pending_combat.has("scheduler") and not _ai_scheduler.restore_state(_pending_combat["scheduler"]):
+		return
+	if _pending_combat.has("fleet") and not _fleet_coordinator.restore_state(_pending_combat["fleet"]):
+		return
+	if _pending_combat.has("docks") and not _dock_authority.restore_state(_pending_combat["docks"]):
 		return
 	if not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
 		return
@@ -498,6 +512,9 @@ func _flush_checkpoint() -> void:
 			"npc_motion": _npc_motor.capture_save_motion(),
 			"npc_ai": npc_state,
 			"scheduler": _ai_scheduler.snapshot_state(),
+			"fleet": _fleet_coordinator.snapshot_state(),
+			"docks": _dock_authority.snapshot_state(),
+			"relations": _relations.snapshot_state(),
 			"world": _world_objects.snapshot_state() if _world_objects != null else {"objects": [], "claimed_ids": [], "processed_spawns": []},
 		}, true)
 		var entity_index := _capture_entity_index(combat_state, npc_state, loot_state)

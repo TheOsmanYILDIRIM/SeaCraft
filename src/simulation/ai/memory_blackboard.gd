@@ -114,6 +114,18 @@ func entry_count() -> int:
 	return _entries.size()
 
 
+func invalidate_target(target_id: String) -> bool:
+	if not SectorIds.valid(target_id):
+		return false
+	var removed := _entries.has(target_id)
+	_entries.erase(target_id)
+	if _selected_target_id == target_id:
+		_selected_target_id = ""
+	if str(_hysteresis.get("target_id", "")) == target_id:
+		_hysteresis["target_id"] = ""
+	return removed
+
+
 func commit_decision(intent_id: int, target_id: String, score: float, decision_tick: int, hysteresis_state: Dictionary) -> bool:
 	if intent_id < 0 or decision_tick < 0 or not is_finite(score):
 		return false

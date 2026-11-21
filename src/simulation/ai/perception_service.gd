@@ -27,6 +27,8 @@ func capture(observer_id: String, simulation_tick: int, sector: SectorRuntime, c
 			continue
 		if not combat.is_alive(candidate_id) or not combat.hostile(observer_id, candidate_id):
 			continue
+		if sector.entity_in_safe_zone(candidate_id):
+			continue
 		var target := combat.target_snapshot(candidate_id)
 		if target.is_empty() or not bool(target.get("selectable", false)):
 			continue

@@ -73,6 +73,8 @@ var _sense_snapshot: Dictionary = {}
 var _last_utility: Dictionary = {}
 var _last_bt_status := -1
 var _last_tactical: Dictionary = {}
+var _fleet_command: Dictionary = {}
+var _fleet_command_sequence := -1
 var _tactical_state := {
 	"range_band": "",
 	"desired_side": 0,
@@ -129,6 +131,8 @@ func rebind_sector(sector: SectorRuntime, combat: CombatAuthority) -> bool:
 	_executor.stop()
 	_sector = sector
 	_combat = combat
+	_fleet_command.clear()
+	_fleet_command_sequence = -1
 	_sense_snapshot.clear()
 	_last_sense_query_tick = -1
 	return _executor.configure(_motor, sector.navigation)
@@ -142,6 +146,7 @@ func decision_tick(simulation_tick: int) -> bool:
 	_last_decision_tick = simulation_tick
 	if not _capture_sense(simulation_tick):
 		return false
+	_sanitize_hostility_memory()
 	if not _memory.advance(_sense_snapshot, simulation_tick, _tuning.threat_decay_interval_ticks, _tuning.threat_decay_amount):
 		return false
 	_executor.advance_if_arrived()
@@ -180,6 +185,7 @@ func decision_tick(simulation_tick: int) -> bool:
 				_decide_resume(hull_ratio, decision)
 	if not tactical.is_empty() and _state in [State.ALERT, State.RETREAT]:
 		_apply_tactical_maneuver(tactical)
+	_apply_fleet_command_if_safe()
 	var actual_hysteresis: Dictionary = decision["hysteresis_state"].duplicate(true)
 	if int(decision["selected_intent_id"]) != _intent or str(decision["selected_target_id"]) != _target_entity_id:
 		actual_hysteresis = {
@@ -192,6 +198,31 @@ func decision_tick(simulation_tick: int) -> bool:
 	_last_bt_status = _bt.tick_intent(_intent, simulation_tick, _tuning.bt_timeout_ticks)
 	_execute_tactical_authority(tactical)
 	return true
+
+
+func set_fleet_command(command: Dictionary) -> bool:
+	if not _valid or not _authority_enabled or _sunk or not FleetCommand.valid(command):
+		return false
+	if command["member_id"] != _entity_id or int(command["sequence"]) <= _fleet_command_sequence:
+		return false
+	_fleet_command = command.duplicate(true)
+	_fleet_command_sequence = int(command["sequence"])
+	return true
+
+
+func clear_fleet_command() -> void:
+	_fleet_command.clear()
+
+
+func support_request() -> Dictionary:
+	if str(_last_tactical.get("tactical_intent", "")) != TacticalDecision.SUPPORT:
+		return {}
+	return {
+		"support_id": "support.%s.%d" % [_entity_id, _decision_sequence],
+		"requester_id": _entity_id,
+		"target_id": str(_last_tactical.get("target_id", "")),
+		"decision_sequence": _decision_sequence,
+	}
 
 
 func record_combat_damage(attacker_id: String, damage: float, combat_sequence: int, simulation_tick: int) -> bool:
@@ -212,6 +243,7 @@ func mark_sunk() -> void:
 	if not _valid:
 		return
 	_sunk = true
+	_fleet_command.clear()
 	_bt.interrupt()
 	_executor.stop()
 
@@ -275,6 +307,8 @@ func snapshot() -> Dictionary:
 		"tactical_ammo_id": str(_last_tactical.get("selected_ammo_id", "")),
 		"tactical_boarding": str(_last_tactical.get("tactical_intent", "")) == TacticalDecision.BOARD,
 		"tactical_support": str(_last_tactical.get("tactical_intent", "")) == TacticalDecision.SUPPORT,
+		"fleet_command_sequence": _fleet_command_sequence,
+		"fleet_command_kind": str(_fleet_command.get("kind", "")),
 	}
 
 
@@ -554,6 +588,48 @@ func _capture_sense(simulation_tick: int) -> bool:
 	perception_query_count = _perception.query_count
 	perception_candidate_count = _perception.last_candidate_count
 	return true
+
+
+func _sanitize_hostility_memory() -> void:
+	var filtered: Array = []
+	for raw in _sense_snapshot.get("candidates", []):
+		if not raw is Dictionary:
+			continue
+		var id := str(raw.get("stable_id", ""))
+		if SectorIds.valid(id) and _combat.hostile(_entity_id, id) and not _sector.entity_in_safe_zone(id):
+			filtered.append(raw)
+		else:
+			_memory.invalidate_target(id)
+	_sense_snapshot["candidates"] = filtered
+	_sense_snapshot["candidate_count"] = filtered.size()
+	for raw in _memory.snapshot_state().get("entries", []):
+		if not raw is Dictionary:
+			continue
+		var id := str(raw.get("stable_id", ""))
+		if SectorIds.valid(id) and (not _combat.hostile(_entity_id, id) or _sector.entity_in_safe_zone(id)):
+			_memory.invalidate_target(id)
+	var locked := _combat.locked_target(_entity_id)
+	if not locked.is_empty() and (not _combat.hostile(_entity_id, locked) or _sector.entity_in_safe_zone(locked)):
+		_combat.clear_target(_entity_id)
+
+
+func _apply_fleet_command_if_safe() -> void:
+	if _fleet_command.is_empty() or _state not in [State.PATROL, State.RESUME] or _has_visible_hostile():
+		return
+	if _combat.hull_ratio(_entity_id) <= _tuning.retreat_enter_hull_ratio:
+		return
+	var kind := str(_fleet_command.get("kind", ""))
+	if kind not in [FleetCommand.FOLLOW_LEADER, FleetCommand.OCCUPY_SLOT, FleetCommand.REGROUP, FleetCommand.DOCK, FleetCommand.ROUTE_JOB, FleetCommand.PATROL, FleetCommand.TRADE_ROUTE, FleetCommand.SALVAGE_ROUTE]:
+		return
+	var destination: Variant = _fleet_command.get("destination", {})
+	if not destination is Dictionary or destination.size() != 2:
+		return
+	var point := Vector2(float(destination.get("x", INF)), float(destination.get("y", INF)))
+	if not point.is_finite() or not _sector.navigation.accessible(point):
+		return
+	_destination = point
+	_intent = Intent.PATROL_TO_WAYPOINT
+	_target_entity_id = ""
 
 
 func _decide_patrol(hull_ratio: float, decision: Dictionary) -> void:

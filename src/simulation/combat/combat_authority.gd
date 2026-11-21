@@ -22,6 +22,7 @@ const TACTICAL_FIRE_CORRIDOR_RADIUS := 24.0
 
 var _enabled := true
 var _inventory: LootAuthority
+var _relations: FactionRelationResolver
 var _ammo_profiles: Dictionary = {}
 var _status_actors: Dictionary = {}
 
@@ -160,6 +161,8 @@ func select(attacker_id: String, target_id: String) -> bool:
 	var attacker: CombatantState = _roster.get(attacker_id)
 	if not _enabled or attacker == null or attacker.sunk() or not _sector.entity_position(attacker_id).is_finite():
 		return false
+	if _relations != null and not hostile(attacker_id, target_id):
+		return false
 	if not TargetingService.rejection(_sector, attacker_id, attacker.faction_id, target_id, _roster).is_empty():
 		return false
 	attacker.locked_id = target_id
@@ -177,7 +180,7 @@ func locked_target(attacker_id: String) -> String:
 	if attacker == null or attacker.sunk() or not _sector.entity_position(attacker_id).is_finite():
 		clear_target(attacker_id)
 		return ""
-	if not TargetingService.rejection(_sector, attacker_id, attacker.faction_id, attacker.locked_id, _roster).is_empty():
+	if (_relations != null and not hostile(attacker_id, attacker.locked_id)) or not TargetingService.rejection(_sector, attacker_id, attacker.faction_id, attacker.locked_id, _roster).is_empty():
 		attacker.locked_id = ""
 	return attacker.locked_id
 
@@ -245,9 +248,10 @@ func tactical_snapshot(actor_id: String, target_ids: Array[String], heading: flo
 		if other.sunk() or other.sector_id != actor.sector_id:
 			continue
 		bounded_nearby.append(id)
-		if other.faction_id == actor.faction_id:
+		var nearby_relation := relation(actor_id, id)
+		if nearby_relation == FactionRelationResolver.FRIENDLY:
 			nearby_allies += 1
-		else:
+		elif nearby_relation == FactionRelationResolver.HOSTILE:
 			nearby_hostiles += 1
 
 	var weapon_data: Dictionary = {}
@@ -317,7 +321,7 @@ func tactical_snapshot(actor_id: String, target_ids: Array[String], heading: flo
 			if nearby_id == target_id:
 				continue
 			var blocker: CombatantState = _roster.get(nearby_id)
-			if blocker == null or blocker.sunk() or blocker.faction_id != actor.faction_id:
+			if blocker == null or blocker.sunk() or relation(actor_id, nearby_id) != FactionRelationResolver.FRIENDLY:
 				continue
 			inspected += 1
 			var blocker_position := _sector.entity_position(nearby_id)
@@ -329,7 +333,7 @@ func tactical_snapshot(actor_id: String, target_ids: Array[String], heading: flo
 			"entity_id": target_id,
 			"target_class": target.target_class,
 			"faction_id": target.faction_id,
-			"hostile": target.faction_id != actor.faction_id,
+			"hostile": relation(actor_id, target_id) == FactionRelationResolver.HOSTILE,
 			"x": target_position.x,
 			"y": target_position.y,
 			"distance": distance,
@@ -471,12 +475,25 @@ func is_alive(id: String) -> bool:
 	return ship != null and not ship.sunk() and _sector != null and ship.sector_id == _sector.sector_id and _sector.entity_position(id).is_finite()
 
 
+func relation(observer_id: String, other_id: String) -> String:
+	if observer_id == other_id:
+		return FactionRelationResolver.FRIENDLY
+	var observer: CombatantState = _roster.get(observer_id)
+	var other: CombatantState = _roster.get(other_id)
+	if observer == null or other == null:
+		return FactionRelationResolver.NEUTRAL
+	if observer.faction_id == other.faction_id:
+		return FactionRelationResolver.FRIENDLY
+	if _relations != null:
+		return _relations.relation(observer.faction_id, other.faction_id)
+	return FactionRelationResolver.HOSTILE
+
+
 func hostile(observer_id: String, other_id: String) -> bool:
 	if observer_id == other_id:
 		return false
-	var observer: CombatantState = _roster.get(observer_id)
 	var other: CombatantState = _roster.get(other_id)
-	return observer != null and other != null and not other.sunk() and observer.faction_id != other.faction_id
+	return other != null and not other.sunk() and relation(observer_id, other_id) == FactionRelationResolver.HOSTILE
 
 
 func hull_ratio(id: String) -> float:
@@ -487,6 +504,13 @@ func hull_ratio(id: String) -> float:
 
 
 # Configuration entrypoints are used by the trusted world adapter, never by intents.
+func bind_relation_resolver(resolver: FactionRelationResolver) -> bool:
+	if resolver == null or _relations != null:
+		return false
+	_relations = resolver
+	return true
+
+
 func attach_inventory(inventory: LootAuthority) -> bool:
 	if inventory == null or _inventory != null:
 		return false
