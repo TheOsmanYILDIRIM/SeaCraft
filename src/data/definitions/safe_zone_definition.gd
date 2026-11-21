@@ -13,3 +13,7 @@ func definition_type() -> String:
 func valid_for_sector(expected_sector_id: String) -> bool:
 	return SectorIds.valid(stable_id) and SectorIds.valid(sector_id) and sector_id == expected_sector_id \
 		and center.is_finite() and is_finite(radius) and radius > 0.0 and radius <= SectorSpatialHash.MAX_RADIUS
+
+
+func referenced_stable_ids() -> PackedStringArray:
+	return PackedStringArray([sector_id]) if not sector_id.is_empty() else PackedStringArray()
