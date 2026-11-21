@@ -29,7 +29,7 @@ if ss -ltnH | awk '{print $4}' | grep -Eq "(^|:)${port}$"; then
   exit 1
 fi
 
-godot --headless --path . --script res://tools/net01/process_harness.gd -- \
+godot --headless --path . res://tools/net01/process_harness.tscn -- \
   --mode=host --port="$port" --stop-file="$stop_file" >"$host_log" 2>&1 &
 host_pid=$!
 
@@ -54,7 +54,7 @@ fi
 run_client() {
   local scenario="$1"
   local log="$work/client-${scenario}.log"
-  if ! timeout 20s godot --headless --path . --script res://tools/net01/process_harness.gd -- \
+  if ! timeout 20s godot --headless --path . res://tools/net01/process_harness.tscn -- \
     --mode=client --scenario="$scenario" --port="$port" >"$log" 2>&1; then
     echo "NET01 client scenario failed: $scenario" >&2
     cat "$log" >&2 || true

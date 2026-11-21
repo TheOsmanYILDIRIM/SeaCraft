@@ -1,4 +1,4 @@
-extends SceneTree
+extends Node
 
 const PROTOCOL := preload("res://src/network/session_protocol.gd")
 const HOST_SCRIPT := preload("res://src/network/session_host.gd")
@@ -21,9 +21,7 @@ var _prehandshake_sent := false
 var _host_authority_printed := false
 
 
-func _initialize() -> void:
-	# --script uses this SceneTree as the MainLoop, so install the default high-level RPC API explicitly.
-	set_multiplayer(SceneMultiplayer.new())
+func _ready() -> void:
 	_started_ms = Time.get_ticks_msec()
 	var args := _parse_args(OS.get_cmdline_user_args())
 	_mode = str(args.get("mode", ""))
@@ -41,38 +39,38 @@ func _initialize() -> void:
 		_fail("invalid mode")
 
 
-func _process(_delta: float) -> bool:
+func _process(_delta: float) -> void:
 	var now := Time.get_ticks_msec()
 	if now - _started_ms > 30000:
 		_fail("timeout")
-		return true
+		return
 	if _finish_at_ms > 0 and now >= _finish_at_ms:
-		quit(0)
-		return true
+		get_tree().quit(0)
+		return
 	if _mode == "host" and not _stop_file.is_empty() and FileAccess.file_exists(_stop_file):
 		if not _host_authority_printed:
 			_fail("host never applied valid move")
-			return true
+			return
 		_host.stop()
 		print("NET01_HOST_CLEAN_EXIT_OK")
 		quit(0)
-	return false
+	return
 
 
 func _start_host() -> void:
 	_host = HOST_SCRIPT.new()
 	_host.name = "Session"
-	root.add_child(_host)
+	add_child(_host)
 	_alpha = MOTOR_SCRIPT.new()
 	_alpha.name = "PlayerAlpha"
 	_alpha.authority_enabled = true
 	_alpha.set_physics_process(false)
-	root.add_child(_alpha)
+	add_child(_alpha)
 	_beta = MOTOR_SCRIPT.new()
 	_beta.name = "PlayerBeta"
 	_beta.authority_enabled = true
 	_beta.set_physics_process(false)
-	root.add_child(_beta)
+	add_child(_beta)
 	if not _host.configure_player_motors({"player.beta": _beta, "player.alpha": _alpha}):
 		_fail("player configuration failed")
 		return
@@ -89,7 +87,7 @@ func _start_client() -> void:
 	_client.name = "Session"
 	if _scenario == "prehandshake":
 		_client.set_auto_handshake(false)
-	root.add_child(_client)
+	add_child(_client)
 	_client.connection_state_changed.connect(_on_client_state_changed)
 	_client.session_ready.connect(_on_client_ready)
 	_client.session_rejected.connect(_on_client_rejected)
@@ -213,7 +211,7 @@ func _fail(message: String) -> void:
 		_host.stop()
 	if _client != null:
 		_client.close_session()
-	quit(1)
+	get_tree().quit(1)
 
 
 func _parse_args(args: PackedStringArray) -> Dictionary:
