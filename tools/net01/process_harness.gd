@@ -22,6 +22,8 @@ var _host_authority_printed := false
 
 
 func _initialize() -> void:
+	# --script uses this SceneTree as the MainLoop, so install the default high-level RPC API explicitly.
+	set_multiplayer(SceneMultiplayer.new())
 	_started_ms = Time.get_ticks_msec()
 	var args := _parse_args(OS.get_cmdline_user_args())
 	_mode = str(args.get("mode", ""))
