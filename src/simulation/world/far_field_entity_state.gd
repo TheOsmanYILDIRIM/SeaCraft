@@ -149,9 +149,11 @@ static func valid_projection(value: Variant) -> bool:
 	var state: Dictionary = value
 	if state.size() != 23 or int(state.get("version", -1)) != VERSION:
 		return false
-	for key in ["instance_id", "definition_id", "entity_kind", "sector_id"]:
+	for key in ["instance_id", "definition_id", "sector_id"]:
 		if not state.get(key) is String or not SectorIds.valid(state[key]):
 			return false
+	if not state.get("entity_kind") is String or state["entity_kind"].is_empty() or state["entity_kind"].length() > 32:
+		return false
 	if not state.get("faction_id") is String or (not state["faction_id"].is_empty() and not SectorIds.valid(state["faction_id"])):
 		return false
 	if not state.get("fleet_id") is String or (not state["fleet_id"].is_empty() and not SectorIds.valid(state["fleet_id"])):
@@ -212,9 +214,11 @@ static func _valid_combat(value: Variant) -> bool:
 
 
 static func _base_record_shape(record: Dictionary) -> bool:
-	for key in ["instance_id", "definition_id", "entity_kind", "sector_id"]:
+	for key in ["instance_id", "definition_id", "sector_id"]:
 		if not record.get(key) is String or not SectorIds.valid(record[key]):
 			return false
+	if not record.get("entity_kind") is String or record["entity_kind"].is_empty() or record["entity_kind"].length() > 32:
+		return false
 	if not _vector(record.get("position")) or not _finite(record.get("health")) or not record.get("alive") is bool:
 		return false
 	for key in ["motion", "route", "cooldowns", "inventory", "payload"]:
