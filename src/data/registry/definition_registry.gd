@@ -85,7 +85,7 @@ func manifest_rows() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for stable_id in indexed_ids():
 		var entry := _entries_by_id[stable_id] as DefinitionIndexEntry
-		var refs: Array[String] = []
+		var refs := PackedStringArray()
 		for reference in entry.referenced_ids:
 			refs.append(reference)
 		refs.sort()
@@ -112,7 +112,7 @@ func manifest_hash() -> String:
 		last_error = "sha256 context failed"
 		return ""
 	for row in rows:
-		var refs: Array = row["referenced_ids"]
+		var refs: PackedStringArray = row["referenced_ids"]
 		var line := "%s|%s|%s|%s|%s\n" % [
 			row["stable_id"], row["definition_type"], row["resource_path"],
 			",".join(refs), row["resource_sha256"],
@@ -159,6 +159,7 @@ func _load_entry(stable_id: String) -> Resource:
 			_fail("safe-zone index/resource ID mismatch: %s" % stable_id, ERR_INVALID_DATA)
 			return null
 		actual_type = "safe_zone"
+		actual_refs = (content as SafeZoneDefinition).referenced_stable_ids()
 	else:
 		if not (loaded is BaseDefinition):
 			_fail("definition is not a BaseDefinition: %s" % entry.definition_path, ERR_PARSE_ERROR)
