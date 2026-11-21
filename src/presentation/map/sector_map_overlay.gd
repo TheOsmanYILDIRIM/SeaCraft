@@ -10,6 +10,7 @@ var _active_sector_id := ""
 var _player_world := Vector2.ZERO
 var _pan := Vector2.ZERO
 var _zoom := 1.0
+var _touch := TouchGestureInterpreter.new()
 
 
 func configure_world(snapshot: Dictionary, active_sector_id: String) -> void:
@@ -36,6 +37,7 @@ func set_world_view(open: bool) -> void:
 	_mode = Mode.WORLD if open else Mode.MINIMAP
 	_pan = Vector2.ZERO
 	_zoom = 1.0
+	_touch.reset()
 	queue_redraw()
 
 
@@ -63,8 +65,21 @@ func _gui_input(event: InputEvent) -> void:
 	if event == null or not visible:
 		return
 	var consumed := false
-	if _mode == Mode.WORLD and event is InputEventScreenDrag:
-		consumed = apply_pan(event.relative)
+	if _mode == Mode.WORLD and event is InputEventScreenTouch:
+		var gestures := _touch.press(event.index, event.position) if event.pressed else _touch.release(event.index, event.position)
+		for gesture: Dictionary in gestures:
+			if gesture["kind"] == "pan":
+				apply_pan(Vector2(gesture["delta_x"], gesture["delta_y"]))
+			elif gesture["kind"] == "zoom":
+				apply_zoom(float(gesture["factor"]))
+		consumed = true
+	elif _mode == Mode.WORLD and event is InputEventScreenDrag:
+		for gesture: Dictionary in _touch.drag(event.index, event.position):
+			if gesture["kind"] == "pan":
+				apply_pan(Vector2(gesture["delta_x"], gesture["delta_y"]))
+			elif gesture["kind"] == "zoom":
+				apply_zoom(float(gesture["factor"]))
+		consumed = true
 	elif _mode == Mode.WORLD and event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_MIDDLE) != 0:
 		consumed = apply_pan(event.relative)
 	elif _mode == Mode.WORLD and event is InputEventMouseButton and event.pressed:

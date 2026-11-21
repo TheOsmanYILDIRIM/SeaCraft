@@ -27,6 +27,10 @@ var _nearby_drop_id := ""
 var _pending_loot_state: Dictionary = {}
 var _pending_combat: Dictionary = {}
 var _core_buttons: Array[CombatFireButton] = []
+var _map_overlay: SectorMapOverlay
+var _map_button: Button
+var _world_map_open := false
+var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
 const CORE_STOCK := {CoreCombatRules.ROUND: 40, CoreCombatRules.EMBER: 20, CoreCombatRules.STOWED: 8}
@@ -90,6 +94,13 @@ func _ready() -> void:
 	if _fire_control == null:
 		_block_boot({"status": "combat_setup_failed"})
 		return
+	var brains: Array[NpcBrain] = []
+	if _npc_brain != null:
+		brains.append(_npc_brain)
+	if not _world.bind_runtime(SectorRuntimeBinding.new(_combat, _loot, _world_objects, brains)):
+		_block_boot({"status": "sector_runtime_binding_failed"})
+		return
+	_setup_map_ui()
 	print(BOOT_MARKER)
 
 
@@ -102,6 +113,8 @@ func _physics_process(_delta: float) -> void:
 		_combat.advance_tick()
 	var position_now := _ship_motor.global_position
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
+	if _map_overlay != null:
+		_map_overlay.set_player_world_position(position_now)
 	if _npc_motor != null and _combat != null and _combat.is_alive(PRACTICE_TARGET):
 		_world.active().move_entity(PRACTICE_TARGET, _npc_motor.global_position)
 	if _npc_brain != null:
@@ -160,11 +173,22 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	cannon.reload_seconds = 1.25
 	cannon.accuracy = 0.92
 	cannon.crit_chance = 0.15
-	if not sector.navigation.accessible(PRACTICE_POSITION) or not sector.register_entity(PRACTICE_TARGET, PRACTICE_POSITION):
-		push_error("VS-02 NPC placement failed")
+	var practice_active := sector.sector_id == FoundationSector.ID
+	var practice_position := sector.entity_position(PRACTICE_TARGET)
+	if practice_active and not practice_position.is_finite():
+		if not sector.navigation.accessible(PRACTICE_POSITION) or not sector.register_entity(PRACTICE_TARGET, PRACTICE_POSITION):
+			push_error("VS-02 NPC placement failed")
+			return
+		practice_position = PRACTICE_POSITION
+	if not _combat.register(FoundationSector.PLAYER, "faction.player", 100.0, cannon):
+		push_error("VS-02 player combat roster setup failed")
 		return
-	if not _combat.register(FoundationSector.PLAYER, "faction.player", 100.0, cannon) or not _combat.register(PRACTICE_TARGET, "faction.practice_hostile", 75.0, null, 4.0, 0.05):
-		push_error("VS-02 combat roster setup failed")
+	if practice_active:
+		if not _combat.register(PRACTICE_TARGET, "faction.practice_hostile", 75.0, null, 4.0, 0.05):
+			push_error("VS-02 combat roster setup failed")
+			return
+	elif not _combat.register_dormant(PRACTICE_TARGET, "faction.practice_hostile", 75.0, FoundationSector.ID, PRACTICE_POSITION):
+		push_error("VS-02 dormant combat roster setup failed")
 		return
 
 	_npc_motor = ShipMotor.new()
@@ -173,7 +197,7 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_npc_motor.collision_mask = FoundationSector.COAST_LAYER
 	_npc_motor.process_physics_priority = -1
 	add_child(_npc_motor)
-	_npc_motor.global_position = PRACTICE_POSITION
+	_npc_motor.global_position = practice_position if practice_position.is_finite() else PRACTICE_POSITION
 
 	_practice_marker = Polygon2D.new()
 	_practice_marker.polygon = PackedVector2Array([
@@ -229,7 +253,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	if _pending_combat.has("npc_motion"):
 		var motion: Variant = _pending_combat["npc_motion"]
-		if not ShipMotor.valid_save_motion(motion) or not sector.move_entity(PRACTICE_TARGET, Vector2(motion["x"], motion["y"])):
+		if not ShipMotor.valid_save_motion(motion):
+			return
+		if practice_active and not sector.move_entity(PRACTICE_TARGET, Vector2(motion["x"], motion["y"])):
 			return
 		_npc_motor.restore_save_motion(motion)
 	if _pending_combat.has("npc_ai") and not _npc_brain.restore_state(_pending_combat["npc_ai"]):
@@ -238,11 +264,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	if not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
 		return
-	if not _combat.is_alive(PRACTICE_TARGET):
+	if _combat.hull(PRACTICE_TARGET) <= 0.0:
 		_npc_brain.mark_sunk()
-		_npc_motor.set_physics_process(false)
-		_practice_marker.hide()
-		_npc_presenter.hide()
+	_sync_sector_local_presentation()
 	_loot.drop_created.connect(_on_loot_drop_created)
 	_loot.drop_claimed.connect(_on_loot_drop_claimed)
 
@@ -469,24 +493,106 @@ func _flush_checkpoint() -> void:
 		return
 	_last_attempt_ms = Time.get_ticks_msec()
 	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
-	var authority_state: Dictionary = {}
+	var authority_state: Dictionary = {"sector_world": _world.snapshot_state(FoundationSector.PLAYER)}
 	if _combat != null and _npc_brain != null:
-		authority_state = {
+		authority_state.merge({
 			"combat": _combat.snapshot_state(),
 			"npc_motion": _npc_motor.capture_save_motion(),
 			"npc_ai": _npc_brain.persistence_state(),
 			"scheduler": _ai_scheduler.snapshot_state(),
 			"world": _world_objects.snapshot_state() if _world_objects != null else {"objects": [], "claimed_ids": [], "processed_spawns": []},
-		}
+		}, true)
 	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, authority_state)
 	save_status = _save_service.save_if_dirty(dto)
 
 
 
+func request_sector_transition(gate_id: String) -> Dictionary:
+	if _world == null or active_sector() == null:
+		return {"accepted": false, "reason": "no_active_sector", "from_sector": "", "to_sector": "", "gate_id": gate_id, "entry_anchor": ""}
+	_world.active().move_entity(FoundationSector.PLAYER, _ship_motor.global_position)
+	var result := _world.request_transition(_authority, FoundationSector.PLAYER, gate_id)
+	if not result["accepted"]:
+		return result
+	_ship_motor.global_position = _world.active().entity_position(FoundationSector.PLAYER)
+	_ship_motor.cancel_target()
+	_build_sector_geometry(_world.active())
+	_sync_sector_local_presentation()
+	if _map_overlay != null:
+		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
+	_save_service.mark_dirty()
+	request_checkpoint()
+	return result
+
+
+func _sync_sector_local_presentation() -> void:
+	if _npc_motor == null or _combat == null:
+		return
+	var active_now := _combat.is_alive(PRACTICE_TARGET)
+	_npc_motor.set_physics_process(active_now)
+	if active_now:
+		var position := _world.active().entity_position(PRACTICE_TARGET)
+		if position.is_finite():
+			_npc_motor.global_position = position
+		_practice_marker.show()
+		_npc_presenter.show()
+	else:
+		_practice_marker.hide()
+		_npc_presenter.hide()
+
+
+func _setup_map_ui() -> void:
+	_map_overlay = SectorMapOverlay.new()
+	_map_overlay.name = "Core03MapOverlay"
+	_map_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	$UI.add_child(_map_overlay)
+	_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
+	_map_button = Button.new()
+	_map_button.name = "Core03MapButton"
+	_map_button.text = "HARİTA"
+	_map_button.focus_mode = Control.FOCUS_NONE
+	_map_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_map_button.pressed.connect(_toggle_world_map)
+	$UI.add_child(_map_button)
+	get_viewport().size_changed.connect(_layout_map_ui)
+	_layout_map_ui()
+
+
+func _toggle_world_map() -> void:
+	_world_map_open = not _world_map_open
+	var input: GameplayInputController = $InputController
+	input.set_world_input_blocked(_world_map_open)
+	if _world_map_open:
+		_map_overlay.configure_world(_world.world_graph_snapshot(), _world.active().sector_id)
+	else:
+		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
+	_map_overlay.set_world_view(_world_map_open)
+	_map_button.text = "KAPAT" if _world_map_open else "HARİTA"
+	_layout_map_ui()
+
+
+func _layout_map_ui() -> void:
+	if _map_overlay == null or _map_button == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	const SAFE_MARGIN := 24.0
+	if _world_map_open:
+		_map_overlay.position = Vector2(SAFE_MARGIN, SAFE_MARGIN)
+		_map_overlay.size = (viewport_size - Vector2(SAFE_MARGIN * 2.0, SAFE_MARGIN * 2.0)).max(Vector2(160, 120))
+	else:
+		_map_overlay.position = Vector2(SAFE_MARGIN, SAFE_MARGIN)
+		_map_overlay.size = Vector2(260, 150).min(viewport_size - Vector2(SAFE_MARGIN * 2.0, SAFE_MARGIN * 2.0))
+	_map_button.size = Vector2(150, 58)
+	_map_button.position = Vector2(maxf(SAFE_MARGIN, viewport_size.x - _map_button.size.x - SAFE_MARGIN), SAFE_MARGIN)
+
+
 func _build_sector_geometry(sector: SectorRuntime) -> void:
+	if _sector_geometry != null:
+		_sector_geometry.queue_free()
 	var geometry := Node2D.new()
 	geometry.name = "ActiveSectorGeometry"
 	geometry.z_index = -1
+	_sector_geometry = geometry
 	add_child(geometry)
 	_add_rectangle(geometry, sector.bounds, Color(0.035, 0.095, 0.115))
 	for obstacle in sector.navigation.obstacle_rects():
