@@ -18,6 +18,7 @@ const ACTION := "use_action_item"
 const BOARD_RANGE := 120.0
 const BOARD_THRESHOLD := 0.45
 const BOARD_COOLDOWN := 240
+const TACTICAL_FIRE_CORRIDOR_RADIUS := 24.0
 
 var _enabled := true
 var _inventory: LootAuthority
@@ -213,6 +214,191 @@ func target_snapshot(id: String) -> Dictionary:
 
 func sequence_id() -> int:
 	return _sequence
+
+
+# Detached, read-only combat facts for authority-side tactical AI.
+# This method never consumes RNG, increments sequence IDs or exposes CombatantState/Resource objects.
+func tactical_snapshot(actor_id: String, target_ids: Array[String], heading: float, nearby_radius: float,
+		max_targets: int, max_ammo_candidates: int, max_line_of_fire_inspected: int) -> Dictionary:
+	if _sector == null or not SectorIds.valid(actor_id) or not is_finite(heading) or not is_finite(nearby_radius):
+		return {}
+	if max_targets <= 0 or max_targets > SenseSnapshot.MAX_CANDIDATES or max_ammo_candidates <= 0 or max_ammo_candidates > 16:
+		return {}
+	if max_line_of_fire_inspected <= 0 or max_line_of_fire_inspected > 64:
+		return {}
+	var actor: CombatantState = _roster.get(actor_id)
+	var origin := _sector.entity_position(actor_id)
+	if actor == null or not origin.is_finite():
+		return {}
+	var nearby: Array[String] = []
+	_sector.spatial.query_radius(origin, clampf(nearby_radius, 0.0, SectorSpatialHash.MAX_RADIUS), nearby)
+	nearby.sort()
+	var bounded_nearby: Array[String] = []
+	var nearby_hostiles := 0
+	var nearby_allies := 0
+	for id in nearby:
+		if bounded_nearby.size() >= max_line_of_fire_inspected:
+			break
+		if id == actor_id or not _roster.has(id):
+			continue
+		var other: CombatantState = _roster[id]
+		if other.sunk() or other.sector_id != actor.sector_id:
+			continue
+		bounded_nearby.append(id)
+		if other.faction_id == actor.faction_id:
+			nearby_allies += 1
+		else:
+			nearby_hostiles += 1
+
+	var weapon_data: Dictionary = {}
+	var reload_ready := false
+	if actor.battery != null:
+		var weapon := actor.battery.weapon
+		weapon_data = {
+			"weapon_id": weapon.stable_id,
+			"min_range": weapon.min_range_meters,
+			"max_range": weapon.range_meters,
+			"reload_seconds": weapon.reload_seconds,
+			"accuracy": weapon.accuracy,
+			"crit_chance": weapon.crit_chance,
+			"crit_multiplier": weapon.crit_multiplier,
+			"broadside_half_arc_degrees": weapon.broadside_half_arc_degrees,
+			"defense_penetration": weapon.defense_penetration,
+			"mounted_side": actor.battery.mounted_side,
+			"last_side": actor.battery.last_side,
+			"normal_damage": actor.normal_damage,
+		}
+		reload_ready = _tick >= actor.battery.ready_tick
+
+	var ammo_candidates: Array = []
+	var available_ammo_count := 0
+	var ammo_ids := actor.ammo_damage.keys()
+	ammo_ids.sort()
+	for raw_id in ammo_ids:
+		if ammo_candidates.size() >= max_ammo_candidates:
+			break
+		var ammo_id := str(raw_id)
+		var profile: AmmoProfile = _ammo_profiles.get(ammo_id)
+		if profile == null:
+			continue
+		var stock := _inventory.inventory_quantity(profile.item_id) if _inventory != null else 0
+		var available := _inventory != null and _inventory.can_consume(actor_id, profile.item_id, 1)
+		if available:
+			available_ammo_count += 1
+		ammo_candidates.append({
+			"ammo_id": ammo_id,
+			"item_id": profile.item_id,
+			"element_id": profile.element_id,
+			"status_id": profile.status_id,
+			"base_damage": float(actor.ammo_damage[ammo_id]),
+			"stock": stock,
+			"available": available,
+		})
+
+	var targets: Array = []
+	var seen: Dictionary = {}
+	for target_id in target_ids:
+		if targets.size() >= max_targets:
+			break
+		if not SectorIds.valid(target_id) or seen.has(target_id) or target_id == actor_id:
+			continue
+		seen[target_id] = true
+		var target: CombatantState = _roster.get(target_id)
+		if target == null or target.sector_id != actor.sector_id:
+			continue
+		var target_position := _sector.entity_position(target_id)
+		if not target_position.is_finite():
+			continue
+		var blocker_id := ""
+		var inspected := 0
+		for nearby_id in bounded_nearby:
+			if inspected >= max_line_of_fire_inspected:
+				break
+			if nearby_id == target_id:
+				continue
+			var blocker: CombatantState = _roster.get(nearby_id)
+			if blocker == null or blocker.sunk() or blocker.faction_id != actor.faction_id:
+				continue
+			inspected += 1
+			var blocker_position := _sector.entity_position(nearby_id)
+			if blocker_position.is_finite() and _point_blocks_segment(origin, target_position, blocker_position, TACTICAL_FIRE_CORRIDOR_RADIUS):
+				blocker_id = nearby_id
+				break
+		var distance := origin.distance_to(target_position)
+		targets.append({
+			"entity_id": target_id,
+			"target_class": target.target_class,
+			"faction_id": target.faction_id,
+			"hostile": target.faction_id != actor.faction_id,
+			"x": target_position.x,
+			"y": target_position.y,
+			"distance": distance,
+			"relative_bearing": ShipMotor.signed_angular_difference(heading, (target_position - origin).angle()),
+			"hull": target.hull,
+			"max_hull": target.max_hull,
+			"hull_ratio": 0.0 if target.max_hull <= 0.0 else clampf(target.hull / target.max_hull, 0.0, 1.0),
+			"defense": target.defense + (5.0 if target.statuses.has("status.braced") else 0.0),
+			"dodge": target.dodge,
+			"crit_prevention": target.crit_prevention,
+			"resistances": target.resistances.duplicate(true),
+			"boarding_protection": target.boarding_protection,
+			"alive": not target.sunk(),
+			"selectable": target.selectable,
+			"safe_zone": _sector.entity_in_safe_zone(target_id),
+			"line_of_fire_clear": blocker_id.is_empty(),
+			"friendly_blocker_id": blocker_id,
+			"line_of_fire_inspected": inspected,
+		})
+
+	var actor_snapshot := {
+		"entity_id": actor_id,
+		"sector_id": actor.sector_id,
+		"faction_id": actor.faction_id,
+		"x": origin.x,
+		"y": origin.y,
+		"hull": actor.hull,
+		"max_hull": actor.max_hull,
+		"hull_ratio": 0.0 if actor.max_hull <= 0.0 else clampf(actor.hull / actor.max_hull, 0.0, 1.0),
+		"locked_target_id": actor.locked_id,
+		"selected_ammo_id": actor.selected_ammo,
+		"requires_ammo": not actor.ammo_damage.is_empty(),
+		"available_ammo_count": available_ammo_count,
+		"ammo_candidates": ammo_candidates,
+		"weapon": weapon_data,
+		"reload_ready": reload_ready,
+		"boarding_power": actor.boarding_power,
+		"boarding_ready": _tick >= int(actor.ready.get(BOARD, 0)),
+		"repair_available": actor.repair_interval > 0 and not actor.repair_item.is_empty(),
+		"repair_ready": _tick >= int(actor.ready.get(REPAIR, 0)),
+		"safe_zone": _sector.entity_in_safe_zone(actor_id),
+	}
+	var result := {
+		"tick": _tick,
+		"sequence_id": _sequence,
+		"actor": actor_snapshot,
+		"targets": targets,
+		"nearby_hostile_count": nearby_hostiles,
+		"nearby_ally_count": nearby_allies,
+		"nearby_inspected": bounded_nearby.size(),
+		"rules": {
+			"board_range": BOARD_RANGE,
+			"board_threshold": BOARD_THRESHOLD,
+			"board_cooldown": BOARD_COOLDOWN,
+		},
+	}
+	return result if DtoContract.is_primitive_safe(result) else {}
+
+
+static func _point_blocks_segment(from: Vector2, to: Vector2, point: Vector2, corridor_radius: float) -> bool:
+	var segment := to - from
+	var length_squared := segment.length_squared()
+	if length_squared <= 0.000001:
+		return false
+	var along := (point - from).dot(segment) / length_squared
+	if along <= 0.0 or along >= 1.0:
+		return false
+	var closest := from + segment * along
+	return point.distance_squared_to(closest) <= corridor_radius * corridor_radius
 
 
 func register_monster(id: String, definition: MonsterDefinition, anchor_id: String) -> bool:
