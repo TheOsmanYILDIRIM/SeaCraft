@@ -15,6 +15,7 @@ var combat_target_at: Callable
 var _camera: Node
 var _touch = TOUCH.new()
 var _mouse_pan_active := false
+var _world_input_blocked := false
 
 
 func _ready() -> void:
@@ -23,7 +24,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _camera == null:
+	if _camera == null or _world_input_blocked:
 		return
 	var axis := Input.get_vector(
 		BINDINGS.ACTION_PAN_LEFT,
@@ -40,7 +41,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func process_device_event(event: InputEvent, ui_consumed: bool = false) -> void:
-	if ui_consumed or _camera == null or event == null:
+	if ui_consumed or _world_input_blocked or _camera == null or event == null:
 		return
 
 	if event is InputEventMouseButton:
@@ -72,6 +73,17 @@ func process_device_event(event: InputEvent, ui_consumed: bool = false) -> void:
 		_dispatch(MAPPER.map_camera_zoom(1.0 / 1.1))
 	elif event.is_action_pressed(BINDINGS.ACTION_RECENTER):
 		_dispatch(MAPPER.map_camera_recenter())
+
+
+func set_world_input_blocked(blocked: bool) -> void:
+	_world_input_blocked = blocked
+	if blocked:
+		_mouse_pan_active = false
+		reset_touch()
+
+
+func world_input_blocked() -> bool:
+	return _world_input_blocked
 
 
 func reset_touch() -> void:

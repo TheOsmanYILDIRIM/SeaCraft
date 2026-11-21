@@ -3,7 +3,7 @@ extends RefCounted
 
 # SHA-256 of newline-terminated Git blob IDs for the movement profile, sector
 # definition and authored foundation graph (in that order). Bump on content changes.
-const CONTENT_HASH := "b379fac338fb4ae59b52e9559180a97c9dedd90ff3463d7183ec7ab0ea0605d6"
+const CONTENT_HASH := "c033f8c86ce7e674776340063fa8eb374027273181a557c742ed74c5506b6a95"
 const LOCAL := "local"
 const HOST := "host"
 
@@ -88,7 +88,14 @@ static func restore(dto: Dictionary, world: SectorWorld, authority: RefCounted, 
 	if world == null or ship == null or streams == null or not ship.authority_enabled:
 		return "invalid_restore_target"
 	var motion: Dictionary = dto["player"]["motion"]
-	error = world.restore_active(authority, dto["sector_id"], entity_id, Vector2(motion["x"], motion["y"]))
+	var authority_state := authoritative_state(dto)
+	var world_state: Variant = authority_state.get("sector_world")
+	if world_state is Dictionary:
+		if world_state.get("active_sector") != dto["sector_id"]:
+			return "invalid_world_state"
+		error = world.restore_state(authority, world_state, entity_id, Vector2(motion["x"], motion["y"]))
+	else:
+		error = world.restore_active(authority, dto["sector_id"], entity_id, Vector2(motion["x"], motion["y"]))
 	if not error.is_empty():
 		return error
 	# All remaining inputs were validated before replacing the active runtime.
