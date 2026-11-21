@@ -305,6 +305,14 @@ func _load_other(path: String) -> SectorDefinition:
 	if path != OTHER_PATH:
 		return null
 	var definition := ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	definition.spawn_anchors = [definition.spawn_anchors[0]]
+	definition.neighbor_ids = PackedStringArray()
+	definition.transition_gates = []
+	definition.safe_haven = false
+	definition.safe_zones = []
+	definition.map_node_position = Vector2.ZERO
+	definition.map_layer = 0
+	definition.biome_tag = ""
 	definition.stable_id = OTHER
 	definition.spawn_anchors[0].sector_id = OTHER
 	return definition

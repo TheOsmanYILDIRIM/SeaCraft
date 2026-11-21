@@ -203,13 +203,18 @@ func test_transition_authority_and_proximity() -> void:
 	var world := SectorWorld.new(_graph(), authority, _load_sector)
 	assert_false(world.activate_initial(stranger, A, ENTRY, ENTITY_ID))
 	assert_true(world.activate_initial(authority, A, ENTRY, ENTITY_ID))
-	assert_true(world.request_transition(stranger, ENTITY_ID, GATE).is_empty())
+	var unauthorized := world.request_transition(stranger, ENTITY_ID, GATE)
+	assert_false(unauthorized["accepted"])
+	assert_eq(unauthorized["reason"], "not_authorized")
 	world.active().move_entity(ENTITY_ID, Vector2(-400, 0))
 	assert_true(world.can_transition(authority, ENTITY_ID, GATE).is_empty())
 	world.active().move_entity(ENTITY_ID, Vector2(-240, 0))
 	var target := world.can_transition(authority, ENTITY_ID, GATE)
 	assert_eq(target, {"sector_id": B, "entry_anchor_id": ENTRY})
-	assert_eq(world.request_transition(authority, ENTITY_ID, GATE), target)
+	var accepted := world.request_transition(authority, ENTITY_ID, GATE)
+	assert_true(accepted["accepted"])
+	assert_eq(accepted["to_sector"], B)
+	assert_eq(accepted["entry_anchor"], ENTRY)
 	assert_eq(world.active().sector_id, B)
 	assert_false(world.leave(stranger))
 	assert_true(world.leave(authority))
@@ -222,7 +227,7 @@ func test_inactive_sector_has_no_runtime_and_old_releases() -> void:
 	assert_true(world.activate_initial(authority, A, ENTRY, ENTITY_ID))
 	assert_eq(_loads, [A_PATH])
 	var old: WeakRef = weakref(world.active())
-	assert_false(world.request_transition(authority, ENTITY_ID, GATE).is_empty())
+	assert_true(world.request_transition(authority, ENTITY_ID, GATE)["accepted"])
 	assert_eq(_loads, [A_PATH, B_PATH])
 	assert_null(old.get_ref())
 
@@ -234,7 +239,9 @@ func test_failed_destination_preserves_active_runtime() -> void:
 	var world := SectorWorld.new(_graph(), authority, broken_loader)
 	assert_true(world.activate_initial(authority, A, ENTRY, ENTITY_ID))
 	var original := world.active()
-	assert_true(world.request_transition(authority, ENTITY_ID, GATE).is_empty())
+	var rejected := world.request_transition(authority, ENTITY_ID, GATE)
+	assert_false(rejected["accepted"])
+	assert_eq(rejected["reason"], "destination_runtime_invalid")
 	assert_true(world.active() == original)
 
 
@@ -298,7 +305,16 @@ func test_ship_motor_cannot_cross_fixture_coast() -> void:
 
 
 func _fixture() -> SectorDefinition:
-	return ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	var definition := ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	definition.spawn_anchors = [definition.spawn_anchors[0]]
+	definition.neighbor_ids = PackedStringArray()
+	definition.transition_gates = []
+	definition.safe_haven = false
+	definition.safe_zones = []
+	definition.map_node_position = Vector2.ZERO
+	definition.map_layer = 0
+	definition.biome_tag = ""
+	return definition
 
 
 func _edge() -> SectorGate:
