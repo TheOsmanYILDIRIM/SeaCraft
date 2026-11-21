@@ -53,6 +53,8 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 		return false
 	var ship := CombatantState.new()
 	ship.faction_id = faction
+	ship.sector_id = _sector.sector_id
+	ship.last_position = _sector.entity_position(id)
 	ship.target_class = target_class
 	ship.max_hull = max_hull
 	ship.hull = max_hull
@@ -72,6 +74,60 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 		ship.battery.mounted_side = mounted_side
 		ship.battery.reload_ticks = maxi(1, ceili(weapon.reload_seconds * _tick_rate))
 	_roster[id] = ship
+	return true
+
+
+func register_dormant(id: String, faction: String, max_hull: float, sector_id: String, position: Vector2,
+		target_class: String = TargetingService.SHIP) -> bool:
+	if not SectorIds.valid(id) or not SectorIds.valid(faction) or not SectorIds.valid(sector_id) or _roster.has(id):
+		return false
+	if not TargetingService.target_class_valid(target_class) or not position.is_finite() or not CoreCombatRules.bounded(max_hull, 0.000001, CoreCombatRules.MAX_VALUE):
+		return false
+	var actor := CombatantState.new()
+	actor.faction_id = faction
+	actor.sector_id = sector_id
+	actor.last_position = position
+	actor.target_class = target_class
+	actor.max_hull = max_hull
+	actor.hull = max_hull
+	_roster[id] = actor
+	return true
+
+
+func rebind_sector(sector: SectorRuntime, transferred_entity_id: String) -> bool:
+	if sector == null or not SectorIds.valid(transferred_entity_id):
+		return false
+	if _sector != null:
+		for id in _roster:
+			var actor: CombatantState = _roster[id]
+			if actor.sector_id == _sector.sector_id:
+				var old_position := _sector.entity_position(id)
+				if old_position.is_finite():
+					actor.last_position = old_position
+	var transferred: CombatantState = _roster.get(transferred_entity_id)
+	if transferred != null:
+		var transferred_position := sector.entity_position(transferred_entity_id)
+		if not transferred_position.is_finite():
+			return false
+		transferred.sector_id = sector.sector_id
+		transferred.last_position = transferred_position
+	_sector = sector
+	for id in _roster:
+		var actor: CombatantState = _roster[id]
+		if actor.sector_id != _sector.sector_id:
+			continue
+		var current := _sector.entity_position(id)
+		if not current.is_finite():
+			if not actor.last_position.is_finite() or not _sector.bounds.has_point(actor.last_position) or not _sector.register_entity(id, actor.last_position):
+				return false
+		else:
+			actor.last_position = current
+	for actor: CombatantState in _roster.values():
+		if actor.locked_id.is_empty():
+			continue
+		var target: CombatantState = _roster.get(actor.locked_id)
+		if target == null or target.sector_id != actor.sector_id:
+			actor.locked_id = ""
 	return true
 
 
@@ -143,7 +199,7 @@ func target_snapshot(id: String) -> Dictionary:
 	var actor: CombatantState = _roster.get(id)
 	if actor == null or _sector == null:
 		return {}
-	var position := _sector.entity_position(id)
+	var position := _sector.entity_position(id) if actor.sector_id == _sector.sector_id else actor.last_position
 	return {
 		"entity_id": id,
 		"target_class": actor.target_class,
@@ -164,7 +220,7 @@ func register_monster(id: String, definition: MonsterDefinition, anchor_id: Stri
 		return false
 	var count := 0
 	for actor: CombatantState in _roster.values():
-		if actor.target_class == TargetingService.MONSTER:
+		if actor.sector_id == _sector.sector_id and actor.target_class == TargetingService.MONSTER:
 			count += 1
 	if count >= MAX_MONSTERS_PER_SECTOR:
 		return false
@@ -202,7 +258,10 @@ func update_monster_position(id: String, requested_position: Vector2) -> bool:
 		bounded = monster.territory_center + offset.normalized() * monster.territory_radius
 	if _sector.navigation == null or not _sector.navigation.accessible(bounded):
 		return false
-	return _sector.move_entity(id, bounded)
+	var moved := _sector.move_entity(id, bounded)
+	if moved:
+		monster.last_position = bounded
+	return moved
 
 
 func retire_destroyed(id: String) -> bool:
@@ -223,7 +282,7 @@ func faction_id(id: String) -> String:
 
 func is_alive(id: String) -> bool:
 	var ship: CombatantState = _roster.get(id)
-	return ship != null and not ship.sunk() and _sector != null and _sector.entity_position(id).is_finite()
+	return ship != null and not ship.sunk() and _sector != null and ship.sector_id == _sector.sector_id and _sector.entity_position(id).is_finite()
 
 
 func hostile(observer_id: String, other_id: String) -> bool:
@@ -381,6 +440,9 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 						return _reject(result, "out_of_range")
 					recipient_id = requested_target
 					recipient = _roster[requested_target]
+					var safe_reason := _hostile_damage_rejection(actor_id, requested_target)
+					if not safe_reason.is_empty():
+						return _reject(result, safe_reason)
 				_:
 					return _reject(result, "invalid_action")
 			status = profile["status"]
@@ -406,6 +468,14 @@ func _transact(actor_id: String, command: Dictionary, now: int, ai: bool) -> Dic
 	if kind == BOARD and success:
 		result["reward_id"] = "reward.boarding_salvage"
 	return result
+
+
+func _hostile_damage_rejection(attacker_id: String, target_id: String) -> String:
+	if _sector == null:
+		return "invalid_sector"
+	if _sector.entity_in_safe_zone(attacker_id) or _sector.entity_in_safe_zone(target_id):
+		return "safe_zone"
+	return ""
 
 
 func _can_pay(actor_id: String, item: String) -> bool:
@@ -440,9 +510,12 @@ func snapshot_state() -> Dictionary:
 				"ready_tick": ship.battery.ready_tick,
 				"last_side": ship.battery.last_side,
 			}
-		var position := _sector.entity_position(id)
+		var position := _sector.entity_position(id) if ship.sector_id == _sector.sector_id else ship.last_position
+		if position.is_finite():
+			ship.last_position = position
 		combatants.append({
 			"entity_id": id,
+			"sector_id": ship.sector_id,
 			"hull": ship.hull,
 			"locked_id": ship.locked_id,
 			"battery": battery,
@@ -465,13 +538,16 @@ func restore_state(value: Variant) -> bool:
 		return false
 	var planned: Dictionary = {}
 	for raw in raw_combatants:
-		if not raw is Dictionary or raw.size() not in [4, 5, 6] or (raw.size() >= 5 and not raw.has("core")):
+		if not raw is Dictionary or raw.size() not in [4, 5, 6, 7] or (raw.size() >= 5 and not raw.has("core")):
 			return false
 		var entry: Dictionary = raw
 		var raw_id: Variant = entry.get("entity_id")
 		if not raw_id is String or not SectorIds.valid(raw_id) or not _roster.has(raw_id) or planned.has(raw_id):
 			return false
 		var ship: CombatantState = _roster[raw_id]
+		var restored_sector: Variant = entry.get("sector_id", ship.sector_id if not ship.sector_id.is_empty() else _sector.sector_id)
+		if not restored_sector is String or not SectorIds.valid(restored_sector):
+			return false
 		if typeof(entry.get("hull")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
 		var restored_hull := float(entry["hull"])
@@ -495,13 +571,14 @@ func restore_state(value: Variant) -> bool:
 		if not raw_position is Dictionary or raw_position.size() != 2 or typeof(raw_position.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(raw_position.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
 		var restored_position := Vector2(float(raw_position["x"]), float(raw_position["y"]))
-		if not restored_position.is_finite() or not _sector.bounds.has_point(restored_position):
+		if not restored_position.is_finite() or (restored_sector == _sector.sector_id and not _sector.bounds.has_point(restored_position)):
 			return false
 		var core: Variant = entry.get("core", {"selected_ammo": ship.selected_ammo, "statuses": {}, "ready": {}, "damage_tick": -1})
 		if not _valid_core_state(core, ship, int(state["tick"])):
 			return false
 		planned[raw_id] = {
 			"hull": restored_hull,
+			"sector_id": restored_sector,
 			"locked_id": raw_lock,
 			"battery": raw_battery.duplicate(true),
 			"position": restored_position,
@@ -517,13 +594,15 @@ func restore_state(value: Variant) -> bool:
 			return false
 		var source: CombatantState = _roster[id]
 		var target: CombatantState = _roster[lock_id]
-		if source.faction_id == target.faction_id or float(planned[lock_id]["hull"]) <= 0.0:
+		if source.faction_id == target.faction_id or planned[id]["sector_id"] != planned[lock_id]["sector_id"] or float(planned[lock_id]["hull"]) <= 0.0:
 			return false
 	_status_actors.clear()
 	for id in planned:
 		var ship: CombatantState = _roster[id]
 		var entry: Dictionary = planned[id]
 		ship.hull = entry["hull"]
+		ship.sector_id = entry["sector_id"]
+		ship.last_position = entry["position"]
 		ship.locked_id = entry["locked_id"]
 		var core: Dictionary = entry["core"]
 		ship.selected_ammo = core["selected_ammo"]
@@ -538,8 +617,13 @@ func restore_state(value: Variant) -> bool:
 			ship.ready[key] = int(ship.ready[key])
 		ship.damage_tick = int(core["damage_tick"])
 		ship.harpoon_ready_tick = int(core.get("harpoon_ready_tick", 0))
-		if not _sector.move_entity(id, entry["position"]):
-			return false
+		if ship.sector_id == _sector.sector_id:
+			var current_position := _sector.entity_position(id)
+			if current_position.is_finite():
+				if not _sector.move_entity(id, entry["position"]):
+					return false
+			elif not _sector.register_entity(id, entry["position"]):
+				return false
 		if ship.battery != null:
 			var battery_state: Dictionary = entry["battery"]
 			ship.battery.ready_tick = int(battery_state["ready_tick"])
@@ -627,6 +711,9 @@ func fire(attacker_id: String, heading: float, command: Dictionary) -> Dictionar
 		return _reject(result, "invalid_arc")
 	if _tick < battery.ready_tick:
 		return _reject(result, "reloading")
+	var safe_reason := _hostile_damage_rejection(attacker_id, target_id)
+	if not safe_reason.is_empty():
+		return _reject(result, safe_reason)
 
 	var ammo: AmmoProfile = _ammo_profiles.get(attacker.selected_ammo)
 	var normal := attacker.normal_damage
@@ -712,6 +799,9 @@ func harpoon(attacker_id: String, command: Dictionary) -> Dictionary:
 		return _reject(result, "out_of_range")
 	if _tick < attacker.harpoon_ready_tick:
 		return _reject(result, "reloading")
+	var safe_reason := _hostile_damage_rejection(attacker_id, target_id)
+	if not safe_reason.is_empty():
+		return _reject(result, safe_reason)
 	if not _can_pay(attacker_id, profile.item_id):
 		return _reject(result, "insufficient_resource")
 	var resistance := float(target.resistances.get(profile.element_id, 0.0)) if profile.element_id != CoreCombatRules.NEUTRAL else 0.0
