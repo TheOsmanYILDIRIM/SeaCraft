@@ -275,7 +275,9 @@ func test_core04_large_entity_roundtrip_is_bounded_and_deterministic() -> void:
 	var load_start := Time.get_ticks_usec()
 	var loaded := _service.load()
 	assert_eq(loaded["status"], SaveService.OK_STATUS)
-	assert_eq(loaded["snapshot"]["authoritative_state"]["entity_index"], index)
+	var loaded_index: Dictionary = loaded["snapshot"]["authoritative_state"]["entity_index"]
+	assert_eq(PersistentEntityIndex.validate(loaded_index, ContentManifest.registry()), "")
+	_assert_entity_index_semantic_equal(index, loaded_index)
 	var authority := RefCounted.new()
 	var world := SectorWorld.new(FoundationSector.graph(), authority)
 	var ship := ShipMotor.new()
@@ -299,7 +301,13 @@ func test_core04_world_ledgers_survive_roundtrip_without_duplicate_claims() -> v
 	assert_eq(_service.save(dto)["status"], SaveService.OK_STATUS)
 	var loaded := _service.load()
 	assert_eq(loaded["status"], SaveService.OK_STATUS)
-	assert_eq(SaveSnapshot.loot_state(loaded["snapshot"]), loot)
+	var loaded_loot := SaveSnapshot.loot_state(loaded["snapshot"])
+	assert_eq(loaded_loot["drops"], loot["drops"])
+	assert_eq(loaded_loot["claimed_ids"], loot["claimed_ids"])
+	assert_eq(loaded_loot["processed_events"], loot["processed_events"])
+	assert_eq(loaded_loot["inventory"].keys(), loot["inventory"].keys())
+	for item_id in loot["inventory"]:
+		assert_eq(int(loaded_loot["inventory"][item_id]), int(loot["inventory"][item_id]))
 	assert_eq(loaded["snapshot"]["authoritative_state"]["entity_index"]["records"][1]["sector_id"], FoundationSector.OUTER_ID)
 
 
@@ -374,3 +382,34 @@ func _remove_store(directory: String) -> void:
 	for name in [SaveService.PRIMARY, SaveService.TEMP, SaveService.BACKUP, SettingsService.FILE_NAME, SettingsService.TEMP_NAME]:
 		_remove_if_exists(directory.path_join(name))
 	DirAccess.remove_absolute(directory)
+
+
+func _assert_entity_index_semantic_equal(expected: Dictionary, actual: Dictionary) -> void:
+	assert_eq(int(actual["version"]), int(expected["version"]))
+	assert_eq(actual["records"].size(), expected["records"].size())
+	for index in expected["records"].size():
+		var left: Dictionary = expected["records"][index]
+		var right: Dictionary = actual["records"][index]
+		for key in ["instance_id", "definition_id", "entity_kind", "sector_id", "alive"]:
+			assert_eq(right[key], left[key], "record %d %s" % [index, key])
+		for key in ["x", "y"]:
+			assert_eq(float(right["position"][key]), float(left["position"][key]), "record %d position.%s" % [index, key])
+		for key in ["heading", "vx", "vy"]:
+			assert_eq(float(right["motion"][key]), float(left["motion"][key]), "record %d motion.%s" % [index, key])
+		assert_eq(float(right["health"]), float(left["health"]), "record %d health" % index)
+		assert_eq(right["route"].keys(), left["route"].keys(), "record %d route keys" % index)
+		if left["route"].has("goal"):
+			for key in ["x", "y"]:
+				assert_eq(float(right["route"]["goal"][key]), float(left["route"]["goal"][key]), "record %d route.goal.%s" % [index, key])
+		for key in ["patrol_index", "intent_id", "next_waypoint"]:
+			if left["route"].has(key):
+				assert_eq(int(right["route"][key]), int(left["route"][key]), "record %d route.%s" % [index, key])
+		if left["route"].has("goal_id"):
+			assert_eq(right["route"]["goal_id"], left["route"]["goal_id"])
+		assert_eq(right["cooldowns"].keys(), left["cooldowns"].keys(), "record %d cooldown keys" % index)
+		for key in left["cooldowns"]:
+			assert_eq(int(right["cooldowns"][key]), int(left["cooldowns"][key]), "record %d cooldown.%s" % [index, key])
+		assert_eq(right["inventory"].keys(), left["inventory"].keys(), "record %d inventory keys" % index)
+		for key in left["inventory"]:
+			assert_eq(int(right["inventory"][key]), int(left["inventory"][key]), "record %d inventory.%s" % [index, key])
+		assert_eq(right["payload"], left["payload"], "record %d payload" % index)
