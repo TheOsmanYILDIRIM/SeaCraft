@@ -397,7 +397,11 @@ func _assert_entity_index_semantic_equal(expected: Dictionary, actual: Dictionar
 		for key in ["heading", "vx", "vy"]:
 			assert_eq(float(right["motion"][key]), float(left["motion"][key]), "record %d motion.%s" % [index, key])
 		assert_eq(float(right["health"]), float(left["health"]), "record %d health" % index)
-		assert_eq(right["route"].keys(), left["route"].keys(), "record %d route keys" % index)
+		var left_route_keys: Array = left["route"].keys()
+		var right_route_keys: Array = right["route"].keys()
+		left_route_keys.sort()
+		right_route_keys.sort()
+		assert_eq(right_route_keys, left_route_keys, "record %d route keys" % index)
 		if left["route"].has("goal"):
 			for key in ["x", "y"]:
 				assert_eq(float(right["route"]["goal"][key]), float(left["route"]["goal"][key]), "record %d route.goal.%s" % [index, key])
