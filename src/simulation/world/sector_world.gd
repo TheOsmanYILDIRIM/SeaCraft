@@ -95,41 +95,30 @@ func snapshot_state(entity_id: String) -> Dictionary:
 		"dormant": _dormant.duplicate(true)}
 
 
+func validate_restore_state(value: Variant, entity_id: String, active_position: Vector2) -> String:
+	return str(_restore_plan(value, entity_id, active_position).get("error", "invalid_world_state"))
+
+
+func validate_restore_active(id: String, entity_id: String, position: Vector2) -> String:
+	return str(_active_restore_plan(id, entity_id, position).get("error", "invalid_spawn_state"))
+
+
 func restore_state(authority: RefCounted, value: Variant, entity_id: String, active_position: Vector2) -> String:
 	if not _authorized(authority):
 		return "not_authorized"
-	if not value is Dictionary or value.size() != 3 or not DtoContract.is_primitive_safe(value):
-		return "invalid_world_state"
-	var state: Dictionary = value
-	if not state.get("active_sector") is String or not SectorIds.valid(state["active_sector"]):
-		return "invalid_world_state"
-	if not state.get("active_runtime") is Dictionary or not state.get("dormant") is Dictionary or state["dormant"].size() > MAX_DORMANT_SECTORS:
-		return "invalid_world_state"
-	var id: String = state["active_sector"]
-	var path := _graph.definition_path(id)
-	if path.is_empty():
-		return "unknown_sector"
-	var candidate := _build_runtime(id, path)
-	if candidate == null:
-		return "missing_or_invalid_sector_definition"
-	if not candidate.restore_state(state["active_runtime"], entity_id):
-		return "invalid_world_state"
-	if not active_position.is_finite() or not candidate.bounds.has_point(active_position) or not candidate.register_entity(entity_id, active_position):
-		return "invalid_spawn_state"
-	var planned_dormant: Dictionary = {}
-	for dormant_id in state["dormant"]:
-		if not dormant_id is String or not SectorIds.valid(dormant_id) or dormant_id == id or _graph.definition_path(dormant_id).is_empty():
-			return "invalid_world_state"
-		var raw: Variant = state["dormant"][dormant_id]
-		if not raw is Dictionary:
-			return "invalid_world_state"
-		var check := _build_runtime(dormant_id, _graph.definition_path(dormant_id))
-		if check == null or not check.restore_state(raw, entity_id):
-			return "invalid_world_state"
-		planned_dormant[dormant_id] = raw.duplicate(true)
-	_runtime = candidate
-	_dormant = planned_dormant
-	if _binding != null and not _binding.rebind_sector(candidate, entity_id):
+	var plan := _restore_plan(value, entity_id, active_position)
+	var error := str(plan.get("error", "invalid_world_state"))
+	if not error.is_empty():
+		return error
+	var previous_runtime := _runtime
+	var previous_dormant := _dormant.duplicate(true)
+	_runtime = plan["runtime"]
+	_dormant = plan["dormant"]
+	if _binding != null and not _binding.rebind_sector(_runtime, entity_id):
+		_runtime = previous_runtime
+		_dormant = previous_dormant
+		if previous_runtime != null:
+			_binding.rebind_sector(previous_runtime, entity_id)
 		return "runtime_rebind_failed"
 	return ""
 
@@ -137,19 +126,70 @@ func restore_state(authority: RefCounted, value: Variant, entity_id: String, act
 func restore_active(authority: RefCounted, id: String, entity_id: String, position: Vector2) -> String:
 	if not _authorized(authority):
 		return "not_authorized"
-	var path := _graph.definition_path(id)
-	if not SectorIds.valid(id) or path.is_empty():
-		return "unknown_sector"
-	var candidate := _build_runtime(id, path)
-	if candidate == null:
-		return "missing_or_invalid_sector_definition"
-	if not position.is_finite() or not candidate.bounds.has_point(position) or not candidate.register_entity(entity_id, position):
-		return "invalid_spawn_state"
-	_runtime = candidate
+	var plan := _active_restore_plan(id, entity_id, position)
+	var error := str(plan.get("error", "invalid_spawn_state"))
+	if not error.is_empty():
+		return error
+	var previous_runtime := _runtime
+	var previous_dormant := _dormant.duplicate(true)
+	_runtime = plan["runtime"]
 	_dormant.clear()
-	if _binding != null and not _binding.rebind_sector(candidate, entity_id):
+	if _binding != null and not _binding.rebind_sector(_runtime, entity_id):
+		_runtime = previous_runtime
+		_dormant = previous_dormant
+		if previous_runtime != null:
+			_binding.rebind_sector(previous_runtime, entity_id)
 		return "runtime_rebind_failed"
 	return ""
+
+
+func _restore_plan(value: Variant, entity_id: String, active_position: Vector2) -> Dictionary:
+	if not value is Dictionary or value.size() != 3 or not DtoContract.is_primitive_safe(value):
+		return {"error": "invalid_world_state"}
+	var state: Dictionary = value
+	if not state.get("active_sector") is String or not SectorIds.valid(state["active_sector"]):
+		return {"error": "invalid_world_state"}
+	if not state.get("active_runtime") is Dictionary or not state.get("dormant") is Dictionary or state["dormant"].size() > MAX_DORMANT_SECTORS:
+		return {"error": "invalid_world_state"}
+	var id: String = state["active_sector"]
+	var path := _graph.definition_path(id)
+	if path.is_empty():
+		return {"error": "unknown_sector"}
+	var candidate := _build_runtime(id, path)
+	if candidate == null:
+		return {"error": "missing_or_invalid_sector_definition"}
+	if not candidate.restore_state(state["active_runtime"], entity_id):
+		return {"error": "invalid_world_state"}
+	if not active_position.is_finite() or not candidate.bounds.has_point(active_position) or not candidate.register_entity(entity_id, active_position):
+		return {"error": "invalid_spawn_state"}
+	if _binding != null and not _binding.can_rebind(candidate, entity_id):
+		return {"error": "runtime_rebind_rejected"}
+	var planned_dormant: Dictionary = {}
+	for dormant_id in state["dormant"]:
+		if not dormant_id is String or not SectorIds.valid(dormant_id) or dormant_id == id or _graph.definition_path(dormant_id).is_empty():
+			return {"error": "invalid_world_state"}
+		var raw: Variant = state["dormant"][dormant_id]
+		if not raw is Dictionary:
+			return {"error": "invalid_world_state"}
+		var check := _build_runtime(dormant_id, _graph.definition_path(dormant_id))
+		if check == null or not check.restore_state(raw, entity_id):
+			return {"error": "invalid_world_state"}
+		planned_dormant[dormant_id] = raw.duplicate(true)
+	return {"error": "", "runtime": candidate, "dormant": planned_dormant}
+
+
+func _active_restore_plan(id: String, entity_id: String, position: Vector2) -> Dictionary:
+	var path := _graph.definition_path(id)
+	if not SectorIds.valid(id) or path.is_empty():
+		return {"error": "unknown_sector"}
+	var candidate := _build_runtime(id, path)
+	if candidate == null:
+		return {"error": "missing_or_invalid_sector_definition"}
+	if not position.is_finite() or not candidate.bounds.has_point(position) or not candidate.register_entity(entity_id, position):
+		return {"error": "invalid_spawn_state"}
+	if _binding != null and not _binding.can_rebind(candidate, entity_id):
+		return {"error": "runtime_rebind_rejected"}
+	return {"error": "", "runtime": candidate}
 
 
 func _transition_plan(authority: RefCounted, entity_id: String, gate_id: String) -> Dictionary:
