@@ -32,6 +32,22 @@ from skimage import color
 ORDER = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 HEADING = {"N": -90, "NE": -45, "E": 0, "SE": 45, "S": 90, "SW": 135, "W": 180, "NW": -135}
 PAIR = {"S": "N", "SW": "NE", "W": "E", "NW": "SE"}
+PAIR_GROUPS = [("N","S"),("NE","SW"),("E","W"),("SE","NW")]
+
+# Learned once from SC-03 manual alignment, intentionally softened so the
+# normalizer does not overfit one ship. Values are residual fractions of the
+# canonical broadside span after water-contact/support-anchor alignment.
+SUPPORT_PROFILE = {
+    "global_target_offset_frac": (13.84/790.0, -30.11/790.0),
+    "family_residual_frac": {
+        "NS": (-14.83/790.0,  13.05/790.0),
+        "NESW": (-9.42/790.0, -27.23/790.0),
+        "EW": (8.85/790.0, 22.98/790.0),
+        "SENW": (15.40/790.0, -8.80/790.0),
+    },
+    "residual_strength": 0.85,
+    "scale_strength": 0.766,
+}
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -47,6 +63,10 @@ def parse_args():
     p.add_argument("--lut-blend", type=float, default=0.92)
     p.add_argument("--gif-fps", type=float, default=6.0)
     p.add_argument("--no-pair-lock", action="store_true")
+    p.add_argument("--support-anchor", dest="support_anchor", action="store_true", default=True,
+                   help="Use tolerant water-contact/support-anchor refinement (default on)")
+    p.add_argument("--no-support-anchor", dest="support_anchor", action="store_false",
+                   help="Disable support-anchor refinement")
     return p.parse_args()
 
 def direction_from_name(name: str):
@@ -128,6 +148,108 @@ def structural_hull_mask(im: Image.Image, fg: np.ndarray):
         hull = fg.copy()
         hull[:int(ymin + 0.30*(ymax-ymin)), :] = False
     return hull
+
+def dense_hull_component(im: Image.Image):
+    """Thick wooden hull body; removes sails and most rigging."""
+    arr=np.asarray(im.convert("RGBA"))
+    fg=arr[...,3] > 20
+    rgb=arr[...,:3].astype(np.float32)
+    lum=.2126*rgb[...,0]+.7152*rgb[...,1]+.0722*rgb[...,2]
+    wood=fg & (lum < 180) & (rgb[...,0] > rgb[...,2]*1.02)
+    m=(wood.astype(np.uint8)*255)
+    m=cv2.morphologyEx(m,cv2.MORPH_OPEN,cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)))
+    m=cv2.morphologyEx(m,cv2.MORPH_CLOSE,cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(11,11)))
+    n,lab,stats,_=cv2.connectedComponentsWithStats((m>0).astype(np.uint8),8)
+    if n<=1:
+        return wood
+    idx=1+np.argmax(stats[1:,cv2.CC_STAT_AREA])
+    return lab==idx
+
+def support_anchor_point(im: Image.Image):
+    """Two-'feet' style anchor: broad hull support midpoint in X + dense hull center in Y."""
+    hm=dense_hull_component(im)
+    ys,xs=np.where(hm)
+    if len(xs)<100:
+        a=np.asarray(im.getchannel("A"))>20
+        ys,xs=np.where(a)
+        return np.array([xs.mean(),ys.mean()],float)
+
+    # X: midpoint of rows whose hull width is at least 80% of max beam.
+    rows=[]
+    for y in range(hm.shape[0]):
+        xx=np.where(hm[y])[0]
+        if len(xx)>=5:
+            rows.append((y,xx.min(),xx.max(),xx.max()-xx.min()+1))
+    rr=np.asarray(rows,float)
+    maxw=rr[:,3].max()
+    sel=rr[:,3]>=maxw*.80
+    x_anchor=np.mean((rr[sel,1]+rr[sel,2])*.5)
+
+    # Y: center of a dense wooden body after opening; avoids mast/sail pull.
+    m=(hm.astype(np.uint8)*255)
+    op=cv2.morphologyEx(m,cv2.MORPH_OPEN,cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7)))
+    yy,xx=np.where(op>0)
+    y_anchor=float(yy.mean()) if len(yy) else float(ys.mean())
+    return np.array([float(x_anchor),y_anchor],float)
+
+def support_hull_span(im: Image.Image, deg: float):
+    hm=dense_hull_component(im)
+    span,*_=heading_measure(hm,deg)
+    return span
+
+def transform_canvas_no_crop(im: Image.Image, scale: float, offset, canvas: int, padding: int):
+    """Scale around canvas center, then translate; never discard visible alpha."""
+    nw=max(1,round(im.width*scale)); nh=max(1,round(im.height*scale))
+    rim=im.resize((nw,nh),Image.Resampling.LANCZOS)
+    source_center=np.array([im.width*.5*scale, im.height*.5*scale],float)
+    target_center=np.array([canvas*.5+offset[0], canvas*.5+offset[1]],float)
+    return compose_no_crop(rim,source_center,target_center,canvas,padding)
+
+def support_family_key(d: str):
+    if d in ("N","S"): return "NS"
+    if d in ("NE","SW"): return "NESW"
+    if d in ("E","W"): return "EW"
+    return "SENW"
+
+def refine_with_support_anchor(stage, ratio, broadside_px, canvas, padding):
+    """Tolerant ship-on-water alignment calibrated against manual SC-03 QA.
+
+    It deliberately fits opposite direction families together instead of
+    reproducing every hand-tuned frame exactly.
+    """
+    center=np.array([canvas*.5,canvas*.5],float)
+    spans={d:support_hull_span(stage[d],HEADING[d]) for d in ORDER}
+    a={d:ratio[d]/max(1e-6,spans[d]) for d in ORDER}
+
+    # No manual target size needed: choose K so average proposed correction is 1.
+    K=1.0/np.mean([a[d] for d in ORDER])
+    raw_scale={d:K*a[d] for d in ORDER}
+    pair_scale={}
+    for p in PAIR_GROUPS:
+        v=np.mean([raw_scale[d] for d in p])
+        v=1.0+SUPPORT_PROFILE["scale_strength"]*(v-1.0)
+        for d in p: pair_scale[d]=float(np.clip(v,.85,1.15))
+
+    anchors={d:support_anchor_point(stage[d]) for d in ORDER}
+    q={d:center+pair_scale[d]*(anchors[d]-center) for d in ORDER}
+
+    go=np.array(SUPPORT_PROFILE["global_target_offset_frac"])*broadside_px
+    target=center+go
+    refined={}; meta={}
+    for d in ORDER:
+        residual=np.array(SUPPORT_PROFILE["family_residual_frac"][support_family_key(d)])*broadside_px
+        residual*=SUPPORT_PROFILE["residual_strength"]
+        offset=target-q[d]+residual
+        placed,safety,_=transform_canvas_no_crop(stage[d],pair_scale[d],offset,canvas,padding)
+        refined[d]=placed
+        meta[d]={
+            "support_anchor":[float(x) for x in anchors[d]],
+            "support_hull_span":float(spans[d]),
+            "support_scale":float(pair_scale[d]),
+            "support_offset":[float(x) for x in offset],
+            "support_no_crop_safety_scale":float(safety),
+        }
+    return refined,meta
 
 def heading_measure(mask: np.ndarray, deg: float):
     ys, xs = np.where(mask)
@@ -261,6 +383,10 @@ def main():
                 placed,safety,offset=compose_no_crop(rim,anchor,target_anchor,a.canvas,a.padding)
                 stage[d]=placed
                 report[d]["pair_scale"]=pair_scale; report[d]["pair_no_crop_safety_scale"]=safety
+    if a.support_anchor:
+        stage,support_meta=refine_with_support_anchor(stage,ratio,a.broadside_px,a.canvas,a.padding)
+        for d in ORDER:
+            report[d].update(support_meta[d])
     ref_stats=build_lut_reference(stage[a.color_ref])
     final={}
     for d in ORDER:
