@@ -429,7 +429,14 @@ func restore_state(value: Variant) -> bool:
 	_next_repair_tick = int(state["next_repair_tick"])
 	_last_damage_sequence = int(state["last_damage_sequence"])
 	_last_sense_query_tick = last_sense_tick
-	_tactical_state = (tactical_source as Dictionary).duplicate(true)
+	var tactical_raw := tactical_source as Dictionary
+	_tactical_state = {
+		"range_band": str(tactical_raw.get("range_band", "")),
+		"desired_side": int(tactical_raw.get("desired_side", 0)),
+		"next_support_tick": int(tactical_raw.get("next_support_tick", 0)),
+		"last_intent": str(tactical_raw.get("last_intent", TacticalDecision.NONE)),
+		"last_target_id": str(tactical_raw.get("last_target_id", "")),
+	}
 	_last_tactical.clear()
 	_memory = memory_probe
 	_sense_snapshot.clear()
