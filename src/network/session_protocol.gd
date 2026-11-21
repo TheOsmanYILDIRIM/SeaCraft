@@ -383,7 +383,7 @@ static func snapshot_bytes(value: Variant) -> int:
 	for row in rows:
 		if not _primitive_safe(row, 0, {"containers": 0}):
 			return -1
-	return var_to_bytes(value, false).size()
+	return var_to_bytes(value).size()
 
 
 static func make_semantic_event(event_sequence: int, event_id: String, event_type: String,
