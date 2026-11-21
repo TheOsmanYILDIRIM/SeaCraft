@@ -321,3 +321,30 @@ J. final 4×2 atlas ve Android düşük-zoom kontrolü
 ```
 
 Bu hat, SC-02 pilotunda yaşanan kamera, ölçek, renk ve merkezleme tekrarlarını azaltmak için sonraki tüm gemilerde varsayılan üretim prosedürüdür.
+
+
+## 11. Mobil manuel hizalama aracı
+
+Otomatik pivot/anchor hizalama iyi bir ilk tahmin üretir; ancak final kabulte birkaç piksellik yönler-arası hareket insan gözüyle hâlâ fark edilebilir. Bu nedenle final üretim kapısında mobil manuel hizalama aracı kullanılır:
+
+`tools/sprite_manual_aligner_template.html`
+
+Araç tek dosyalık, internetsiz çalışan bir HTML'dir. Kullanım:
+
+1. 8 adet 1024×1024 şeffaf PNG'yi **N, NE, E, SE, S, SW, W, NW** sırasıyla seç.
+2. Büyük önizlemede tek parmakla seçili frame'i X/Y kaydır.
+3. İki parmak pinch ile yalnız gerektiğinde scale düzelt.
+4. **Play** ile dönüşü sürekli izle; konumsal sıçramayı tek kare yerine döngü içinde değerlendir.
+5. **Ghost** ile önceki yönü düşük alfa referans olarak göster.
+6. Ayarları JSON olarak indir; böylece manuel karar tekrar üretilebilir.
+7. Atlas düğmesiyle 4×2 master atlası dışa aktar.
+
+Final merkezleme kuralı:
+
+- otomatik anchor = başlangıç tahmini
+- manuel HTML hizalama = final görsel kabul kapısı
+- kaydedilen JSON = yeniden üretilebilir düzeltme kaydı
+- PNG'lerdeki ölçek ve LUT işlemleri HTML'e girmeden önce tamamlanmış olmalı
+- mümkünse scale = 1 bırakılır; araç esas olarak X/Y pivot ince ayarı içindir
+
+SC-02 pilotunda final kabul edilen manuel kayıt, otomatik hizalamanın üzerine frame bazlı X/Y düzeltmeleri uyguladı. Bu nedenle sonraki gemilerde de final paketlemeden önce aynı araçla bir tam 360° dönüş kontrolü yapılmalıdır.
