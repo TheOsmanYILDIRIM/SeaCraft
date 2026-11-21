@@ -123,6 +123,8 @@ func restore_state(value: Variant) -> bool:
 			if not _valid_job(raw):
 				return false
 			var row: Dictionary = (raw as Dictionary).duplicate(true)
+			for numeric_key in ["due_tick", "enqueued_tick", "sequence"]:
+				row[numeric_key] = int(row[numeric_key])
 			if planned_by_id.has(row["stable_id"]):
 				return false
 			planned_rows.append(row)

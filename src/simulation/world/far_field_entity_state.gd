@@ -114,6 +114,63 @@ static func apply_projection(record: Dictionary, projection: Dictionary) -> Dict
 	return attach(result, state)
 
 
+static func normalize_record(record: Dictionary) -> Dictionary:
+	if not _base_record_shape(record):
+		return {}
+	var result := record.duplicate(true)
+	var position: Dictionary = result["position"]
+	position["x"] = float(position["x"])
+	position["y"] = float(position["y"])
+	result["position"] = position
+	var motion: Dictionary = result["motion"]
+	for key in ["heading", "vx", "vy"]:
+		if motion.has(key):
+			motion[key] = float(motion[key])
+	result["motion"] = motion
+	result["health"] = float(result["health"])
+	var route: Dictionary = result["route"]
+	for key in ["patrol_index", "intent_id", "next_waypoint"]:
+		if route.has(key):
+			route[key] = int(route[key])
+	if route.has("goal") and route["goal"] is Dictionary:
+		var goal: Dictionary = route["goal"]
+		goal["x"] = float(goal["x"])
+		goal["y"] = float(goal["y"])
+		route["goal"] = goal
+	result["route"] = route
+	var cooldowns: Dictionary = result["cooldowns"]
+	for key in cooldowns:
+		cooldowns[key] = int(cooldowns[key])
+	result["cooldowns"] = cooldowns
+	var inventory: Dictionary = result["inventory"]
+	for item_id in inventory:
+		inventory[item_id] = int(inventory[item_id])
+	result["inventory"] = inventory
+	var state := semantic(result)
+	if state.is_empty():
+		return {}
+	for key in ["version", "residency_ticks", "last_simulation_tick", "next_due_tick", "rng_event_sequence", "rng_version"]:
+		state[key] = int(state[key])
+	var travel: Dictionary = state["travel"]
+	travel["route_index"] = int(travel["route_index"])
+	travel["segment_progress"] = float(travel["segment_progress"])
+	travel["speed_per_tick"] = float(travel["speed_per_tick"])
+	state["travel"] = travel
+	var combat: Dictionary = state["combat"]
+	combat["strength"] = float(combat["strength"])
+	state["combat"] = combat
+	var job: Dictionary = state["world_job"]
+	if not job.is_empty():
+		job["version"] = int(job["version"])
+		job["progress"] = float(job["progress"])
+		var cargo: Dictionary = job["cargo_mission"]
+		if not cargo.is_empty():
+			cargo["quantity"] = int(cargo["quantity"])
+			job["cargo_mission"] = cargo
+		state["world_job"] = job
+	return attach(result, state)
+
+
 static func valid_semantic(value: Variant) -> bool:
 	if not value is Dictionary or not DtoContract.is_primitive_safe(value):
 		return false

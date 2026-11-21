@@ -232,10 +232,12 @@ func restore_state(value: Variant) -> bool:
 	for raw in state["logical_spawns"]:
 		if not _valid_spawn_plan(raw):
 			return false
-		var row: Dictionary = raw
+		var row: Dictionary = (raw as Dictionary).duplicate(true)
+		row["director_sequence"] = int(row["director_sequence"])
+		row["tick"] = int(row["tick"])
 		if logical.has(row["logical_key"]) or not population.has(row["instance_id"]):
 			return false
-		logical[row["logical_key"]] = row.duplicate(true)
+		logical[row["logical_key"]] = row
 	var counters: Dictionary = {}
 	for raw in state["admiral_counters"]:
 		if not raw is Dictionary or raw.size() != 4 or not SectorIds.valid(str(raw.get("region_id", ""))):

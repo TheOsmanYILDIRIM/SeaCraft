@@ -264,14 +264,22 @@ func restore_state(value: Variant) -> bool:
 		return false
 	var records: Dictionary = {}
 	for raw in state["entity_index"]["records"]:
-		records[raw["instance_id"]] = (raw as Dictionary).duplicate(true)
+		var normalized := FarFieldEntityState.normalize_record(raw)
+		if normalized.is_empty():
+			return false
+		records[normalized["instance_id"]] = normalized
+	var encounters: Array = []
+	for raw in state["pending_encounters"]:
+		var encounter: Dictionary = (raw as Dictionary).duplicate(true)
+		encounter["elapsed_coarse_ticks"] = int(encounter["elapsed_coarse_ticks"])
+		encounters.append(encounter)
 	_records = records
 	_scheduler = scheduler
 	_spawn_director = spawn
 	_fleet_state = (state["fleet_state"] as Dictionary).duplicate(true)
 	_master_seed = int(state["master_seed"])
 	_current_tick = int(state["current_tick"])
-	_encounters = (state["pending_encounters"] as Array).duplicate(true)
+	_encounters = encounters
 	_lod_transitions = 0
 	_far_encounters_resolved = 0
 	_mid_updates = 0
