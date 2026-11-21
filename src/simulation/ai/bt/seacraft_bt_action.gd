@@ -43,7 +43,7 @@ func before_run(_actor: Node, _blackboard: Blackboard) -> void:
 
 
 func tick(_actor: Node, _blackboard: Blackboard) -> int:
-	var target := _handler_target.get_ref() if _handler_target != null else null
+	var target: Object = (_handler_target.get_ref() as Object) if _handler_target != null else null
 	if target == null or _handler_method == StringName() or action_kind.is_empty() or current_tick < 0:
 		return FAILURE
 	if _started_tick < 0:
@@ -59,7 +59,7 @@ func tick(_actor: Node, _blackboard: Blackboard) -> int:
 
 func interrupt(_actor: Node, _blackboard: Blackboard) -> void:
 	interrupted = true
-	var target := _handler_target.get_ref() if _handler_target != null else null
+	var target: Object = (_handler_target.get_ref() as Object) if _handler_target != null else null
 	if target != null and _handler_method != StringName():
 		target.call(_handler_method, "interrupt:%s" % action_kind, current_tick)
 	_started_tick = -1
