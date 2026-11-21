@@ -5,117 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>SeaCraft 8 Yön Sprite Hizalama</title>
 <style>
-:root{--bg:#17191d;--panel:#22252b;--panel2:#2a2e35;--text:#f2f3f5;--muted:#aeb4bd;--accent:#e7b86a;--line:#3a4049}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
-body{position:fixed;inset:0}
-#app{height:100dvh;display:grid;grid-template-rows:38px minmax(0,1fr) 124px;gap:6px;padding:max(4px,env(safe-area-inset-top)) 6px max(4px,env(safe-area-inset-bottom)) 6px}
-.top{display:flex;align-items:center;justify-content:space-between;padding:0 6px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
-.title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.status{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
-.stage{position:relative;min-height:0;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:#434850}
-canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none}
-.hint{position:absolute;left:8px;bottom:7px;pointer-events:none;font-size:10px;color:#d7dbe1;background:#15171bb8;border-radius:6px;padding:3px 6px}
-.controls{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:grid;grid-template-rows:38px 1fr;gap:5px;padding:5px}
-.dirs{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
-button,.filebtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:7px;font-weight:700;min-width:0;padding:0;touch-action:manipulation}
-.dirs button{font-size:11px}
-button.active{background:var(--accent);color:#17130c;border-color:#f0c77f}
-.actions{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-height:0}
-.actions button,.actions label{font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}
-.small{font-size:8px;color:var(--muted);font-weight:600;display:block}
-input[type=file]{display:none}
-@media(orientation:landscape) and (max-height:520px){#app{grid-template-rows:34px minmax(0,1fr) 96px}.controls{grid-template-rows:30px 1fr}.hint{font-size:9px}}
-</style>
-</head>
-<body>
-<div id="app">
-  <div class="top">
-    <div class="title">SeaCraft · 8 Yön Manuel Hizalama</div>
-    <div id="status" class="status">Görselleri yükle</div>
-  </div>
-
-  <div class="stage" id="stage">
-    <canvas id="cv"></canvas>
-    <div class="hint">Tek parmak: taşı · İki parmak: ölçek · Play: dönüşü anında kontrol et</div>
-  </div>
-
-  <div class="controls">
-    <div class="dirs" id="dirs"></div>
-    <div class="actions">
-      <label class="filebtn">＋<span class="small">&nbsp;8 PNG</span><input id="files" type="file" accept="image/png" multiple></label>
-      <button id="play">▶<span class="small">&nbsp;Play</span></button>
-      <button id="ghost">◫<span class="small">&nbsp;Ghost</span></button>
-      <button id="reset">↺<span class="small">&nbsp;Frame</span></button>
-      <label class="filebtn">⇧<span class="small">&nbsp;JSON</span><input id="importJson" type="file" accept="application/json,.json"></label>
-      <button id="settings">⇩<span class="small">&nbsp;JSON</span></button>
-      <button id="atlas">▦<span class="small">&nbsp;Atlas</span></button>
-    </div>
-  </div>
-</div>
-
+:root{--bg:#17191d;--panel:#22252b;--panel2:#2a2e35;--line:#3a4049;--text:#f3f4f6;--muted:#aeb4bd;--accent:#e7b86a;--warn:#ffb86b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}body{position:fixed;inset:0}
+#app{height:100dvh;display:grid;grid-template-rows:36px minmax(0,1fr) 162px;gap:5px;padding:max(4px,env(safe-area-inset-top)) 5px max(4px,env(safe-area-inset-bottom)) 5px}.top{display:flex;align-items:center;justify-content:space-between;padding:0 7px;background:var(--panel);border:1px solid var(--line);border-radius:8px}.title{font-size:12px;font-weight:750}.status{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}.status.warn{color:var(--warn)}.stage{position:relative;min-height:0;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:#444951}canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none}.hint{position:absolute;left:7px;bottom:6px;padding:3px 5px;border-radius:5px;font-size:9px;background:#111318b8;pointer-events:none}.controls{background:var(--panel);border:1px solid var(--line);border-radius:9px;display:grid;grid-template-rows:30px 38px 34px 1fr;gap:4px;padding:4px}.dirs{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}button,.filebtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:6px;font-weight:700;min-width:0;padding:0;touch-action:manipulation}.dirs button{font-size:10px}button.active{background:var(--accent);color:#17130c}.row{display:grid;align-items:center;gap:4px}.scaleRow{grid-template-columns:42px 34px 1fr 34px 50px}.fpsRow{grid-template-columns:42px 1fr 42px}.label{font-size:9px;color:var(--muted);text-align:center;font-weight:700}.value{font-size:9px;text-align:center}.actions{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.actions button,.actions label{font-size:9px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}.small{display:block;font-size:7px;color:var(--muted)}input[type=file]{display:none}input[type=range]{width:100%;margin:0;accent-color:var(--accent)}
+</style></head><body><div id="app"><div class="top"><div class="title">SeaCraft · 8 Yön Manuel Hizalama</div><div id="status" class="status">8 PNG yükle</div></div><div class="stage" id="stage"><canvas id="cv"></canvas><div class="hint">1 parmak: taşı · 2 parmak: ölçek · kaynak PNG kırpılmaz</div></div><div class="controls"><div class="dirs" id="dirs"></div><div class="row scaleRow"><div class="label">BOYUT</div><button id="minus">−</button><input id="scale" type="range" min="50" max="150" step="0.5" value="100"><button id="plus">+</button><div id="scaleVal" class="value">100%</div></div><div class="row fpsRow"><div class="label">FPS</div><input id="fps" type="range" min="1" max="24" step="1" value="6"><div id="fpsVal" class="value">6</div></div><div class="actions"><label class="filebtn">＋<span class="small">&nbsp;8 PNG</span><input id="files" type="file" accept="image/png" multiple></label><button id="play">▶<span class="small">&nbsp;Play</span></button><button id="ghost">◫<span class="small">&nbsp;Ghost</span></button><button id="reset">↺<span class="small">&nbsp;Frame</span></button><label class="filebtn">⇧<span class="small">&nbsp;JSON</span><input id="importJson" type="file" accept="application/json,.json"></label><button id="json">⇩<span class="small">&nbsp;JSON</span></button><button id="atlas">▦<span class="small">&nbsp;Atlas</span></button></div></div></div>
 <script>
-const ORDER=["N","NE","E","SE","S","SW","W","NW"];
-const STORAGE_KEY="seacraft-8dir-aligner-v2";
-const canvas=document.getElementById("cv"),ctx=canvas.getContext("2d"),stage=document.getElementById("stage");
-const statusEl=document.getElementById("status"),dirsEl=document.getElementById("dirs");
-const playBtn=document.getElementById("play"),ghostBtn=document.getElementById("ghost");
-let current=0,playing=false,ghost=false,lastTick=0,frameMs=300,fit=1;
-const state=Object.fromEntries(ORDER.map(d=>[d,{x:0,y:0,scale:1}]));
-const imgs={};
-
-function saveLocal(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
-function loadLocal(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");if(s)ORDER.forEach(d=>Object.assign(state[d],s[d]||{}))}catch(e){}}
-loadLocal();
-
-ORDER.forEach((d,i)=>{const b=document.createElement("button");b.textContent=d;b.onclick=()=>{playing=false;current=i;sync();render()};dirsEl.appendChild(b)});
-
-function sync(){
- [...dirsEl.children].forEach((b,i)=>b.classList.toggle("active",i===current));
- playBtn.classList.toggle("active",playing);ghostBtn.classList.toggle("active",ghost);
- const d=ORDER[current],s=state[d],loaded=ORDER.filter(x=>imgs[x]).length;
- statusEl.textContent=`${d} · X ${Math.round(s.x)} · Y ${Math.round(s.y)} · ${Math.round(s.scale*100)}% · ${loaded}/8`;
- playBtn.innerHTML=playing?'Ⅱ<span class="small">&nbsp;Durdur</span>':'▶<span class="small">&nbsp;Play</span>';
-}
-
-function resize(){const r=stage.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(dpr,0,0,dpr,0,0);render()}
-function bg(w,h){ctx.fillStyle="#454a52";ctx.fillRect(0,0,w,h);ctx.fillStyle="#4c5159";for(let y=0;y<h;y+=24)for(let x=0;x<w;x+=24)if(((x/24)+(y/24))%2===0)ctx.fillRect(x,y,24,24)}
-function cross(w,h){ctx.save();ctx.strokeStyle="rgba(255,255,255,.18)";ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();ctx.fillStyle="rgba(231,184,106,.9)";ctx.beginPath();ctx.arc(w/2,h/2,3,0,Math.PI*2);ctx.fill();ctx.restore()}
-function drawFrame(index,alpha=1){const d=ORDER[index],im=imgs[d];if(!im)return;const w=canvas.clientWidth,h=canvas.clientHeight;fit=Math.min(w/1024,h/1024)*.96;const s=state[d],dw=1024*fit*s.scale,dh=1024*fit*s.scale,x=w/2-dw/2+s.x*fit,y=h/2-dh/2+s.y*fit;ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";ctx.drawImage(im,x,y,dw,dh);ctx.restore()}
-function render(){if(!canvas.width)return;const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);bg(w,h);if(ghost&&!playing)drawFrame((current+7)%8,.16);drawFrame(current,1);cross(w,h);sync()}
-
-function loop(t){if(playing){if(!lastTick)lastTick=t;if(t-lastTick>=frameMs){current=(current+1)%8;lastTick=t;render()}}requestAnimationFrame(loop)}
-requestAnimationFrame(loop);
-
-playBtn.onclick=()=>{playing=!playing;lastTick=0;render()};
-ghostBtn.onclick=()=>{ghost=!ghost;render()};
-document.getElementById("reset").onclick=()=>{state[ORDER[current]]={x:0,y:0,scale:1};saveLocal();render()};
-
-function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-document.getElementById("settings").onclick=()=>dl(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),"sprite_manual_alignment.json");
-
-document.getElementById("importJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;const obj=JSON.parse(await f.text());ORDER.forEach(d=>Object.assign(state[d],obj[d]||{}));saveLocal();render()};
-
-document.getElementById("files").onchange=async e=>{
- const files=[...e.target.files];
- if(files.length!==8){alert("Tam 8 PNG seç: N, NE, E, SE, S, SW, W, NW.");return}
- for(let i=0;i<8;i++){const url=URL.createObjectURL(files[i]),im=new Image();await new Promise((res,rej)=>{im.onload=res;im.onerror=rej;im.src=url});imgs[ORDER[i]]=im}
- render()
-};
-
-document.getElementById("atlas").onclick=()=>{
- if(ORDER.some(d=>!imgs[d])){alert("Önce 8 PNG yükle.");return}
- const out=document.createElement("canvas");out.width=4096;out.height=2048;const o=out.getContext("2d");o.clearRect(0,0,out.width,out.height);
- ORDER.forEach((d,i)=>{const im=imgs[d],s=state[d],col=i%4,row=Math.floor(i/4),dw=1024*s.scale,dh=1024*s.scale,x=col*1024+512-dw/2+s.x,y=row*1024+512-dh/2+s.y;o.drawImage(im,x,y,dw,dh)});
- out.toBlob(b=>dl(b,"sprite_manual_aligned_atlas_4x2.png"),"image/png")
-};
-
-const pts=new Map();let dragStart=null,pinchStart=null;
-canvas.addEventListener("pointerdown",e=>{e.preventDefault();if(playing){playing=false;lastTick=0}canvas.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});const s=state[ORDER[current]];if(pts.size===1)dragStart={px:e.clientX,py:e.clientY,x:s.x,y:s.y};else if(pts.size===2){const a=[...pts.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);pinchStart={dist,scale:s.scale};dragStart=null}render()},{passive:false});
-canvas.addEventListener("pointermove",e=>{if(!pts.has(e.pointerId))return;e.preventDefault();pts.set(e.pointerId,{x:e.clientX,y:e.clientY});const s=state[ORDER[current]];if(pts.size===1&&dragStart){const p=[...pts.values()][0];s.x=dragStart.x+(p.x-dragStart.px)/fit;s.y=dragStart.y+(p.y-dragStart.py)/fit;saveLocal();render()}else if(pts.size===2&&pinchStart){const a=[...pts.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);s.scale=Math.max(.75,Math.min(1.25,pinchStart.scale*(dist/pinchStart.dist)));saveLocal();render()}},{passive:false});
-function end(e){pts.delete(e.pointerId);if(!pts.size){dragStart=null;pinchStart=null}else if(pts.size===1){const p=[...pts.values()][0],s=state[ORDER[current]];dragStart={px:p.x,py:p.y,x:s.x,y:s.y};pinchStart=null}}
-canvas.addEventListener("pointerup",end);canvas.addEventListener("pointercancel",end);
-window.addEventListener("resize",resize);new ResizeObserver(resize).observe(stage);resize();sync();
-</script>
-</body>
-</html>
+const ORDER=['N','NE','E','SE','S','SW','W','NW'],VIRTUAL=1024,KEY='seacraft-8dir-aligner-v3';
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),stage=document.getElementById('stage'),dirs=document.getElementById('dirs'),statusEl=document.getElementById('status'),scaleEl=document.getElementById('scale'),scaleVal=document.getElementById('scaleVal'),fpsEl=document.getElementById('fps'),fpsVal=document.getElementById('fpsVal'),play=document.getElementById('play'),ghostBtn=document.getElementById('ghost');
+let current=0,playing=false,ghost=false,lastTick=0,fit=1,fps=6;const imgs={},meta={},state=Object.fromEntries(ORDER.map(d=>[d,{x:0,y:0,scale:1}]));
+try{let s=JSON.parse(localStorage.getItem(KEY)||'null');if(s){if(s.frames)ORDER.forEach(d=>Object.assign(state[d],s.frames[d]||{}));if(s.fps)fps=s.fps}}catch(e){}
+function save(){localStorage.setItem(KEY,JSON.stringify({frames:state,fps:fps}))}function sync(){[...dirs.children].forEach((b,i)=>b.classList.toggle('active',i===current));let d=ORDER[current],s=state[d],warn=meta[d]&&meta[d].edgeTouch;statusEl.classList.toggle('warn',!!warn);statusEl.textContent=d+' · X '+Math.round(s.x)+' · Y '+Math.round(s.y)+' · '+Math.round(s.scale*100)+'%'+(warn?' · KAYNAK KENARA DEĞİYOR':'');scaleEl.value=s.scale*100;scaleVal.textContent=(Math.round(s.scale*1000)/10)+'%';fpsEl.value=fps;fpsVal.textContent=fps;play.innerHTML=playing?'Ⅱ<span class="small">&nbsp;Durdur</span>':'▶<span class="small">&nbsp;Play</span>'}
+ORDER.forEach((d,i)=>{let b=document.createElement('button');b.textContent=d;b.onclick=()=>{playing=false;current=i;render()};dirs.appendChild(b)});
+function resize(){let r=stage.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));cv.style.width=r.width+'px';cv.style.height=r.height+'px';ctx.setTransform(dpr,0,0,dpr,0,0);render()}
+function bg(w,h){ctx.fillStyle='#454a52';ctx.fillRect(0,0,w,h);ctx.fillStyle='#4d525b';for(let y=0;y<h;y+=24)for(let x=0;x<w;x+=24)if(((x/24)+(y/24))%2===0)ctx.fillRect(x,y,24,24)}function cross(w,h){ctx.save();ctx.strokeStyle='rgba(255,255,255,.17)';ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();ctx.restore()}
+function drawFrame(i,a){let d=ORDER[i],im=imgs[d];if(!im)return;let w=cv.clientWidth,h=cv.clientHeight;fit=Math.min(w/VIRTUAL,h/VIRTUAL)*.96;let s=state[d],base=Math.min(VIRTUAL/im.naturalWidth,VIRTUAL/im.naturalHeight),dw=im.naturalWidth*base*fit*s.scale,dh=im.naturalHeight*base*fit*s.scale,x=w/2-dw/2+s.x*fit,y=h/2-dh/2+s.y*fit;ctx.save();ctx.globalAlpha=a;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(im,x,y,dw,dh);ctx.restore()}
+function render(){if(!cv.width)return;let w=cv.clientWidth,h=cv.clientHeight;ctx.clearRect(0,0,w,h);bg(w,h);if(ghost&&!playing)drawFrame((current+7)%8,.18);drawFrame(current,1);cross(w,h);sync()}
+function loop(t){if(playing&&ORDER.every(d=>imgs[d])){let ms=1000/fps;if(!lastTick)lastTick=t;if(t-lastTick>=ms){current=(current+1)%8;lastTick=t;render()}}requestAnimationFrame(loop)}requestAnimationFrame(loop);
+play.onclick=()=>{playing=!playing;lastTick=0;render()};ghostBtn.onclick=()=>{ghost=!ghost;render()};document.getElementById('reset').onclick=()=>{state[ORDER[current]]={x:0,y:0,scale:1};save();render()};scaleEl.oninput=()=>{state[ORDER[current]].scale=Math.max(.5,Math.min(1.5,parseFloat(scaleEl.value)/100));save();render()};document.getElementById('minus').onclick=()=>{state[ORDER[current]].scale=Math.max(.5,state[ORDER[current]].scale-.01);save();render()};document.getElementById('plus').onclick=()=>{state[ORDER[current]].scale=Math.min(1.5,state[ORDER[current]].scale+.01);save();render()};fpsEl.oninput=()=>{fps=parseInt(fpsEl.value,10);save();sync()};
+function dl(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}document.getElementById('json').onclick=()=>dl(new Blob([JSON.stringify({fps:fps,frames:state},null,2)],{type:'application/json'}),'sprite_manual_alignment.json');document.getElementById('importJson').onchange=async e=>{let f=e.target.files[0];if(!f)return;let o=JSON.parse(await f.text()),fr=o.frames||o;ORDER.forEach(d=>Object.assign(state[d],fr[d]||{}));if(o.fps)fps=o.fps;save();render()};
+function detect(name){let n=name.toUpperCase().replace(/[^A-Z]/g,' ');for(let d of ['NE','SE','SW','NW','N','E','S','W'])if(new RegExp('(^| )'+d+'( |$)').test(n))return d;return null}async function analyze(im){let c=document.createElement('canvas'),k=Math.min(1,512/Math.max(im.naturalWidth,im.naturalHeight));c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));let x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0,c.width,c.height);let p=x.getImageData(0,0,c.width,c.height).data,edge=false;for(let xx=0;xx<c.width&&!edge;xx++)if(p[xx*4+3]>16||p[((c.height-1)*c.width+xx)*4+3]>16)edge=true;for(let yy=0;yy<c.height&&!edge;yy++)if(p[(yy*c.width)*4+3]>16||p[(yy*c.width+c.width-1)*4+3]>16)edge=true;return{edgeTouch:edge}}
+document.getElementById('files').onchange=async e=>{let fs=[...e.target.files];if(fs.length!==8){alert('Tam 8 PNG seç.');return}let used={},fallback=0;for(let f of fs){let url=URL.createObjectURL(f),im=new Image();await new Promise((res,rej)=>{im.onload=res;im.onerror=rej;im.src=url});let d=detect(f.name);if(!d||used[d]){while(fallback<8&&used[ORDER[fallback]])fallback++;d=ORDER[fallback++]}used[d]=true;imgs[d]=im;meta[d]=await analyze(im)}render()};
+document.getElementById('atlas').onclick=()=>{if(ORDER.some(d=>!imgs[d])){alert('Önce 8 PNG yükle.');return}let out=document.createElement('canvas');out.width=4096;out.height=2048;let o=out.getContext('2d');ORDER.forEach((d,i)=>{let im=imgs[d],s=state[d],base=Math.min(VIRTUAL/im.naturalWidth,VIRTUAL/im.naturalHeight),dw=im.naturalWidth*base*s.scale,dh=im.naturalHeight*base*s.scale,col=i%4,row=Math.floor(i/4),x=col*VIRTUAL+512-dw/2+s.x,y=row*VIRTUAL+512-dh/2+s.y;o.drawImage(im,x,y,dw,dh)});out.toBlob(b=>dl(b,'sprite_manual_aligned_atlas_4x2.png'),'image/png')};
+const pts=new Map();let drag=null,pinch=null;cv.addEventListener('pointerdown',e=>{e.preventDefault();if(playing){playing=false;lastTick=0}cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});let s=state[ORDER[current]];if(pts.size===1)drag={px:e.clientX,py:e.clientY,x:s.x,y:s.y};else if(pts.size===2){let a=[...pts.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);pinch={dist:dist,scale:s.scale};drag=null}render()},{passive:false});cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;e.preventDefault();pts.set(e.pointerId,{x:e.clientX,y:e.clientY});let s=state[ORDER[current]];if(pts.size===1&&drag){let p=[...pts.values()][0];s.x=drag.x+(p.x-drag.px)/fit;s.y=drag.y+(p.y-drag.py)/fit;save();render()}else if(pts.size===2&&pinch){let a=[...pts.values()],dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);s.scale=Math.max(.5,Math.min(1.5,pinch.scale*(dist/pinch.dist)));save();render()}},{passive:false});function end(e){pts.delete(e.pointerId);if(!pts.size){drag=null;pinch=null}}cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);window.addEventListener('resize',resize);new ResizeObserver(resize).observe(stage);resize();sync();
+</script></body></html>
