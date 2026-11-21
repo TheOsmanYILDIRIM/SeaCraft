@@ -195,7 +195,7 @@ func test_core04_npc_route_cooldown_and_scheduler_resume() -> void:
 
 func test_core04_recovery_fault_matrix_and_dirty_retry() -> void:
 	assert_eq(_service.save(_snapshot())["status"], SaveService.OK_STATUS)
-	var baseline := _service.load()["snapshot"]
+	var baseline: Dictionary = _service.load()["snapshot"]
 	for fault in ["temp_open", "short_write", "temp_verify", "rotate", "replace", "primary_verify"]:
 		var writer := FaultService.new(_directory)
 		writer.fault = fault

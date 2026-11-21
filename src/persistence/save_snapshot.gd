@@ -217,7 +217,7 @@ static func _validate_loot(value: Variant, registry: DefinitionRegistry) -> Stri
 		var drop_id: Variant = loot["processed_events"][event_id]
 		if not event_id is String or not _stable(event_id) or not drop_id is String or (not drop_id.is_empty() and not _stable(drop_id)):
 			return "invalid_loot"
-		if not drop_id.is_empty() and not seen.has(drop_id) and not loot["claimed_ids"].has(drop_id):
+		if not drop_id.is_empty() and drop_id != event_id and not seen.has(drop_id) and not loot["claimed_ids"].has(drop_id):
 			return "ledger_reference_mismatch"
 	for claimed_id in loot["claimed_ids"]:
 		var referenced := false
