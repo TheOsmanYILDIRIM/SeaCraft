@@ -17,10 +17,11 @@ var _cached_from: Vector2
 var _cached_to: Vector2
 var _cached_route: PackedVector2Array
 var _has_cache: bool
+var _hazards: Dictionary = {}
 var search_count: int
+var hazard_revision: int
 
 
-# Visibility graph, constructed only for the active fixture. No agents and no physics callback.
 func configure(bounds: Rect2, fixture: SectorNavigationFixture) -> bool:
 	_ready = false
 	if fixture == null or not _valid_rect(bounds) or not is_finite(fixture.clearance) or fixture.clearance < 0.0:
@@ -37,6 +38,8 @@ func configure(bounds: Rect2, fixture: SectorNavigationFixture) -> bool:
 			return false
 		_blocked.append(obstacle.grow(fixture.clearance))
 	_astar.clear()
+	_hazards.clear()
+	hazard_revision = 0
 	_weighted = false
 	_has_cache = false
 	_cached_route = PackedVector2Array()
@@ -57,6 +60,10 @@ func obstacle_rects() -> Array[Rect2]:
 	return _obstacles.duplicate()
 
 
+func waypoint_count() -> int:
+	return _point_count
+
+
 func accessible(point: Vector2) -> bool:
 	if not point.is_finite() or not _water.has_point(point):
 		return false
@@ -75,8 +82,6 @@ func direct_clear(from: Vector2, to: Vector2) -> bool:
 	return true
 
 
-# Explicit event-driven call. Reuse the returned packed route until movement or hazard changes
-# warrant a query. A bounded exact endpoint cache also avoids duplicate simultaneous requests.
 func path(from: Vector2, to: Vector2) -> PackedVector2Array:
 	if not _ready or not accessible(from) or not accessible(to):
 		return PackedVector2Array()
@@ -105,21 +110,67 @@ func path(from: Vector2, to: Vector2) -> PackedVector2Array:
 	return _cached_route
 
 
-# Cold-path waypoint weighting; zero hazards preserve the geometric heuristic.
-# Frontier hazard systems can update these weights on events, never per physics frame.
 func set_hazard_cost(point_index: int, storm: float, shallows: float, area: float, faction: float) -> bool:
 	if not _ready or point_index < 0 or point_index >= _point_count:
 		return false
 	var weight := hazard_weight(storm, shallows, area, faction)
 	if weight < 1.0:
 		return false
+	var next := {"point_index": point_index, "storm": clampf(storm, 0.0, 100.0),
+		"shallows": clampf(shallows, 0.0, 100.0), "area": clampf(area, 0.0, 100.0),
+		"faction": clampf(faction, 0.0, 100.0)}
+	var previous: Dictionary = _hazards.get(point_index, {})
+	if previous == next:
+		return true
 	_astar.set_point_weight_scale(point_index, weight)
-	_weighted = false
-	for i in _point_count:
-		if _astar.get_point_weight_scale(i) > 1.0:
-			_weighted = true
-			break
+	if is_equal_approx(weight, 1.0):
+		_hazards.erase(point_index)
+	else:
+		_hazards[point_index] = next
+	_weighted = not _hazards.is_empty()
 	_has_cache = false
+	hazard_revision += 1
+	return true
+
+
+func snapshot_hazard_state() -> Array:
+	var result: Array = []
+	var ids := _hazards.keys()
+	ids.sort()
+	for id in ids:
+		result.append((_hazards[id] as Dictionary).duplicate(true))
+	return result
+
+
+func restore_hazard_state(value: Variant) -> bool:
+	if not value is Array or value.size() > _point_count:
+		return false
+	var planned: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for raw in value:
+		if not raw is Dictionary or raw.size() != 5:
+			return false
+		var index_value: Variant = raw.get("point_index")
+		if typeof(index_value) not in [TYPE_INT, TYPE_FLOAT]:
+			return false
+		var index := int(index_value)
+		if float(index_value) != float(index) or index < 0 or index >= _point_count or seen.has(index):
+			return false
+		for key in ["storm", "shallows", "area", "faction"]:
+			if typeof(raw.get(key)) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(raw[key])) or float(raw[key]) < 0.0 or float(raw[key]) > 100.0:
+				return false
+		var entry: Dictionary = raw.duplicate(true)
+		entry["point_index"] = index
+		planned.append(entry)
+		seen[index] = true
+	for i in _point_count:
+		_astar.set_point_weight_scale(i, 1.0)
+	_hazards.clear()
+	_weighted = false
+	_has_cache = false
+	for entry in planned:
+		if not set_hazard_cost(int(entry["point_index"]), float(entry["storm"]), float(entry["shallows"]), float(entry["area"]), float(entry["faction"])):
+			return false
 	return true
 
 
