@@ -19,6 +19,30 @@ const MAX_CONTAINERS: int = 32
 const MAX_DEPTH: int = 4
 const MAX_STRING_LENGTH: int = 128
 const MAX_ABS_NUMBER: float = 1.0e9
+const ENTITY_KINDS := ["player", "npc", "monster", "loot"]
+const MAX_REPLICATED_ENTITIES: int = 96
+const MAX_SNAPSHOT_ENTITIES: int = 64
+const MAX_SNAPSHOT_BYTES: int = 8192
+const MAX_INTERPOLATION_SAMPLES: int = 4
+const SNAPSHOT_INTERVAL_TICKS: int = 3
+const AOI_RADIUS: float = 600.0
+const SPAWN_KEYS := [
+	"protocol_version", "entity_id", "entity_kind", "sector_id", "definition_id",
+	"generation", "lifecycle_sequence", "state_sequence", "x", "y", "heading",
+	"hull_ratio", "alive",
+]
+const SNAPSHOT_KEYS := ["protocol_version", "snapshot_sequence", "server_tick", "aoi_sector", "entity_rows"]
+const SNAPSHOT_ROW_KEYS := ["entity_id", "entity_kind", "sector_id", "x", "y", "heading", "hull_ratio", "alive"]
+const EVENT_KEYS := ["protocol_version", "event_sequence", "event_id", "event_type", "source_id", "target_id", "payload"]
+const EVENT_TYPES := [
+	"hull_damaged", "ship_sunk", "monster_defeated", "wreck_destroyed",
+	"drop_created", "drop_claimed",
+]
+const REJECT_MALFORMED_SPAWN := "malformed spawn"
+const REJECT_UNKNOWN_ENTITY_KIND := "unknown entity kind"
+const REJECT_MALFORMED_SNAPSHOT := "malformed snapshot"
+const REJECT_SNAPSHOT_BUDGET := "snapshot budget exceeded"
+const REJECT_MALFORMED_EVENT := "malformed replication event"
 
 const REJECT_PROTOCOL_MISMATCH := "protocol mismatch"
 const REJECT_SCHEMA_MISMATCH := "schema/version mismatch"
@@ -234,6 +258,186 @@ static func valid_ipv4(address: String) -> bool:
 
 static func valid_port(port: int) -> bool:
 	return port >= MIN_PORT and port <= MAX_PORT
+
+
+static func valid_stable_id(value: Variant) -> bool:
+	if not value is String:
+		return false
+	var text := str(value)
+	return not text.is_empty() and text.length() <= MAX_STRING_LENGTH and SectorIds.valid(text)
+
+
+static func spawn_payload(entity_id: String, entity_kind: String, sector_id: String, definition_id: String,
+		generation: int, lifecycle_sequence: int, state_sequence: int, state: Dictionary) -> Dictionary:
+	return {
+		"protocol_version": PROTOCOL_VERSION,
+		"entity_id": entity_id,
+		"entity_kind": entity_kind,
+		"sector_id": sector_id,
+		"definition_id": definition_id,
+		"generation": generation,
+		"lifecycle_sequence": lifecycle_sequence,
+		"state_sequence": state_sequence,
+		"x": float(state.get("x", 0.0)),
+		"y": float(state.get("y", 0.0)),
+		"heading": float(state.get("heading", 0.0)),
+		"hull_ratio": float(state.get("hull_ratio", 1.0)),
+		"alive": bool(state.get("alive", true)),
+	}
+
+
+static func validate_spawn_payload(value: Variant) -> String:
+	if not value is Dictionary:
+		return REJECT_MALFORMED_SPAWN
+	var payload: Dictionary = value
+	if not _has_exact_keys(payload, SPAWN_KEYS) or not _primitive_safe(payload, 0, {"containers": 0}):
+		return REJECT_MALFORMED_SPAWN
+	if not _is_int(payload["protocol_version"]) or int(payload["protocol_version"]) != PROTOCOL_VERSION:
+		return REJECT_PROTOCOL_MISMATCH
+	if not valid_stable_id(payload["entity_id"]) or not valid_stable_id(payload["sector_id"]):
+		return REJECT_MALFORMED_SPAWN
+	if not payload["entity_kind"] is String or str(payload["entity_kind"]) not in ENTITY_KINDS:
+		return REJECT_UNKNOWN_ENTITY_KIND
+	if not payload["definition_id"] is String or str(payload["definition_id"]).length() > MAX_STRING_LENGTH:
+		return REJECT_MALFORMED_SPAWN
+	if not str(payload["definition_id"]).is_empty() and not valid_stable_id(payload["definition_id"]):
+		return REJECT_MALFORMED_SPAWN
+	for key in ["generation", "lifecycle_sequence"]:
+		if not _is_int(payload[key]) or int(payload[key]) <= 0 or int(payload[key]) > MAX_SEQUENCE:
+			return REJECT_MALFORMED_SPAWN
+	if not _is_int(payload["state_sequence"]) or int(payload["state_sequence"]) < 0 or int(payload["state_sequence"]) > MAX_SEQUENCE:
+		return REJECT_MALFORMED_SPAWN
+	if not _valid_state_numbers(payload):
+		return REJECT_MALFORMED_SPAWN
+	return ""
+
+
+static func validate_snapshot_row(value: Variant) -> String:
+	if not value is Dictionary:
+		return REJECT_MALFORMED_SNAPSHOT
+	var row: Dictionary = value
+	if not _has_exact_keys(row, SNAPSHOT_ROW_KEYS) or not _primitive_safe(row, 0, {"containers": 0}):
+		return REJECT_MALFORMED_SNAPSHOT
+	if not valid_stable_id(row["entity_id"]) or not valid_stable_id(row["sector_id"]):
+		return REJECT_MALFORMED_SNAPSHOT
+	if not row["entity_kind"] is String or str(row["entity_kind"]) not in ENTITY_KINDS:
+		return REJECT_UNKNOWN_ENTITY_KIND
+	if not _valid_state_numbers(row):
+		return REJECT_MALFORMED_SNAPSHOT
+	return ""
+
+
+static func make_snapshot(snapshot_sequence: int, server_tick: int, aoi_sector: String, rows: Array) -> Dictionary:
+	return {
+		"protocol_version": PROTOCOL_VERSION,
+		"snapshot_sequence": snapshot_sequence,
+		"server_tick": server_tick,
+		"aoi_sector": aoi_sector,
+		"entity_rows": rows.duplicate(true),
+	}
+
+
+static func validate_snapshot(value: Variant) -> String:
+	if not value is Dictionary:
+		return REJECT_MALFORMED_SNAPSHOT
+	var snapshot: Dictionary = value
+	if not _has_exact_keys(snapshot, SNAPSHOT_KEYS):
+		return REJECT_MALFORMED_SNAPSHOT
+	if not _is_int(snapshot["protocol_version"]) or int(snapshot["protocol_version"]) != PROTOCOL_VERSION:
+		return REJECT_PROTOCOL_MISMATCH
+	for key in ["snapshot_sequence", "server_tick"]:
+		if not _is_int(snapshot[key]) or int(snapshot[key]) < 0 or int(snapshot[key]) > MAX_SEQUENCE:
+			return REJECT_MALFORMED_SNAPSHOT
+	if not valid_stable_id(snapshot["aoi_sector"]) or not snapshot["entity_rows"] is Array:
+		return REJECT_MALFORMED_SNAPSHOT
+	var rows: Array = snapshot["entity_rows"]
+	if rows.size() > MAX_SNAPSHOT_ENTITIES:
+		return REJECT_SNAPSHOT_BUDGET
+	var seen: Dictionary = {}
+	var previous_id := ""
+	for raw in rows:
+		var reason := validate_snapshot_row(raw)
+		if not reason.is_empty():
+			return reason
+		var row: Dictionary = raw
+		var entity_id := str(row["entity_id"])
+		if seen.has(entity_id) or (not previous_id.is_empty() and entity_id <= previous_id):
+			return REJECT_MALFORMED_SNAPSHOT
+		seen[entity_id] = true
+		previous_id = entity_id
+	var encoded_bytes := snapshot_bytes(snapshot)
+	if encoded_bytes < 0 or encoded_bytes > MAX_SNAPSHOT_BYTES:
+		return REJECT_SNAPSHOT_BUDGET
+	return ""
+
+
+static func snapshot_bytes(value: Variant) -> int:
+	if not value is Dictionary:
+		return -1
+	var snapshot: Dictionary = value
+	if not _has_exact_keys(snapshot, SNAPSHOT_KEYS) or not snapshot.get("entity_rows") is Array:
+		return -1
+	var rows: Array = snapshot["entity_rows"]
+	if rows.size() > MAX_SNAPSHOT_ENTITIES:
+		return -1
+	for row in rows:
+		if not _primitive_safe(row, 0, {"containers": 0}):
+			return -1
+	return var_to_bytes(value, false).size()
+
+
+static func make_semantic_event(event_sequence: int, event_id: String, event_type: String,
+		source_id: String, target_id: String, payload: Dictionary) -> Dictionary:
+	return {
+		"protocol_version": PROTOCOL_VERSION,
+		"event_sequence": event_sequence,
+		"event_id": event_id,
+		"event_type": event_type,
+		"source_id": source_id,
+		"target_id": target_id,
+		"payload": payload.duplicate(true),
+	}
+
+
+static func validate_semantic_event(value: Variant) -> String:
+	if not value is Dictionary:
+		return REJECT_MALFORMED_EVENT
+	var event: Dictionary = value
+	if not _has_exact_keys(event, EVENT_KEYS) or not _primitive_safe(event, 0, {"containers": 0}):
+		return REJECT_MALFORMED_EVENT
+	if not _is_int(event["protocol_version"]) or int(event["protocol_version"]) != PROTOCOL_VERSION:
+		return REJECT_PROTOCOL_MISMATCH
+	if not _is_int(event["event_sequence"]) or int(event["event_sequence"]) <= 0 or int(event["event_sequence"]) > MAX_SEQUENCE:
+		return REJECT_MALFORMED_EVENT
+	if not valid_stable_id(event["event_id"]) or not event["event_type"] is String or str(event["event_type"]) not in EVENT_TYPES:
+		return REJECT_MALFORMED_EVENT
+	for key in ["source_id", "target_id"]:
+		if not event[key] is String or str(event[key]).length() > MAX_STRING_LENGTH:
+			return REJECT_MALFORMED_EVENT
+		if not str(event[key]).is_empty() and not valid_stable_id(event[key]):
+			return REJECT_MALFORMED_EVENT
+	if not event["payload"] is Dictionary or (event["payload"] as Dictionary).size() > MAX_CONTAINER_ITEMS:
+		return REJECT_MALFORMED_EVENT
+	return ""
+
+
+static func primitive_safe(value: Variant) -> bool:
+	return _primitive_safe(value, 0, {"containers": 0})
+
+
+static func next_sequence(current: int) -> int:
+	if current < 0 or current >= MAX_SEQUENCE:
+		return -1
+	return current + 1
+
+
+static func _valid_state_numbers(state: Dictionary) -> bool:
+	for key in ["x", "y", "heading", "hull_ratio"]:
+		if not state.has(key) or not _is_number(state[key]) or not is_finite(float(state[key])) or absf(float(state[key])) > MAX_ABS_NUMBER:
+			return false
+	if float(state["hull_ratio"]) < 0.0 or float(state["hull_ratio"]) > 1.0:
+		return false
+	return state.has("alive") and state["alive"] is bool
 
 
 static func _validate_intent_payload(intent_type: String, payload: Dictionary) -> String:

@@ -7,6 +7,8 @@ signal handshake_accepted(payload: Dictionary)
 signal handshake_rejected(reason: String)
 signal command_accepted(sequence: int)
 signal command_rejected(sequence: int, reason: String)
+signal replication_snapshot_received(snapshot: Dictionary)
+signal replication_event_received(event: Dictionary)
 
 
 func send_client_hello(hello: Dictionary) -> void:
@@ -31,6 +33,14 @@ func send_command_accept(peer_id: int, sequence: int) -> void:
 
 func send_command_reject(peer_id: int, sequence: int, reason: String) -> void:
 	rpc_id(peer_id, "_rpc_command_reject", sequence, reason)
+
+
+func send_snapshot(peer_id: int, snapshot: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_replication_snapshot", snapshot)
+
+
+func send_replication_event(peer_id: int, event: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_replication_event", event)
 
 
 @rpc("any_peer", "call_remote", "reliable", 0)
@@ -65,3 +75,13 @@ func _rpc_command_accept(sequence: int) -> void:
 @rpc("authority", "call_remote", "reliable", 0)
 func _rpc_command_reject(sequence: int, reason: String) -> void:
 	command_rejected.emit(sequence, reason)
+
+
+@rpc("authority", "call_remote", "unreliable_ordered", 2)
+func _rpc_replication_snapshot(snapshot: Dictionary) -> void:
+	replication_snapshot_received.emit(snapshot)
+
+
+@rpc("authority", "call_remote", "reliable", 1)
+func _rpc_replication_event(event: Dictionary) -> void:
+	replication_event_received.emit(event)

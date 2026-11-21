@@ -4,6 +4,7 @@ extends Node
 const PROTOCOL := preload("res://src/network/session_protocol.gd")
 const RPC_BRIDGE := preload("res://src/network/session_rpc_bridge.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
+const REPLICATION := preload("res://src/network/network_replication_peer.gd")
 
 const STATE_CONNECTED := "connected"
 const STATE_HANDSHAKING := "handshaking"
@@ -17,6 +18,7 @@ signal intent_rejected(peer_id: int, sequence: int, reason: String)
 
 var _peer: ENetMultiplayerPeer
 var _bridge: SessionRpcBridge
+var _replication: NetworkReplicationPeer
 var _player_motors: Dictionary = {}
 var _player_ids: Array[String] = []
 var _peer_states: Dictionary = {}
@@ -39,6 +41,10 @@ func _ready() -> void:
 	add_child(_bridge)
 	_bridge.client_hello_received.connect(_on_client_hello)
 	_bridge.client_intent_received.connect(_on_client_intent)
+	_replication = REPLICATION.new()
+	_replication.name = "Replication"
+	add_child(_replication, true)
+	_replication.configure_bridge(_bridge)
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
@@ -72,6 +78,7 @@ func start(port: int) -> Error:
 		_peer = null
 		return error
 	multiplayer.multiplayer_peer = _peer
+	_replication.set_host_enabled(true)
 	_running = true
 	_listen_port = port
 	return OK
@@ -83,6 +90,9 @@ func stop() -> void:
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer = null
 	_peer = null
+	if _replication != null:
+		_replication.set_host_enabled(false)
+		_replication.reset_session()
 	_running = false
 	_listen_port = 0
 	_peer_states.clear()
@@ -116,6 +126,45 @@ func telemetry() -> Dictionary:
 	return _telemetry.duplicate(true)
 
 
+func network_entity_registry() -> NetworkEntityRegistry:
+	return _replication.registry() if _replication != null else null
+
+
+func spawn_network_entity(entity_id: String, entity_kind: String, sector_id: String, initial_state: Dictionary,
+		definition_id: String = "", source: Object = null, snapshot_method: StringName = &"", source_args: Array = []) -> bool:
+	return _running and _replication != null and _replication.spawn_authoritative(
+		entity_id, entity_kind, sector_id, initial_state, definition_id, source, snapshot_method, source_args
+	)
+
+
+func despawn_network_entity(entity_id: String) -> bool:
+	return _running and _replication != null and _replication.despawn_authoritative(entity_id)
+
+
+func update_network_entity_state(entity_id: String, changes: Dictionary) -> bool:
+	return _running and _replication != null and _replication.update_authoritative_state(entity_id, changes)
+
+
+func bind_network_snapshot_source(entity_id: String, source: Object, method: StringName, source_args: Array = []) -> bool:
+	return _running and _replication != null and _replication.bind_snapshot_source(entity_id, source, method, source_args)
+
+
+func bind_combat_replication(authority: Object) -> bool:
+	return _running and _replication != null and _replication.bind_combat_authority(authority)
+
+
+func bind_loot_replication(authority: Object) -> bool:
+	return _running and _replication != null and _replication.bind_loot_authority(authority)
+
+
+func emit_network_event(event_type: String, source_id: String, target_id: String, payload: Dictionary) -> bool:
+	return _running and _replication != null and _replication.emit_semantic_event(event_type, source_id, target_id, payload)
+
+
+func network_replication_telemetry() -> Dictionary:
+	return _replication.telemetry() if _replication != null else {}
+
+
 func _on_peer_connected(peer_id: int) -> void:
 	_peer_states[peer_id] = STATE_CONNECTED
 	_telemetry["connections"] = int(_telemetry["connections"]) + 1
@@ -126,6 +175,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_peer_states.erase(peer_id)
 	_peer_to_player.erase(peer_id)
 	_last_sequence.erase(peer_id)
+	if _replication != null:
+		_replication.remove_peer(peer_id)
 
 
 func _on_client_hello(peer_id: int, hello: Dictionary) -> void:
@@ -148,6 +199,7 @@ func _on_client_hello(peer_id: int, hello: Dictionary) -> void:
 				_peer_to_player[peer_id] = player_id
 				_last_sequence[peer_id] = -1
 				_peer_states[peer_id] = STATE_READY
+				_replication.set_peer_player(peer_id, player_id)
 				_telemetry["ready"] = int(_telemetry["ready"]) + 1
 				_bridge.send_handshake_accept(peer_id, {
 					"protocol_version": PROTOCOL.PROTOCOL_VERSION,

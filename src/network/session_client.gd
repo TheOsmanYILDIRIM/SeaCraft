@@ -3,6 +3,7 @@ extends Node
 
 const PROTOCOL := preload("res://src/network/session_protocol.gd")
 const RPC_BRIDGE := preload("res://src/network/session_rpc_bridge.gd")
+const REPLICATION := preload("res://src/network/network_replication_peer.gd")
 
 const STATE_DISCONNECTED := "disconnected"
 const STATE_CONNECTING := "connecting"
@@ -19,6 +20,7 @@ signal command_rejected(sequence: int, reason: String)
 
 var _peer: ENetMultiplayerPeer
 var _bridge: SessionRpcBridge
+var _replication: NetworkReplicationPeer
 var _state: String = STATE_DISCONNECTED
 var _rejection_reason: String = ""
 var _assigned_player_id: String = ""
@@ -37,6 +39,10 @@ func _ready() -> void:
 	_bridge.handshake_rejected.connect(_on_handshake_rejected)
 	_bridge.command_accepted.connect(_on_command_accepted)
 	_bridge.command_rejected.connect(_on_command_rejected)
+	_replication = REPLICATION.new()
+	_replication.name = "Replication"
+	add_child(_replication, true)
+	_replication.configure_bridge(_bridge)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
@@ -101,6 +107,8 @@ func close_session() -> void:
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer = null
 	_peer = null
+	if _replication != null:
+		_replication.reset_session()
 	_hello_overrides.clear()
 	_assigned_player_id = ""
 	_set_state(STATE_DISCONNECTED)
@@ -128,6 +136,36 @@ func accepted_sequences() -> Array[int]:
 
 func command_rejections() -> Array[Dictionary]:
 	return _command_rejections.duplicate(true)
+
+
+func network_entity_registry() -> NetworkEntityRegistry:
+	return _replication.registry() if _replication != null else null
+
+
+func network_replication_telemetry() -> Dictionary:
+	return _replication.telemetry() if _replication != null else {}
+
+
+func visible_network_entity_ids() -> Array[String]:
+	if _replication == null:
+		return []
+	return _replication.visible_entity_ids()
+
+
+func network_events() -> Array[Dictionary]:
+	if _replication == null:
+		return []
+	return _replication.event_history()
+
+
+func network_event_types() -> Array[String]:
+	if _replication == null:
+		return []
+	return _replication.event_types()
+
+
+func last_snapshot_sequence() -> int:
+	return _replication.last_snapshot_sequence() if _replication != null else -1
 
 
 func _on_connected_to_server() -> void:
