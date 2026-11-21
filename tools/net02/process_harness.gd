@@ -226,11 +226,17 @@ func _process_client() -> void:
 				])
 	if not _aoi_printed:
 		var visible := _client.visible_network_entity_ids()
-		var expected_visible: Array[String] = (
-			["loot.shared", "npc.alpha", "npc.shared", "player.alpha"]
-			if _label == "A"
-			else ["loot.shared", "monster.beta", "npc.shared", "player.beta"]
-		)
+		var expected_visible: Array[String] = []
+		if _label == "A":
+			expected_visible.append("loot.shared")
+			expected_visible.append("npc.alpha")
+			expected_visible.append("npc.shared")
+			expected_visible.append("player.alpha")
+		else:
+			expected_visible.append("loot.shared")
+			expected_visible.append("monster.beta")
+			expected_visible.append("npc.shared")
+			expected_visible.append("player.beta")
 		expected_visible.sort()
 		if visible == expected_visible:
 			_aoi_printed = true
