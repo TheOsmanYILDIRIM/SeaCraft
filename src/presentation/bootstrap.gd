@@ -8,6 +8,12 @@ const PRACTICE_POSITION := Vector2(-520, 260)
 const NPC_TUNING := preload("res://src/data/ai/vs02_sc03_tuning.tres")
 const VS03_LOOT_TABLE := preload("res://src/data/loot/vs03_sc03_loot_table.tres")
 const VS03_LOOT_ITEM := preload("res://src/data/items/vs03_salvage_scrap.tres")
+const PLAYER_SHIP_DEF := preload("res://src/data/content/ship_foundation_player.tres")
+const PRACTICE_SHIP_DEF := preload("res://src/data/content/ship_vs02_practice.tres")
+const PRACTICE_CANNON := preload("res://src/data/content/weapon_vs01_practice_cannon.tres")
+const ROUND_AMMO_PROFILE := preload("res://src/data/content/ammo_core_round.tres")
+const EMBER_AMMO_PROFILE := preload("res://src/data/content/ammo_core_ember.tres")
+const HARPOON_PROFILE := preload("res://src/data/content/harpoon_core02_debug.tres")
 
 var _combat: CombatAuthority
 var _practice_marker: Polygon2D
@@ -52,6 +58,9 @@ var save_status: Dictionary = {}
 
 
 func _ready() -> void:
+	if ContentManifest.current_hash().is_empty():
+		_block_boot({"status": "content_registry_unavailable"})
+		return
 	_world = SectorWorld.new(FoundationSector.graph(), _authority)
 	save_status = _save_service.load()
 	match save_status["status"]:
@@ -165,14 +174,7 @@ func _on_gameplay_command(command: Dictionary) -> void:
 
 func _setup_combat(sector: SectorRuntime) -> void:
 	_combat = CombatAuthority.new(sector, _streams, Engine.physics_ticks_per_second)
-	var cannon := WeaponDefinition.new()
-	cannon.stable_id = "weapon.vs01_practice_cannon"
-	cannon.base_damage = 25.0
-	cannon.min_range_meters = 35.0
-	cannon.range_meters = 360.0
-	cannon.reload_seconds = 1.25
-	cannon.accuracy = 0.92
-	cannon.crit_chance = 0.15
+	var cannon := PRACTICE_CANNON as WeaponDefinition
 	var practice_active := sector.sector_id == FoundationSector.ID
 	var practice_position := sector.entity_position(PRACTICE_TARGET)
 	if practice_active and not practice_position.is_finite():
@@ -180,14 +182,14 @@ func _setup_combat(sector: SectorRuntime) -> void:
 			push_error("VS-02 NPC placement failed")
 			return
 		practice_position = PRACTICE_POSITION
-	if not _combat.register(FoundationSector.PLAYER, "faction.player", 100.0, cannon):
+	if not _combat.register(FoundationSector.PLAYER, (PLAYER_SHIP_DEF as ShipDefinition).faction_id, (PLAYER_SHIP_DEF as ShipDefinition).base_hull_hp, cannon):
 		push_error("VS-02 player combat roster setup failed")
 		return
 	if practice_active:
-		if not _combat.register(PRACTICE_TARGET, "faction.practice_hostile", 75.0, null, 4.0, 0.05):
+		if not _combat.register(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, null, 4.0, 0.05):
 			push_error("VS-02 combat roster setup failed")
 			return
-	elif not _combat.register_dormant(PRACTICE_TARGET, "faction.practice_hostile", 75.0, FoundationSector.ID, PRACTICE_POSITION):
+	elif not _combat.register_dormant(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, FoundationSector.ID, PRACTICE_POSITION):
 		push_error("VS-02 dormant combat roster setup failed")
 		return
 
@@ -231,18 +233,11 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	_loot.initialize_missing_stock(CORE_STOCK)
 	_loot.initialize_missing_stock(NPC_STOCK)
-	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(CoreCombatRules.ammo(ROUND_AMMO, CoreCombatRules.ROUND, CoreCombatRules.NEUTRAL, 1.0)) or not _combat.register_ammo(CoreCombatRules.ammo(EMBER_AMMO, CoreCombatRules.EMBER, CoreCombatRules.FIRE, 1.15, "status.scorched")):
+	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(ROUND_AMMO_PROFILE as AmmoProfile) or not _combat.register_ammo(EMBER_AMMO_PROFILE as AmmoProfile):
 		return
 	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):
 		return
-	var harpoon := HarpoonProfile.new()
-	harpoon.stable_id = "harpoon.core02_debug"
-	harpoon.display_name = "Debug Harpoon"
-	harpoon.base_damage = 18.0
-	harpoon.range_meters = 320.0
-	harpoon.reload_seconds = 1.25
-	harpoon.element_id = CoreCombatRules.NEUTRAL
-	if not _combat.mount_harpoon(FoundationSector.PLAYER, harpoon):
+	if not _combat.mount_harpoon(FoundationSector.PLAYER, HARPOON_PROFILE as HarpoonProfile):
 		return
 	_world_objects = WorldObjectAuthority.new(sector, _loot, _combat, VS03_LOOT_TABLE as LootTable, FoundationSector.PLAYER, true)
 	if _pending_combat.has("world") and not _world_objects.restore_state(_pending_combat["world"]):
@@ -495,13 +490,20 @@ func _flush_checkpoint() -> void:
 	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
 	var authority_state: Dictionary = {"sector_world": _world.snapshot_state(FoundationSector.PLAYER)}
 	if _combat != null and _npc_brain != null:
+		var combat_state := _combat.snapshot_state()
+		var npc_state := _npc_brain.persistence_state()
 		authority_state.merge({
-			"combat": _combat.snapshot_state(),
+			"combat": combat_state,
 			"npc_motion": _npc_motor.capture_save_motion(),
-			"npc_ai": _npc_brain.persistence_state(),
+			"npc_ai": npc_state,
 			"scheduler": _ai_scheduler.snapshot_state(),
 			"world": _world_objects.snapshot_state() if _world_objects != null else {"objects": [], "claimed_ids": [], "processed_spawns": []},
 		}, true)
+		var entity_index := _capture_entity_index(combat_state, npc_state, loot_state)
+		if entity_index.is_empty():
+			save_status = {"status": "entity_index_failed"}
+			return
+		authority_state["entity_index"] = entity_index
 	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, authority_state)
 	save_status = _save_service.save_if_dirty(dto)
 
@@ -628,3 +630,62 @@ static func _add_coast(parent: Node2D, rect: Rect2) -> void:
 	collider.shape = shape
 	body.add_child(collider)
 	parent.add_child(body)
+
+
+func _capture_entity_index(combat_state: Dictionary, npc_state: Dictionary, loot_state: Dictionary) -> Dictionary:
+	var registry := ContentManifest.registry()
+	if registry == null:
+		return {}
+	var combatants: Dictionary = {}
+	for raw in combat_state.get("combatants", []):
+		if raw is Dictionary and raw.get("entity_id") is String:
+			combatants[raw["entity_id"]] = raw
+	if not combatants.has(FoundationSector.PLAYER) or not combatants.has(PRACTICE_TARGET):
+		return {}
+	var player_combat: Dictionary = combatants[FoundationSector.PLAYER]
+	var npc_combat: Dictionary = combatants[PRACTICE_TARGET]
+	var player_motion := _ship_motor.capture_save_motion()
+	var npc_motion := _npc_motor.capture_save_motion()
+	var player_ready: Dictionary = player_combat.get("core", {}).get("ready", {})
+	var player_cooldowns := {
+		"cannon_ready_tick": int(player_combat.get("battery", {}).get("ready_tick", 0)),
+		"harpoon_ready_tick": int(player_combat.get("core", {}).get("harpoon_ready_tick", 0)),
+	}
+	for key in player_ready:
+		player_cooldowns[str(key)] = int(player_ready[key])
+	var npc_cooldowns := {
+		"next_repair_tick": maxi(0, int(npc_state.get("next_repair_tick", 0))),
+		"last_decision_tick": maxi(0, int(npc_state.get("last_decision_tick", 0))),
+	}
+	var npc_destination: Dictionary = npc_state.get("destination", {"x": npc_motion["x"], "y": npc_motion["y"]})
+	var records: Array = [
+		{
+			"instance_id": FoundationSector.PLAYER,
+			"definition_id": (PLAYER_SHIP_DEF as ShipDefinition).stable_id,
+			"entity_kind": "ship",
+			"sector_id": str(player_combat["sector_id"]),
+			"position": {"x": float(player_motion["x"]), "y": float(player_motion["y"])},
+			"motion": {"heading": float(player_motion["heading"]), "vx": float(player_motion["vx"]), "vy": float(player_motion["vy"])},
+			"health": float(player_combat["hull"]),
+			"alive": float(player_combat["hull"]) > 0.0,
+			"route": {},
+			"cooldowns": player_cooldowns,
+			"inventory": (loot_state.get("inventory", {}) as Dictionary).duplicate(true),
+			"payload": {"content_refs": [PRACTICE_CANNON.stable_id, ROUND_AMMO_PROFILE.stable_id, EMBER_AMMO_PROFILE.stable_id, HARPOON_PROFILE.stable_id]},
+		},
+		{
+			"instance_id": PRACTICE_TARGET,
+			"definition_id": (PRACTICE_SHIP_DEF as ShipDefinition).stable_id,
+			"entity_kind": "npc_ship",
+			"sector_id": str(npc_combat["sector_id"]),
+			"position": {"x": float(npc_combat["position"]["x"]), "y": float(npc_combat["position"]["y"])},
+			"motion": {"heading": float(npc_motion["heading"]), "vx": float(npc_motion["vx"]), "vy": float(npc_motion["vy"])},
+			"health": float(npc_combat["hull"]),
+			"alive": float(npc_combat["hull"]) > 0.0 and not bool(npc_state.get("sunk", false)),
+			"route": {"goal": npc_destination.duplicate(true), "patrol_index": int(npc_state["patrol_index"]), "intent_id": int(npc_state["intent_id"])},
+			"cooldowns": npc_cooldowns,
+			"inventory": {},
+			"payload": {"content_refs": []},
+		},
+	]
+	return PersistentEntityIndex.build(records, registry)
