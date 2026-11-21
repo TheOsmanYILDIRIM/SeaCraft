@@ -93,7 +93,8 @@ static func evaluate(context: Dictionary, decision_sequence: int) -> Dictionary:
 	var reload_ready := bool(actor.get("reload_ready", false))
 	var locked := str(actor.get("locked_target_id", "")) == str(target["entity_id"])
 	var ammo_ready := bool(ammo_choice.get("available", not bool(actor.get("requires_ammo", false))))
-	var fire_allowed := has_cannon and range_band == BAND_HOLD and broadside_valid and line_clear and reload_ready and locked and ammo_ready and not safe_restricted
+	var ammo_switch_required := bool(actor.get("requires_ammo", false)) and not selected_ammo.is_empty() and selected_ammo != str(actor.get("selected_ammo_id", ""))
+	var fire_allowed := has_cannon and range_band == BAND_HOLD and broadside_valid and line_clear and reload_ready and locked and ammo_ready and not safe_restricted and not ammo_switch_required
 
 	var retreat_score := _retreat_score(actor, target, context, role, expected_dps, escape)
 	var repair_score := _repair_score(actor, context)
@@ -124,7 +125,7 @@ static func evaluate(context: Dictionary, decision_sequence: int) -> Dictionary:
 	elif str(actor.get("locked_target_id", "")) != str(target["entity_id"]):
 		intent = ACQUIRE_TARGET
 		reason = "target_lock_required"
-	elif bool(actor.get("requires_ammo", false)) and selected_ammo != str(actor.get("selected_ammo_id", "")):
+	elif ammo_switch_required:
 		intent = MANEUVER
 		reason = "ammo_switch_required"
 	elif fire_allowed:
@@ -146,6 +147,7 @@ static func evaluate(context: Dictionary, decision_sequence: int) -> Dictionary:
 	result["support_score"] = support_score
 	result["support_requested"] = support_requested
 	result["fire_allowed"] = fire_allowed
+	result["ammo_switch_required"] = ammo_switch_required
 	result["range_band"] = range_band
 	result["desired_range"] = (preferred_min + preferred_max) * 0.5
 	result["line_of_fire_clear"] = line_clear
@@ -232,6 +234,7 @@ static func _base_result(tick: int, sequence: int, intent: String, target_id: St
 		"support_score": 0.0,
 		"support_requested": false,
 		"fire_allowed": false,
+		"ammo_switch_required": false,
 		"range_band": "",
 		"desired_range": 0.0,
 		"line_of_fire_clear": false,
