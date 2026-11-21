@@ -48,11 +48,13 @@ func test_net02_snapshot_order_rejects_stale_and_duplicate_sequences() -> void:
 	var payload := _spawn("npc.shared", "npc", "sector.net02", 1.0, 2.0, 1)
 	assert_true(proxy.configure_spawn(payload))
 	assert_true(registry.register_mirror(payload, proxy))
-	for raw_sequence in [10, 12, 11, 12, 13]:
-		var sequence := int(raw_sequence)
+	var sequences := [10, 12, 11, 12, 13]
+	var expected := [true, true, false, false, true]
+	for index in sequences.size():
+		var sequence := int(sequences[index])
 		var row := _row("npc.shared", "npc", "sector.net02", float(sequence), 2.0, 1.0, true)
 		var accepted := peer.consume_snapshot(PROTOCOL.make_snapshot(sequence, sequence * 3, "sector.net02", [row]))
-		assert_eq(accepted, sequence in [10, 12, 13])
+		assert_eq(accepted, bool(expected[index]))
 	assert_eq(peer.last_snapshot_sequence(), 13)
 	assert_eq(proxy.authoritative_state()["sequence"], 13)
 	assert_eq(proxy.authoritative_state()["x"], 13.0)
@@ -94,7 +96,7 @@ func test_net02_aoi_visibility_uses_authoritative_sector_and_radius() -> void:
 
 func test_net02_combat_events_are_reliable_contract_and_idempotent() -> void:
 	var peer := REPLICATION.new()
-	var event := PROTOCOL.make_semantic_event(1, "event.combat.1", "hull_damaged", "npc.alpha", "player.alpha", {
+	var event := PROTOCOL.make_semantic_event(1, "event.combat.s1", "hull_damaged", "npc.alpha", "player.alpha", {
 		"amount": 10.0, "remaining_hull": 90.0,
 	})
 	assert_eq(PROTOCOL.validate_semantic_event(event), "")
@@ -109,7 +111,7 @@ func test_net02_combat_events_are_reliable_contract_and_idempotent() -> void:
 
 func test_net02_loot_events_are_idempotent_and_primitive_safe() -> void:
 	var peer := REPLICATION.new()
-	var event := PROTOCOL.make_semantic_event(1, "event.loot.1", "drop_created", "drop.alpha", "", {
+	var event := PROTOCOL.make_semantic_event(1, "event.loot.s1", "drop_created", "drop.alpha", "", {
 		"item_id": "item.scrap", "quantity": 2, "sector_id": "sector.net02",
 	})
 	assert_eq(PROTOCOL.validate_semantic_event(event), "")
@@ -154,7 +156,7 @@ func test_net02_snapshot_rows_are_deterministic_and_object_free() -> void:
 	]
 	assert_eq(PROTOCOL.validate_snapshot(PROTOCOL.make_snapshot(1, 3, "sector.net02", unsorted)), PROTOCOL.REJECT_MALFORMED_SNAPSHOT)
 	var forbidden := Node.new()
-	var event := PROTOCOL.make_semantic_event(1, "event.bad.1", "drop_created", "drop.alpha", "", {"node": forbidden})
+	var event := PROTOCOL.make_semantic_event(1, "event.bad.s1", "drop_created", "drop.alpha", "", {"node": forbidden})
 	assert_eq(PROTOCOL.validate_semantic_event(event), PROTOCOL.REJECT_MALFORMED_EVENT)
 	forbidden.free()
 

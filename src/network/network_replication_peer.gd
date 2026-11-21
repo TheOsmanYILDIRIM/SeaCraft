@@ -203,7 +203,7 @@ func emit_semantic_event(event_type: String, source_id: String, target_id: Strin
 	var next_event := PROTOCOL.next_sequence(_event_sequence)
 	if next_event <= 0:
 		return false
-	var event_id := "net.%s.%d" % [event_type, next_event]
+	var event_id := "net.%s.s%d" % [event_type, next_event]
 	var event := PROTOCOL.make_semantic_event(next_event, event_id, event_type, source_id, target_id, payload)
 	if PROTOCOL.validate_semantic_event(event) != "":
 		return false
