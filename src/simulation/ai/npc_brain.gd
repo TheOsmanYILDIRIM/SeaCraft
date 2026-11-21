@@ -11,6 +11,7 @@ var perception_candidate_count: int = 0
 var _entity_id: String = ""
 var _sector: SectorRuntime
 var _combat: CombatAuthority
+var _motor: ShipMotor
 var _tuning: NpcAiTuning
 var _executor := NpcIntentExecutor.new()
 var _memory := NpcThreatMemory.new()
@@ -58,11 +59,23 @@ func _configure(entity_id: String, sector: SectorRuntime, combat: CombatAuthorit
 	_entity_id = entity_id
 	_sector = sector
 	_combat = combat
+	_motor = motor
 	_tuning = tuning.duplicate(true) as NpcAiTuning
 	_authority_enabled = authority_enabled
 	_destination = _tuning.patrol_waypoints[0]
 	_valid = true
 	return true
+
+
+func rebind_sector(sector: SectorRuntime, combat: CombatAuthority) -> bool:
+	if not _valid or sector == null or combat == null or _motor == null:
+		return false
+	_executor.stop()
+	_sector = sector
+	_combat = combat
+	_perceived_target = ""
+	_last_perception_inspected = 0
+	return _executor.configure(_motor, sector.navigation)
 
 
 func decision_tick(simulation_tick: int) -> bool:

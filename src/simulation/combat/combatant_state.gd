@@ -3,6 +3,8 @@ extends RefCounted
 
 # Owned by CombatAuthority, never handed to input or presentation.
 var faction_id: String
+var sector_id: String = ""
+var last_position: Vector2 = Vector2.INF
 var target_class := TargetingService.SHIP
 var max_hull: float
 var hull: float

@@ -32,6 +32,20 @@ func _init(sector: SectorRuntime, streams: SeedStreams, table: LootTable, item: 
 	_authority_enabled = authority_enabled
 
 
+func rebind_sector(sector: SectorRuntime) -> bool:
+	if sector == null:
+		return false
+	_sector = sector
+	for id in _drops:
+		var drop: Dictionary = _drops[id]
+		if drop["sector_id"] != _sector.sector_id:
+			continue
+		var position := Vector2(float(drop["x"]), float(drop["y"]))
+		if not _sector.entity_position(id).is_finite() and not _sector.register_entity(id, position):
+			return false
+	return true
+
+
 func on_ship_sunk(entity_id: String, sequence_id: int, position: Vector2) -> Dictionary:
 	if not _authority_enabled or _sector == null or _streams == null or _table == null or _item == null:
 		return {}

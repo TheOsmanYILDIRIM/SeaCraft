@@ -41,10 +41,33 @@ static func stable_spawn_id(sector_id: String, anchor_id: String, archetype: Str
 	return "world.id_%s" % seed.sha256_text().substr(0, 32)
 
 
+func rebind_sector(sector: SectorRuntime) -> bool:
+	if sector == null:
+		return false
+	_sector = sector
+	for id in _objects:
+		var object: Dictionary = _objects[id]
+		if object["sector_id"] != _sector.sector_id:
+			continue
+		var position := Vector2(float(object["x"]), float(object["y"]))
+		if not _sector.entity_position(id).is_finite() and not _sector.register_entity(id, position):
+			return false
+		if object["archetype"] == WRECK and _combat != null and not _combat.has_combatant(id):
+			if not _combat.register(id, WRECK_FACTION, float(object["max_health"]), null, 0.0, 0.0, true, {}, 0, TargetingService.WRECK):
+				return false
+	return true
+
+
 func spawn(archetype: String, anchor_id: String, slot: int, max_health: float = 40.0) -> Dictionary:
 	if not _authority_enabled or _sector == null or _loot == null or _table == null or not _table.valid():
 		return {}
-	if archetype not in ARCHETYPES or slot < 0 or slot > MAX_SLOT or _objects.size() >= MAX_WORLD_OBJECTS_PER_SECTOR:
+	if archetype not in ARCHETYPES or slot < 0 or slot > MAX_SLOT:
+		return {}
+	var sector_objects := 0
+	for current: Dictionary in _objects.values():
+		if current["sector_id"] == _sector.sector_id:
+			sector_objects += 1
+	if sector_objects >= MAX_WORLD_OBJECTS_PER_SECTOR:
 		return {}
 	var anchor := _sector.anchor(anchor_id)
 	if anchor == null or anchor.category != archetype or _sector.navigation == null or not _sector.navigation.accessible(anchor.position):
@@ -55,7 +78,7 @@ func spawn(archetype: String, anchor_id: String, slot: int, max_health: float = 
 	if archetype == WRECK:
 		var wrecks := 0
 		for current: Dictionary in _objects.values():
-			if current["archetype"] == WRECK:
+			if current["sector_id"] == _sector.sector_id and current["archetype"] == WRECK:
 				wrecks += 1
 		if wrecks >= MAX_WRECKS_PER_SECTOR or not CoreCombatRules.bounded(max_health, 0.000001, CoreCombatRules.MAX_VALUE):
 			return {}
@@ -92,6 +115,9 @@ func pickup(actor: String, entity_id: String) -> Dictionary:
 	if object.is_empty():
 		result["reason"] = "object_not_found"
 		return result
+	if object.get("sector_id") != _sector.sector_id:
+		result["reason"] = "wrong_sector"
+		return result
 	if object["archetype"] not in [CHEST, GLITTER]:
 		result["reason"] = "not_pickup"
 		return result
@@ -124,6 +150,9 @@ func on_wreck_destroyed(actor: String, entity_id: String, sequence_id: int) -> D
 	var object: Dictionary = _objects.get(entity_id, {})
 	if object.is_empty() or object.get("archetype") != WRECK:
 		result["reason"] = "object_not_found"
+		return result
+	if object.get("sector_id") != _sector.sector_id:
+		result["reason"] = "wrong_sector"
 		return result
 	if sequence_id <= 0 or _combat == null or _combat.is_alive(entity_id):
 		result["reason"] = "wreck_not_destroyed"
@@ -196,7 +225,7 @@ func restore_state(value: Variant) -> bool:
 		var object: Dictionary = raw.duplicate(true)
 		object["slot"] = int(object["slot"])
 		var id: String = object["entity_id"]
-		if not _sector.register_entity(id, Vector2(object["x"], object["y"])):
+		if object["sector_id"] == _sector.sector_id and not _sector.register_entity(id, Vector2(float(object["x"]), float(object["y"]))):
 			return false
 		if object["archetype"] == WRECK:
 			if _combat == null:
@@ -216,7 +245,7 @@ func validate_state(value: Variant) -> bool:
 	var state: Dictionary = value
 	if not state.get("objects") is Array or not state.get("claimed_ids") is Array or not state.get("processed_spawns") is Array:
 		return false
-	if state["objects"].size() > MAX_WORLD_OBJECTS_PER_SECTOR or state["claimed_ids"].size() > 512 or state["processed_spawns"].size() > 512:
+	if state["objects"].size() > MAX_WORLD_OBJECTS_PER_SECTOR * 8 or state["claimed_ids"].size() > 512 or state["processed_spawns"].size() > 512:
 		return false
 	var claimed: Dictionary = {}
 	for id in state["claimed_ids"]:
@@ -241,15 +270,17 @@ func validate_state(value: Variant) -> bool:
 			return false
 		if not archetype is String or archetype not in ARCHETYPES or not anchor_id is String or not SectorIds.valid(anchor_id):
 			return false
-		if object.get("sector_id") != _sector.sector_id or stable_spawn_id(_sector.sector_id, anchor_id, archetype, int(object.get("slot", -1))) != id:
+		var object_sector: Variant = object.get("sector_id")
+		if not object_sector is String or not SectorIds.valid(object_sector) or stable_spawn_id(object_sector, anchor_id, archetype, int(object.get("slot", -1))) != id:
 			return false
-		var anchor := _sector.anchor(anchor_id)
-		if anchor == null or anchor.category != archetype:
-			return false
+		if object_sector == _sector.sector_id:
+			var anchor := _sector.anchor(anchor_id)
+			if anchor == null or anchor.category != archetype:
+				return false
 		if typeof(object.get("x")) not in [TYPE_INT, TYPE_FLOAT] or typeof(object.get("y")) not in [TYPE_INT, TYPE_FLOAT]:
 			return false
 		var position := Vector2(float(object["x"]), float(object["y"]))
-		if not position.is_finite() or not _sector.bounds.has_point(position):
+		if not position.is_finite() or (object.get("sector_id") == _sector.sector_id and not _sector.bounds.has_point(position)):
 			return false
 		if typeof(object.get("max_health")) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(object["max_health"])):
 			return false
