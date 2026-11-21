@@ -18,7 +18,7 @@ var weapon: WeaponDefinition
 func _setup(stock: int = 4, dodge: float = 0.0, accuracy: float = 1.0, enabled: bool = true) -> void:
 	sector = SectorRuntime.new()
 	sector.bounds = Rect2(-640, -360, 1280, 720)
-	sector.sector_id = "sector.core"
+	sector.sector_id = FoundationSector.ID
 	assert_true(sector.register_entity(A, Vector2.ZERO))
 	assert_true(sector.register_entity(B, Vector2(0, 100)))
 	rng = SeedStreams.new(71)
