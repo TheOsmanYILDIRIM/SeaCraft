@@ -104,6 +104,7 @@ func _start_client() -> void:
 
 
 func _on_client_state_changed(state: String) -> void:
+	print("NET01_CLIENT_STATE scenario=%s state=%s" % [_scenario, state])
 	if _scenario == "prehandshake" and state == CLIENT_SCRIPT.STATE_CONNECTED and not _prehandshake_sent:
 		_prehandshake_sent = true
 		var envelope := PROTOCOL.make_envelope(0, COMMANDS.MOVE_TO_WORLD_POSITION, {"world_x": 8.0, "world_y": 9.0})

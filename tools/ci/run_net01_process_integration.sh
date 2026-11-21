@@ -54,8 +54,14 @@ fi
 run_client() {
   local scenario="$1"
   local log="$work/client-${scenario}.log"
-  timeout 20s godot --headless --path . --script res://tools/net01/process_harness.gd -- \
-    --mode=client --scenario="$scenario" --port="$port" >"$log" 2>&1
+  if ! timeout 20s godot --headless --path . --script res://tools/net01/process_harness.gd -- \
+    --mode=client --scenario="$scenario" --port="$port" >"$log" 2>&1; then
+    echo "NET01 client scenario failed: $scenario" >&2
+    cat "$log" >&2 || true
+    echo "--- NET01 host log ---" >&2
+    cat "$host_log" >&2 || true
+    exit 1
+  fi
   cat "$log" >> "$combined"
 }
 
