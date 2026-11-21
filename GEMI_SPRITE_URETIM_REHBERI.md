@@ -348,3 +348,94 @@ Final merkezleme kuralı:
 - mümkünse scale = 1 bırakılır; araç esas olarak X/Y pivot ince ayarı içindir
 
 SC-02 pilotunda final kabul edilen manuel kayıt, otomatik hizalamanın üzerine frame bazlı X/Y düzeltmeleri uyguladı. Bu nedenle sonraki gemilerde de final paketlemeden önce aynı araçla bir tam 360° dönüş kontrolü yapılmalıdır.
+
+
+## 12. Kanonik otomatik normalizasyon aracı
+
+Bundan sonra boyut, dünya ölçeği, otomatik pivot/anchor, 180° karşı-yön eşleme, alfa çıkarma ve N yönüne LUT/Lab renk eşitleme için her gemide yeniden Python kodu yazılmaz.
+
+Tek kanonik araç:
+
+`tools/sprite_normalize.py`
+
+Bu araç final manuel HTML aşamasından **önce** çalıştırılır.
+
+Örnek:
+
+```bash
+python tools/sprite_normalize.py raw/ normalized/ \
+  --camera-elevation 55 \
+  --broadside-px 790 \
+  --anchor-x 512 \
+  --anchor-y 560 \
+  --padding 24 \
+  --color-ref N \
+  --gif-fps 6
+```
+
+Gerekli Python paketleri:
+
+```text
+pillow
+numpy
+opencv-python
+scikit-image
+```
+
+Araç şu işlemleri tek akışta yapar:
+
+1. Gerçek alfa varsa onu kullanır; opak stüdyo arka planında GrabCut ile foreground çıkarır.
+2. Yelken/arma bbox'ını dünya ölçeği sanmaz; gövde-ağırlıklı yapısal maske üzerinden yön ekseni ölçer.
+3. 55° ortografik kamera için doğal projeksiyon oranlarını korur:
+   - E/W = 1.000
+   - çaprazlar ≈ 0.914
+   - N/S ≈ 0.819
+4. Gövde ekseninden otomatik anchor çıkarır ve ortak pivot çevresine yerleştirir.
+5. N↔S, NE↔SW, E↔W, SE↔NW karşıt yön çiftlerinin görsel footprint'ini kontrol eder/eşler.
+6. N yönünü varsayılan canonical renk hedefi kabul edip diğer yönlere luminance quantile + Lab a/b covariance tabanlı LUT-benzeri transfer uygular.
+7. **No-crop safety fit** uygular. Ölçek/pivot sonucu içerik 1024 tuvalden taşacaksa piksel kesmez; ilgili frame'i güvenli padding içine uniform küçültür ve oranı `normalization_report.json` içine yazar.
+8. Şunları otomatik üretir:
+   - 8 şeffaf normalize PNG
+   - `contactsheet.png`
+   - `rotation.gif`
+   - `normalized_png.zip`
+   - `normalization_report.json`
+
+### Zorunlu sıra
+
+```text
+Ham 8 yön
+→ tools/sprite_normalize.py
+→ contact sheet / rotation GIF kontrolü
+→ tools/sprite_manual_aligner_template.html
+→ manuel X/Y/scale ince ayarı
+→ JSON kayıt
+→ final atlas
+```
+
+**Kural:** Normalizasyon/LUT/pivot için sohbet içinde her seferinde yeni ad-hoc script yazma. Önce bu kanonik aracı kullan. Araçta eksik veya hata bulunursa yeni geçici script üretmek yerine bu dosyayı düzelt, aynı test setinde yeniden doğrula ve rehberi güncel tut.
+
+SC-03 sırasında tespit edilen kritik hata: normalize edilmiş kareler 1024×1024 olsa bile negatif compositing offset alfa içeriğini tuval dışında bırakabiliyordu. Kare dosya olmak tek başına kırpılmadığı anlamına gelmez. Bu nedenle `compose_no_crop()` güvenlik kapısı kanonik aracın zorunlu parçasıdır.
+
+## 13. Manuel hizalama template'i — tek kanonik HTML
+
+Tekrar kullanılacak tek HTML:
+
+`tools/sprite_manual_aligner_template.html`
+
+Bu dosya gemiye özel görsel gömmez. Her gemide normalize edilmiş 8 PNG kullanıcı tarafından yüklenir.
+
+Template kuralları:
+
+- kaynak PNG'ye bbox trim/crop uygulamaz;
+- kaynak görselin tam doğal dikdörtgenini ve aspect ratio'sunu korur;
+- yalnız X/Y ve uniform scale transformu uygular;
+- frame başına %50–150 boyut düzeltme sağlar;
+- iki parmak pinch ile scale ayarı sağlar;
+- animasyon hızını 1–24 FPS arasında anlık değiştirir;
+- Ghost ile önceki frame'i gösterir;
+- ayarları `sprite_manual_alignment.json` olarak kaydeder/geri yükler;
+- final 4×2 atlas dışa aktarır;
+- kaynak alfa ekran kenarına değiyorsa `KAYNAK KENARA DEĞİYOR` uyarısı verir. Bu uyarı HTML'in kırptığı anlamına gelmez; PNG'nin kendisinin daha önce kesilmiş olabileceğini bildirir.
+
+**Kural:** Gemiden gemiye yeni HTML üretme. Yeni işlev gerekiyorsa bu tek template'i geliştir ve GitHub'daki dosyayı güncelle.
