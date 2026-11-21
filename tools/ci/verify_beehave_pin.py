@@ -52,8 +52,16 @@ def main() -> None:
     runner = Path("src/simulation/ai/ai_bt_runner.gd").read_text(encoding="utf-8")
     if "BeehaveTree.ProcessThread.MANUAL" not in runner or "_tree.tick()" not in runner:
         fail("SeaCraft runner is not manual Beehave execution")
-    if "not _tree.is_inside_tree()" not in runner or "actor.add_child(_tree)" in runner:
-        fail("Beehave runtime tree must remain detached from SceneTree")
+    if "SeaCraftManualBeehaveTree.new()" not in runner or "actor.add_child(_tree)" not in runner:
+        fail("SeaCraft must bind the manual Beehave tree to the actor lifecycle")
+    if "_tree.is_inside_tree()" not in runner:
+        fail("SeaCraft runner must verify actor-owned Beehave lifetime")
+    manual_tree = Path("src/simulation/ai/bt/seacraft_manual_beehave_tree.gd").read_text(encoding="utf-8")
+    for required in ["extends BeehaveTree", "func _ready()", "set_process(false)", "set_physics_process(false)"]:
+        if required not in manual_tree:
+            fail(f"manual Beehave lifecycle wrapper missing contract: {required}")
+    if "BeehaveGlobalDebugger" in manual_tree or "BeehaveGlobalMetrics" in manual_tree:
+        fail("manual Beehave lifecycle wrapper must not enable runtime debugger/metrics hooks")
     print(
         f"AI01_BEEHAVE_PIN_OK tag={TAG} commit={COMMIT} upstream={UPSTREAM} runtime_files={len(EXPECTED)}"
     )
