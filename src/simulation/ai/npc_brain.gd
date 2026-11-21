@@ -510,9 +510,7 @@ func _execute_tactical_authority(tactical: Dictionary) -> void:
 		_combat.select(_entity_id, target_id)
 		return
 	var selected_ammo := str(tactical.get("selected_ammo_id", ""))
-	var combat_snapshot := _combat.tactical_snapshot(_entity_id, [target_id], _motor.current_heading(), _tuning.perception_radius, 1, _tuning.max_ammo_candidates, _tuning.max_line_of_fire_inspected)
-	var actor: Dictionary = combat_snapshot.get("actor", {})
-	if bool(actor.get("requires_ammo", false)) and not selected_ammo.is_empty() and selected_ammo != str(actor.get("selected_ammo_id", "")):
+	if bool(tactical.get("ammo_switch_required", false)) and not selected_ammo.is_empty():
 		var ammo_result := _combat.transact(_entity_id, CombatAuthority.intent(CombatAuthority.AMMO_SELECT, selected_ammo))
 		if bool(ammo_result.get("accepted", false)):
 			tactical_ammo_selects += 1
