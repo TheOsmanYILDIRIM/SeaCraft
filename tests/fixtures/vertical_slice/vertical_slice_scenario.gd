@@ -363,7 +363,7 @@ func _wire_runtime(restoring: bool, authority_state: Dictionary, loot_state: Dic
 	if not _combat.register(NPC, "faction.hostile", 100.0):
 		return false
 	_loot = LootAuthority.new(_world.active(), _streams, LOOT_TABLE, LOOT_ITEM, true)
-	var ammo_id := "ammo.vs04_round"
+	var ammo_id := "ammo.core_round"
 	var stock := {CoreCombatRules.ROUND: 16, CoreCombatRules.NPC_REPAIR: 24}
 	if not _loot.bind_inventory_owner(PLAYER, {CoreCombatRules.ROUND: 16}) or not _loot.reserve_inventory_item(NPC, CoreCombatRules.NPC_REPAIR) or not _combat.attach_inventory(_loot):
 		return false

@@ -3,7 +3,7 @@ extends GutTest
 const BOOT := preload("res://src/presentation/bootstrap.tscn")
 const CURRENT := "res://tests/fixtures/save/current.json"
 const LEGACY := "res://tests/fixtures/save/legacy_v0.json"
-const OTHER := "sector.other"
+const OTHER := FoundationSector.OUTER_ID
 const OTHER_PATH := "res://other_lazy_definition.tres"
 
 class InterruptedService extends SaveService:
@@ -90,7 +90,9 @@ func test_schema_and_content_metadata() -> void:
 	var dto: Dictionary = _service.load().get("snapshot", {})
 	assert_eq(int(dto["schema_version"]), DataContractVersions.SCHEMA_VERSION)
 	assert_eq(dto["content_version"], DataContractVersions.CONTENT_VERSION)
-	assert_eq(dto["content_hash"], SaveSnapshot.CONTENT_HASH)
+	assert_eq(dto["content_hash"], ContentManifest.current_hash())
+	assert_eq(dto["content_manifest"]["hash"], dto["content_hash"])
+	assert_eq(int(dto["content_manifest"]["entry_count"]), ContentManifest.current_entry_count())
 	assert_eq(int(dto["rng_stream_version"]), DataContractVersions.RNG_STREAM_VERSION)
 
 
@@ -120,10 +122,10 @@ func test_truncated_json_is_controlled() -> void:
 func test_unknown_sector_does_not_replace_active_runtime() -> void:
 	var dto := _snapshot()
 	dto["sector_id"] = "sector.unknown"
-	_expect_save(dto)
 	var previous := _world.active()
-	assert_eq(_restore(_world, _new_ship()), "unknown_sector")
+	assert_eq(_save_status(dto), "unknown_sector")
 	assert_same(_world.active(), previous)
+	assert_false(_service.has_save())
 
 
 func test_missing_definition_reference_is_controlled() -> void:
@@ -186,14 +188,23 @@ func test_bad_primary_and_backup_refuse_overwrite() -> void:
 	assert_eq(_read_text(_directory.path_join(SaveService.PRIMARY)), "broken primary")
 
 
-func test_current_schema_fixture_is_readable() -> void:
+func test_schema1_fixture_migrates_to_current() -> void:
 	_write(SaveService.PRIMARY, _read_text(CURRENT))
-	assert_eq(_service.load()["status"], SaveService.OK_STATUS)
+	var result := _service.load()
+	assert_eq(result["status"], SaveService.OK_STATUS)
+	assert_true(result["migrated"])
+	assert_eq(int(result["snapshot"]["schema_version"]), DataContractVersions.SCHEMA_VERSION)
 
 
-func test_old_schema_fixture_is_explicitly_unsupported() -> void:
+func test_legacy_v0_fixture_migrates_to_current() -> void:
 	_write(SaveService.PRIMARY, _read_text(LEGACY))
-	assert_eq(_service.load()["status"], "unsupported_version")
+	var result := _service.load()
+	assert_eq(result["status"], SaveService.OK_STATUS)
+	assert_true(result["migrated"])
+	assert_eq(int(result["snapshot"]["schema_version"]), DataContractVersions.SCHEMA_VERSION)
+	assert_eq(result["snapshot"]["sector_id"], FoundationSector.ID)
+	assert_eq(result["snapshot"]["player"]["entity_id"], SaveMigrations.LEGACY_V0_ENTITY_ID)
+	assert_eq(result["snapshot"]["rng"]["master_seed"], str(SaveMigrations.LEGACY_V0_MASTER_SEED))
 
 
 func test_future_schema_is_not_bypassed_with_backup() -> void:

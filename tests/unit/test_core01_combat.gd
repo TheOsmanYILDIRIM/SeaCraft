@@ -233,7 +233,11 @@ func test_core01_checkpoint_continuation() -> void:
 	var directory := "user://core01-%s-%s" % [get_instance_id(), Time.get_ticks_usec()]
 	assert_eq(DirAccess.make_dir_recursive_absolute(directory), OK)
 	var service := SaveService.new(directory)
-	var dto := service.create_snapshot(sector, A, motor, rng, SaveSnapshot.LOCAL, "", loot.snapshot_state(), {"combat": combat.snapshot_state()})
+	var save_sector := SectorRuntime.new()
+	save_sector.sector_id = FoundationSector.ID
+	save_sector.bounds = sector.bounds
+	assert_true(save_sector.register_entity(A, motor.global_position))
+	var dto := service.create_snapshot(save_sector, A, motor, rng, SaveSnapshot.LOCAL, "", loot.snapshot_state(), {"combat": combat.snapshot_state()})
 	assert_eq(service.save(dto)["status"], SaveService.OK_STATUS)
 	var loaded := service.load()
 	assert_eq(loaded["status"], SaveService.OK_STATUS)

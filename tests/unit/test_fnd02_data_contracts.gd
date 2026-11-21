@@ -170,8 +170,8 @@ func test_dto_contract_rejects_godot_runtime_objects() -> void:
 
 func test_schema_and_content_versions_are_distinct_contract_fields() -> void:
 	var stamp: Dictionary = VERSION_CONTRACT.compatibility_stamp()
-	assert_eq(stamp["schema_version"], 1)
-	assert_eq(stamp["content_version"], "fnd02-fixture-1")
+	assert_eq(stamp["schema_version"], 2)
+	assert_eq(stamp["content_version"], "core04-registry-1")
 	assert_ne(str(stamp["schema_version"]), stamp["content_version"])
 	assert_true(DTO_CONTRACT.is_primitive_safe(stamp))
 

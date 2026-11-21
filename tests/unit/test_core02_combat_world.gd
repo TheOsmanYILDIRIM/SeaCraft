@@ -314,7 +314,11 @@ func test_core02_world_persistence_claim_ledger_health_and_rng_continuation() ->
 	add_child_autofree(motor)
 	motor.set_physics_process(false)
 	motor.global_position = sector.entity_position(PLAYER)
-	var dto := service.create_snapshot(sector, PLAYER, motor, rng, SaveSnapshot.LOCAL, "", loot.snapshot_state(), {
+	var save_sector := SectorRuntime.new()
+	save_sector.sector_id = FoundationSector.ID
+	save_sector.bounds = sector.bounds
+	assert_true(save_sector.register_entity(PLAYER, motor.global_position))
+	var dto := service.create_snapshot(save_sector, PLAYER, motor, rng, SaveSnapshot.LOCAL, "", loot.snapshot_state(), {
 		"combat": combat.snapshot_state(),
 		"world": world_objects.snapshot_state(),
 	})
