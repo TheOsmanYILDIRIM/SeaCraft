@@ -30,11 +30,20 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 		return false
 	_last_sequence = sequence
 	var target_suffix := "" if target_value.is_empty() else " → %s" % target_value
-	_label.text = "%s | %s\n%s%s" % [
+	var tactical_intent := str(snapshot.get("tactical_intent", "none"))
+	var tactical_maneuver := str(snapshot.get("tactical_maneuver", ""))
+	var ammo_id := str(snapshot.get("tactical_ammo_id", ""))
+	var tactical_suffix := tactical_intent
+	if not tactical_maneuver.is_empty():
+		tactical_suffix += "/%s" % tactical_maneuver
+	if not ammo_id.is_empty():
+		tactical_suffix += " [%s]" % ammo_id
+	_label.text = "%s | %s\n%s%s | %s" % [
 		state_label(state_value),
 		intent_label(intent_value),
 		role_value,
 		target_suffix,
+		tactical_suffix,
 	]
 	return true
 
