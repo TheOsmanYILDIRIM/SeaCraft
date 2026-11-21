@@ -183,7 +183,10 @@ func test_core04_npc_route_cooldown_and_scheduler_resume() -> void:
 	var restored_brain := restored_scene.get("_npc_brain") as NpcBrain
 	var restored_combat := restored_scene.get("_combat") as CombatAuthority
 	var restored_scheduler := restored_scene.get("_ai_scheduler") as AiDecisionScheduler
-	assert_eq(restored_brain.persistence_state(), before_brain)
+	var restored_brain_state := restored_brain.persistence_state()
+	if restored_brain_state != before_brain:
+		print("AI02_PERSISTENCE_DIFF before=", before_brain, " after=", restored_brain_state)
+	assert_eq(restored_brain_state, before_brain)
 	assert_eq(restored_combat.snapshot_state(), before_combat)
 	assert_eq(restored_scheduler.snapshot_state(), before_scheduler)
 	assert_eq(restored_brain.persistence_state()["patrol_index"], before_brain["patrol_index"])
