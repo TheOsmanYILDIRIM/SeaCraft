@@ -360,7 +360,11 @@ static func _retreat_score(actor: Dictionary, target: Dictionary, context: Dicti
 	var outlook := 1.0 - clampf(expected_dps / target_hull * 10.0, 0.0, 1.0)
 	var ammo_pressure := 1.0 if bool(actor.get("requires_ammo", false)) and int(actor.get("available_ammo_count", 0)) == 0 else 0.0
 	var escape_quality := clampf(float(escape.get("score", 0.0)), 0.0, 1.0)
-	return clampf((hull_pressure * 0.35 + numerical * 0.20 + threat * 0.15 + outlook * 0.10 + ammo_pressure * 0.10 + escape_quality * 0.10) * float(role.get("tactical_retreat", 1.0)), 0.0, 2.0)
+	var weighted := (hull_pressure * 0.45 + numerical * 0.25 + threat * 0.10 + outlook * 0.08 + ammo_pressure * 0.05 + escape_quality * 0.07) * float(role.get("tactical_retreat", 1.0))
+	var critical_pressure_floor := 0.0
+	if float(actor.get("hull_ratio", 1.0)) <= 0.25 and numerical >= 0.5:
+		critical_pressure_floor = 0.78
+	return clampf(maxf(weighted, critical_pressure_floor), 0.0, 2.0)
 
 
 static func _repair_score(actor: Dictionary, context: Dictionary) -> float:
