@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_anchor.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_navigation_fixture.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_gate.gd" id="4"]
+[ext_resource type="Script" path="res://src/data/definitions/safe_zone_definition.gd" id="5"]
+
+[sub_resource type="Resource" id="Anchor_west"]
+script = ExtResource("2")
+stable_id = "anchor.haven_west"
+sector_id = "sector.safe_haven"
+position = Vector2(-520, 0)
+category = "gate"
+
+[sub_resource type="Resource" id="Anchor_center"]
+script = ExtResource("2")
+stable_id = "anchor.haven_center"
+sector_id = "sector.safe_haven"
+position = Vector2(0, 0)
+category = "player"
+
+[sub_resource type="Resource" id="Gate_outer"]
+script = ExtResource("4")
+stable_id = "gate.haven_outer"
+from_sector = "sector.safe_haven"
+to_sector = "sector.outer_reach"
+exit_anchor = "anchor.haven_west"
+entry_anchor = "anchor.outer_east"
+activation_radius = 64.0
+
+[sub_resource type="Resource" id="Safe_core"]
+script = ExtResource("5")
+stable_id = "safe_zone.haven_core"
+sector_id = "sector.safe_haven"
+center = Vector2(0, 0)
+radius = 300.0
+
+[sub_resource type="Resource" id="Nav_fixture"]
+script = ExtResource("3")
+waypoints = PackedVector2Array(-360, -180, 360, -180, -360, 180, 360, 180)
+clearance = 16.0
+
+[resource]
+script = ExtResource("1")
+stable_id = "sector.safe_haven"
+display_name = "Ashen Haven"
+label_id = "label.safe_haven"
+bounds = Rect2(-640, -360, 1280, 720)
+navigation_fixture = SubResource("Nav_fixture")
+spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_west"), SubResource("Anchor_center")])
+neighbor_ids = PackedStringArray("sector.outer_reach")
+transition_gates = Array[ExtResource("4")]([SubResource("Gate_outer")])
+hazard_cost_profile_id = "hazard.safe"
+safe_haven = true
+safe_zones = Array[ExtResource("5")]([SubResource("Safe_core")])
+map_node_position = Vector2(340, -20)
+map_layer = 0
+biome_tag = "hazard.safe"

@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_anchor.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_navigation_fixture.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_gate.gd" id="4"]
+
+[sub_resource type="Resource" id="Anchor_west"]
+script = ExtResource("2")
+stable_id = "anchor.outer_west"
+sector_id = "sector.outer_reach"
+position = Vector2(-520, 0)
+category = "gate"
+
+[sub_resource type="Resource" id="Anchor_east"]
+script = ExtResource("2")
+stable_id = "anchor.outer_east"
+sector_id = "sector.outer_reach"
+position = Vector2(520, 0)
+category = "gate"
+
+[sub_resource type="Resource" id="Anchor_chest"]
+script = ExtResource("2")
+stable_id = "anchor.outer_chest"
+sector_id = "sector.outer_reach"
+position = Vector2(-220, 220)
+category = "chest"
+
+[sub_resource type="Resource" id="Anchor_wreck"]
+script = ExtResource("2")
+stable_id = "anchor.outer_wreck"
+sector_id = "sector.outer_reach"
+position = Vector2(220, -220)
+category = "wreck"
+
+[sub_resource type="Resource" id="Anchor_monster"]
+script = ExtResource("2")
+stable_id = "anchor.outer_monster"
+sector_id = "sector.outer_reach"
+position = Vector2(220, 220)
+category = "monster_territory"
+
+[sub_resource type="Resource" id="Gate_foundation"]
+script = ExtResource("4")
+stable_id = "gate.outer_foundation"
+from_sector = "sector.outer_reach"
+to_sector = "sector.foundation"
+exit_anchor = "anchor.outer_west"
+entry_anchor = "anchor.foundation_east"
+activation_radius = 64.0
+
+[sub_resource type="Resource" id="Gate_haven"]
+script = ExtResource("4")
+stable_id = "gate.outer_haven"
+from_sector = "sector.outer_reach"
+to_sector = "sector.safe_haven"
+exit_anchor = "anchor.outer_east"
+entry_anchor = "anchor.haven_west"
+activation_radius = 64.0
+
+[sub_resource type="Resource" id="Nav_fixture"]
+script = ExtResource("3")
+obstacles = Array[Rect2]([Rect2(-64, -150, 128, 300)])
+waypoints = PackedVector2Array(-100, -200, 100, -200, -100, 200, 100, 200)
+clearance = 20.0
+
+[resource]
+script = ExtResource("1")
+stable_id = "sector.outer_reach"
+display_name = "Outer Reach"
+label_id = "label.outer_reach"
+bounds = Rect2(-640, -360, 1280, 720)
+navigation_fixture = SubResource("Nav_fixture")
+spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_west"), SubResource("Anchor_east"), SubResource("Anchor_chest"), SubResource("Anchor_wreck"), SubResource("Anchor_monster")])
+neighbor_ids = PackedStringArray("sector.foundation", "sector.safe_haven")
+transition_gates = Array[ExtResource("4")]([SubResource("Gate_foundation"), SubResource("Gate_haven")])
+hazard_cost_profile_id = "hazard.storm_lane"
+map_node_position = Vector2(180, 40)
+map_layer = 0
+biome_tag = "hazard.storm_lane"
