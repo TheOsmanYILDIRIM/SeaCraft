@@ -1,7 +1,9 @@
 class_name InventoryState
 extends RefCounted
 
-const VERSION := 1
+const PRG02 := preload("res://src/simulation/progression/prg02_progression_state.gd")
+
+const VERSION := 2
 const MAX_QUANTITY := 2147483647
 const MAX_ITEMS := 128
 const MAX_EQUIPMENT_SLOTS := 16
@@ -16,6 +18,13 @@ const OP_UNEQUIP := "inventory_unequip"
 const OP_SOCKET_INSERT := "inventory_socket_insert"
 const OP_SOCKET_UPGRADE := "inventory_socket_upgrade"
 const OP_PRESET_APPLY := "inventory_preset_apply"
+const OP_CRAFT := PRG02.OP_CRAFT
+const OP_SALVAGE := PRG02.OP_SALVAGE
+const OP_UPGRADE := PRG02.OP_UPGRADE
+const OP_CORE_INSERT := PRG02.OP_CORE_INSERT
+const OP_CORE_REMOVE := PRG02.OP_CORE_REMOVE
+const OP_CORE_REPLACE := PRG02.OP_CORE_REPLACE
+const OP_TROPHY_UNLOCK := PRG02.OP_TROPHY_UNLOCK
 
 var _catalog: Dictionary = {}
 var _containers: Dictionary = {}
@@ -25,6 +34,8 @@ var _presets: Dictionary = {}
 var _transactions: Dictionary = {}
 var _combat_locked: Dictionary = {}
 var _safe_state: Dictionary = {}
+var _prg02
+var _pending_prg02_state: Dictionary = {}
 
 func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 1000000.0) -> bool:
 	if not SectorIds.valid(owner_id) or max_slots <= 0 or max_slots > MAX_ITEMS or not is_finite(max_weight) or max_weight < 0.0 or _containers.has(owner_id):
@@ -33,6 +44,8 @@ func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 10000
 	_equipment[owner_id] = {}
 	_sockets[owner_id] = {}
 	_presets[owner_id] = {}
+	if _prg02 != null and not _prg02.bind_owner(owner_id):
+		return false
 	return true
 
 func reassign_owner(from_id: String, to_id: String) -> bool:
@@ -46,28 +59,96 @@ func reassign_owner(from_id: String, to_id: String) -> bool:
 	_sockets.erase(from_id)
 	_presets[to_id] = _presets.get(from_id, {})
 	_presets.erase(from_id)
+	if _prg02 != null and not _prg02.reassign_owner(from_id, to_id):
+		return false
 	return true
 
 func register_item_definition(definition: ItemDefinition) -> bool:
 	if definition == null or not definition.valid():
 		return false
-	return register_item_spec(definition.stable_id, definition.item_category, definition.stack_limit, definition.equip_slot, definition.weight, definition.stat_modifiers)
+	return register_item_spec(definition.stable_id, definition.item_category, definition.stack_limit, definition.equip_slot, definition.weight, definition.stat_modifiers, definition.core_type, definition.core_unique)
 
-func register_item_spec(item_id: String, category: String, stack_limit: int, equip_slot: String = "", weight: float = 0.0, modifiers: Array[Dictionary] = []) -> bool:
+func register_item_spec(item_id: String, category: String, stack_limit: int, equip_slot: String = "", weight: float = 0.0, modifiers: Array[Dictionary] = [], core_type: String = "", core_unique: bool = false) -> bool:
 	if not SectorIds.valid(item_id) or category.is_empty() or stack_limit <= 0 or stack_limit > MAX_QUANTITY or not is_finite(weight) or weight < 0.0:
 		return false
 	if not equip_slot.is_empty() and equip_slot not in SLOT_TYPES:
+		return false
+	if category == "core":
+		if not equip_slot.is_empty() or core_type.is_empty() or core_type.length() > 64 or not SectorIds.valid("core_type." + core_type):
+			return false
+	elif not core_type.is_empty() or core_unique:
 		return false
 	if _catalog.has(item_id):
 		return false
 	for modifier in modifiers:
 		if not _valid_modifier(modifier):
 			return false
-	_catalog[item_id] = {"category": category, "stack_limit": stack_limit, "equip_slot": equip_slot, "weight": weight, "modifiers": modifiers.duplicate(true)}
+	_catalog[item_id] = {"category": category, "stack_limit": stack_limit, "equip_slot": equip_slot, "weight": weight, "modifiers": modifiers.duplicate(true), "core_type": core_type, "core_unique": core_unique}
 	return true
 
 func has_item_spec(item_id: String) -> bool:
 	return _catalog.has(item_id)
+
+func has_owner(owner_id: String) -> bool:
+	return _containers.has(owner_id)
+
+func item_spec(item_id: String) -> Dictionary:
+	return (_catalog.get(item_id, {}) as Dictionary).duplicate(true)
+
+func can_apply_item_deltas(owner_id: String, deltas: Dictionary) -> bool:
+	if not _containers.has(owner_id) or deltas.size() > MAX_ITEMS:
+		return false
+	var clone := _containers.duplicate(true)
+	return _apply_deltas_to(clone, owner_id, deltas)
+
+func apply_item_deltas_atomic(owner_id: String, deltas: Dictionary) -> bool:
+	if not _containers.has(owner_id) or deltas.size() > MAX_ITEMS:
+		return false
+	var clone := _containers.duplicate(true)
+	if not _apply_deltas_to(clone, owner_id, deltas):
+		return false
+	_containers = clone
+	return true
+
+func item_equipped(owner_id: String, item_id: String) -> bool:
+	var slots: Dictionary = _equipment.get(owner_id, {})
+	return slots.values().has(item_id)
+
+func configure_prg02(streams: SeedStreams) -> bool:
+	if streams == null or _prg02 != null:
+		return false
+	_prg02 = PRG02.new(self, streams)
+	for owner_id in _containers:
+		if not _prg02.bind_owner(str(owner_id)):
+			_prg02 = null
+			return false
+	if not _pending_prg02_state.is_empty():
+		if not _prg02.restore_state(_pending_prg02_state):
+			_prg02 = null
+			return false
+		_pending_prg02_state.clear()
+	return true
+
+func register_recipe_definition(definition: RecipeDefinition) -> bool:
+	return _prg02 != null and _prg02.register_recipe(definition)
+
+func register_salvage_definition(definition: SalvageTable) -> bool:
+	return _prg02 != null and _prg02.register_salvage_table(definition)
+
+func register_upgrade_definition(definition: ShipUpgradeDefinition) -> bool:
+	return _prg02 != null and _prg02.register_upgrade(definition)
+
+func register_trophy_definition(definition: TrophyDefinition) -> bool:
+	return _prg02 != null and _prg02.register_trophy(definition)
+
+func validate_prg02_catalog() -> String:
+	return _prg02.validate_catalog() if _prg02 != null else "progression_unavailable"
+
+func configure_prg02_core_slot(owner_id: String, slot_id: String, slot_type: String, allowed_core_type: String) -> bool:
+	return _prg02 != null and _prg02.configure_core_slot(owner_id, slot_id, slot_type, allowed_core_type)
+
+func prg02_state_snapshot() -> Dictionary:
+	return _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state()
 
 func quantity(owner_id: String, item_id: String) -> int:
 	var container: Dictionary = _containers.get(owner_id, {})
@@ -178,12 +259,29 @@ func socket_snapshot(owner_id: String) -> Dictionary:
 	return (_sockets.get(owner_id, {}) as Dictionary).duplicate(true)
 
 func progression_snapshot() -> Dictionary:
-	return {"version": VERSION, "equipment": _equipment.duplicate(true), "sockets": _sockets.duplicate(true), "presets": _presets.duplicate(true), "transactions": _transactions.duplicate(true)}
+	return {
+		"version": VERSION,
+		"equipment": _equipment.duplicate(true),
+		"sockets": _sockets.duplicate(true),
+		"presets": _presets.duplicate(true),
+		"transactions": _transactions.duplicate(true),
+		"prg02": _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state(),
+	}
 
 func restore_progression(value: Variant) -> bool:
 	if not validate_progression_state(value, _catalog):
 		return false
-	var state: Dictionary = value
+	var source: Dictionary = value
+	var state := source.duplicate(true)
+	if int(state.get("version", 0)) == 1:
+		state["version"] = VERSION
+		state["prg02"] = PRG02.empty_state()
+	var prg02_state: Dictionary = state["prg02"]
+	if _prg02 != null:
+		if not _prg02.restore_state(prg02_state):
+			return false
+	else:
+		_pending_prg02_state = prg02_state.duplicate(true)
 	for owner_id in state["equipment"]:
 		if not _containers.has(owner_id):
 			return false
@@ -197,7 +295,14 @@ static func validate_progression_state(value: Variant, catalog: Dictionary = {})
 	if not value is Dictionary or not DtoContract.is_primitive_safe(value):
 		return false
 	var state: Dictionary = value
-	if state.size() != 5 or int(state.get("version", 0)) != VERSION:
+	var version := int(state.get("version", 0))
+	if version == 1:
+		if state.size() != 5:
+			return false
+	elif version == VERSION:
+		if state.size() != 6 or not PRG02.validate_state(state.get("prg02")):
+			return false
+	else:
 		return false
 	for key in ["equipment", "sockets", "presets", "transactions"]:
 		if not state.get(key) is Dictionary:
@@ -232,10 +337,17 @@ func stat_value(owner_id: String, stat_id: String, base_value: float) -> float:
 		var gem_id := str(row.get("gem_id", ""))
 		if not gem_id.is_empty():
 			_append_modifiers(by_id, gem_id, stat_id, "socket." + str(socket_id))
+	if _prg02 != null:
+		_prg02.append_stat_modifiers(owner_id, stat_id, by_id)
 	return StatModifierPipeline.apply_from_dictionary(base_value, by_id)
 
 func _execute_uncached(actor_id: String, operation: String, payload: Dictionary) -> Dictionary:
 	var result := {"accepted": false, "reason": "", "operation": operation}
+	if PRG02.supports_operation(operation):
+		if _prg02 == null:
+			result["reason"] = "progression_unavailable"
+			return result
+		return _prg02.execute(actor_id, operation, payload)
 	match operation:
 		OP_TRANSFER:
 			if not _exact(payload, ["source_container", "target_container", "item_id", "quantity"]):
@@ -432,6 +544,23 @@ func _remove_from(containers: Dictionary, owner_id: String, item_id: String, amo
 		items[item_id] = next
 	container["items"] = items
 	containers[owner_id] = container
+	return true
+
+func _apply_deltas_to(containers: Dictionary, owner_id: String, deltas: Dictionary) -> bool:
+	if not containers.has(owner_id):
+		return false
+	var keys: Array = deltas.keys()
+	keys.sort()
+	for item_id in keys:
+		if not item_id is String or not _catalog.has(item_id) or not _integer(deltas[item_id]):
+			return false
+		var amount := int(deltas[item_id])
+		if amount < 0 and not _remove_from(containers, owner_id, item_id, -amount):
+			return false
+	for item_id in keys:
+		var amount := int(deltas[item_id])
+		if amount > 0 and not _add_to(containers, owner_id, item_id, amount):
+			return false
 	return true
 
 func _container_within_limits(container: Dictionary) -> bool:

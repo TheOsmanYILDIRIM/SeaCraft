@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 4
+const PROTOCOL_VERSION: int = 5
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -100,7 +100,17 @@ const INVENTORY_UNEQUIP := InventoryState.OP_UNEQUIP
 const INVENTORY_SOCKET_INSERT := InventoryState.OP_SOCKET_INSERT
 const INVENTORY_SOCKET_UPGRADE := InventoryState.OP_SOCKET_UPGRADE
 const INVENTORY_PRESET_APPLY := InventoryState.OP_PRESET_APPLY
-const PROGRESSION_INTENTS := [INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY]
+const PROGRESSION_CRAFT := InventoryState.OP_CRAFT
+const PROGRESSION_SALVAGE := InventoryState.OP_SALVAGE
+const PROGRESSION_SHIP_UPGRADE := InventoryState.OP_UPGRADE
+const PROGRESSION_CORE_INSERT := InventoryState.OP_CORE_INSERT
+const PROGRESSION_CORE_REMOVE := InventoryState.OP_CORE_REMOVE
+const PROGRESSION_CORE_REPLACE := InventoryState.OP_CORE_REPLACE
+const PROGRESSION_TROPHY_UNLOCK := InventoryState.OP_TROPHY_UNLOCK
+const PROGRESSION_INTENTS := [
+	INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY,
+	PROGRESSION_CRAFT, PROGRESSION_SALVAGE, PROGRESSION_SHIP_UPGRADE, PROGRESSION_CORE_INSERT, PROGRESSION_CORE_REMOVE, PROGRESSION_CORE_REPLACE, PROGRESSION_TROPHY_UNLOCK,
+]
 const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT] + PROGRESSION_INTENTS
 const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
 const REJECT_AOI := "outside authority interest"
@@ -114,6 +124,13 @@ const NETWORK_INTENTS := [
 	INVENTORY_SOCKET_INSERT,
 	INVENTORY_SOCKET_UPGRADE,
 	INVENTORY_PRESET_APPLY,
+	PROGRESSION_CRAFT,
+	PROGRESSION_SALVAGE,
+	PROGRESSION_SHIP_UPGRADE,
+	PROGRESSION_CORE_INSERT,
+	PROGRESSION_CORE_REMOVE,
+	PROGRESSION_CORE_REPLACE,
+	PROGRESSION_TROPHY_UNLOCK,
 	BASELINE_ACK,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
@@ -590,6 +607,24 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 				return REJECT_MALFORMED_PAYLOAD
 		INVENTORY_PRESET_APPLY:
 			if not _has_exact_keys(payload, ["transaction_id", "preset_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["preset_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_CRAFT:
+			if not _has_exact_keys(payload, ["transaction_id", "recipe_id", "count"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["recipe_id"]) or not _is_int(payload["count"]) or int(payload["count"]) <= 0:
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_SALVAGE:
+			if not _has_exact_keys(payload, ["transaction_id", "table_id", "source_item_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["table_id"]) or not valid_stable_id(payload["source_item_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_SHIP_UPGRADE:
+			if not _has_exact_keys(payload, ["transaction_id", "upgrade_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["upgrade_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_CORE_INSERT, PROGRESSION_CORE_REPLACE:
+			if not _has_exact_keys(payload, ["transaction_id", "slot_id", "item_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["slot_id"]) or not valid_stable_id(payload["item_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_CORE_REMOVE:
+			if not _has_exact_keys(payload, ["transaction_id", "slot_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["slot_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_TROPHY_UNLOCK:
+			if not _has_exact_keys(payload, ["transaction_id", "trophy_id", "event_key"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["trophy_id"]) or not valid_stable_id(payload["event_key"]):
 				return REJECT_MALFORMED_PAYLOAD
 		BASELINE_ACK:
 			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):

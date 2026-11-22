@@ -239,11 +239,14 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_loot = LootAuthority.new(sector, _streams, VS03_LOOT_TABLE as LootTable, VS03_LOOT_ITEM as ItemDefinition, true)
 	if not _loot.bind_inventory_owner(FoundationSector.PLAYER, CORE_STOCK) or not _loot.reserve_inventory_item(PRACTICE_TARGET, CoreCombatRules.NPC_REPAIR):
 		return
+	if not _loot.inventory_state().configure_prg02(_streams):
+		push_error("PRG-02 progression authority setup failed")
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
 	if _pending_combat.has("progression") and not _loot.inventory_state().restore_progression(_pending_combat["progression"]):
-		push_error("PRG-01 progression restore failed")
+		push_error("Progression restore failed")
 		return
 	_loot.initialize_missing_stock(CORE_STOCK)
 	_loot.initialize_missing_stock(NPC_STOCK)

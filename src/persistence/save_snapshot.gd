@@ -225,8 +225,13 @@ static func _validate_loot(value: Variant, registry: DefinitionRegistry) -> Stri
 
 
 static func _validate_authoritative_content(authoritative: Dictionary, registry: DefinitionRegistry) -> String:
-	if authoritative.has("progression") and not InventoryState.validate_progression_state(authoritative["progression"]):
-		return "invalid_progression_state"
+	if authoritative.has("progression"):
+		var progression: Variant = authoritative["progression"]
+		if not InventoryState.validate_progression_state(progression):
+			return "invalid_progression_state"
+		if progression is Dictionary and int((progression as Dictionary).get("version", 0)) == InventoryState.VERSION:
+			if not Prg02ProgressionState.validate_content_refs((progression as Dictionary).get("prg02"), registry):
+				return "unknown_progression_content"
 	if authoritative.has("entity_index"):
 		var index_error := PersistentEntityIndex.validate(authoritative["entity_index"], registry)
 		if not index_error.is_empty():

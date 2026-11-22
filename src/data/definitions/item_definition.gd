@@ -1,7 +1,7 @@
 class_name ItemDefinition
 extends BaseDefinition
 
-const VALID_CATEGORIES := ["salvage", "material", "consumable", "ammo", "weapon", "structure", "sail", "figurehead", "crew", "trainer", "pet", "companion", "ship_gem", "pet_gem"]
+const VALID_CATEGORIES := ["salvage", "material", "consumable", "ammo", "weapon", "structure", "sail", "figurehead", "crew", "trainer", "pet", "companion", "ship_gem", "pet_gem", "core"]
 const VALID_SLOTS := ["", "weapon", "structure", "sail", "figurehead", "crew", "trainer", "pet"]
 
 @export var display_name: String = ""
@@ -10,6 +10,8 @@ const VALID_SLOTS := ["", "weapon", "structure", "sail", "figurehead", "crew", "
 @export var equip_slot: String = ""
 @export var weight: float = 0.0
 @export var stat_modifiers: Array[Dictionary] = []
+@export var core_type: String = ""
+@export var core_unique: bool = false
 
 func definition_type() -> String:
 	return "item"
@@ -23,6 +25,11 @@ func valid() -> bool:
 		var normalized := "pet" if item_category == "companion" else item_category
 		if normalized != equip_slot:
 			return false
+	if item_category == "core":
+		if not equip_slot.is_empty() or core_type.is_empty() or core_type.length() > 64 or not SectorIds.valid("core_type." + core_type):
+			return false
+	elif not core_type.is_empty() or core_unique:
+		return false
 	for modifier in stat_modifiers:
 		if modifier.size() < 3 or not modifier.get("stat") is String or str(modifier["stat"]).is_empty():
 			return false
