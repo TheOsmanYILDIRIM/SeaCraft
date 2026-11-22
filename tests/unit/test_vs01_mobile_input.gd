@@ -25,6 +25,7 @@ func test_combat_touch_and_fire_do_not_emit_world_move() -> void:
 	input.camera_path = NodePath("../CameraStub")
 	view.add_child(input)
 	input.combat_target_at = func(point: Vector2) -> String: return "entity.target" if point.x < 100 else ""
+	input.ui_hit_test = func(point: Vector2) -> bool: return Rect2(Vector2(192, 100), Vector2(224, 132)).has_point(point)
 	var seen: Array[Dictionary] = []
 	input.command_emitted.connect(func(command: Dictionary) -> void: seen.append(command))
 	var button := CombatFireButton.new()
