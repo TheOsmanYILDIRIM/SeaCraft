@@ -1,32 +1,30 @@
-# AKTİF GÖREV — PRG-03
+# AKTİF GÖREV — PRG-04
 
 > Bu dosya SeaCraft'ın kanonik aktif uygulama briefidir. Sohbette uzun brief tekrarlanmaz.
 >
-> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-03 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
+> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-04 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — KAPALI
+## Durum — AKTİF
 
-PRG-03 doğrulanmış biçimde kapalıdır. Exact kod SHA `2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`, Actions run `45034255905` — `success`, artifact `SeaCraft-PRG03-2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584` / ID `14759425694`, Avenox Beyin task `done` revision `2` ve receipt `receipts/7bd576a04c1148524ad9275be0183c6bd6455b69e0540ad44194fd9a27c17b85.md` geri okunmuştur. Fiziksel Android doğrulaması `not_run`. PRG-04 **başlatılmadı / not_started**.
-
-> Aşağıdaki metin kapanmış PRG-03 uygulama briefinin tarihsel kaydıdır; yeniden uygulanmaz ve PRG-04 briefi değildir. Ayrıntılı kanıt `GOREV_RAPORU.md` içindedir.
+PRG-03 doğrulanmış biçimde kapalıdır. WAVE 6'nın dördüncü görevi PRG-04 başlatılmıştır. PRG-05, PRG-04 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
 
 ## Kimlik
 
-- Sohbet etiketi: `[SOHBET-34 | SeaCraft PRG-03 — XP, Skill Tree, Rank ve Local Challenge Meta]`
+- Sohbet etiketi: `[SOHBET-35 | SeaCraft PRG-04 — Quest, Journal ve NPC Interaction]`
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
 - Dal: yalnız `main`
-- Uygulama başlangıç HEAD'i: `c1dd69644e7dc77ece909eb62c1cfb1691730eb4`
-- PRG-02 exact kod kapanışı: `d6ddfb014ee83ef9826563441453152d15d7d789`
-- PRG-02 Actions: `45019833696` — `success`
-- PRG-02 artifact ID: `14753292824`
+- Uygulama başlangıç HEAD'i: `9f016ef7be3b9d4c09365d6fcace3a61cc573958`
+- PRG-03 exact kod kapanışı: `2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`
+- PRG-03 Actions: `45034255905` — `success`
+- PRG-03 artifact ID: `14759425694`
 - Godot: `4.7.2-stable`
-- Bağımlılık: PRG-02 tamamlandı
-- Avenox Beyin görevi: `tasks/seacraft-prg03-xp-skill-tree-rank-local-challenge-meta-20261122.md`
-- Sonraki görev: PRG-04 — PRG-03 kapanmadan başlama
+- Bağımlılık: PRG-03 tamamlandı
+- Avenox Beyin görevi: `tasks/seacraft-prg04-quest-journal-npc-interaction-20261122.md`
+- Sonraki görev: PRG-05 — PRG-04 kapanmadan başlama
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 
-Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-03 kapsamını güvenli biçimde uygula.
+Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-04 kapsamını güvenli biçimde uygula.
 
 ---
 
@@ -34,262 +32,282 @@ Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GO
 
 Plan:
 
-**PRG-03 — XP, skill tree, rank ve local challenge meta**
+**PRG-04 — Quest, journal ve NPC interaction**
 
 Amaç:
 
-- player growth'u offline-first ve deterministic progression state olarak kurmak
-- XP gain'i idempotent ledger ile tek authoritative progression truth içinde tutmak
-- level/rank hesaplamasını veri odaklı, bounded ve deterministic yapmak
-- skill tree'yi cycle-free prerequisite DAG olarak kurmak
-- skill point spend ve respec işlemlerini atomik transaction yapmak
-- license/test gates ile progression unlock koşullarını stable-ID sözleşmesiyle bağlamak
-- internet gerektirmeyen local challenge/milestone meta sistemi kurmak
-- progression kaynaklı bütün stat etkilerini mevcut tek `StatModifierPipeline` üzerinden geçirmek
-- LAN'da XP/spend/respec/challenge reward mutasyonlarını host-authoritative yapmak
+- data-driven görev modelini ve runtime quest instance state'ini kurmak
+- bounty/escort/salvage/trade/capture/damage/collect/acquire/timed objective türlerini stable-ID event modeliyle işletmek
+- start/turn-in NPC, chain prerequisite, region/map constraint ve target/acquisition rule sözleşmelerini veri odaklı yapmak
+- reward ledger'ı idempotent ve atomik kılmak
+- NPC interaction authority ile presentation/journal katmanını ayırmak
+- save/load sırasında quest progress, objective counters, timer/version ve reward state'ini korumak
+- offline-first davranışı korurken LAN'da quest completion/reward doğrulamasını host-authoritative yapmak
+- gelecekte PRG-05 faction/economy ve ADV encounter sistemlerinin tüketebileceği stabil objective/reward API bırakmak
 
 Mekanik katalog:
 
-- M-021
+- M-031
 - M-032
-- M-033
-- M-035
-- M-054
 
-Forum araştırması yalnız progression pattern, objective ve kategori referansıdır. Exact isim, XP eğrisi, rank değeri, challenge ödülü veya görsel doğrudan production içeriğine kopyalanmaz.
+Forum araştırması yalnız görev zinciri alanları, objective çeşitliliği, start/turn-in NPC, region/map constraint, reward bundle ve daily/raid/Atlantis benzeri etiket şemaları için referanstır. Exact görev isimleri, metinleri, değerleri veya ödülleri SeaCraft production içeriğine doğrudan kopyalanmaz.
 
 ---
 
-# 2. PRG-01 / PRG-02 sözleşmelerini koru
+# 2. Mevcut progression sözleşmelerini koru
 
-Yeni ikinci progression/inventory/modifier truth oluşturma.
+PRG-04 yeni inventory, XP, stat veya reward authority kurmaz.
 
 Zorunlu reuse:
 
 - PRG-01 `InventoryState` ve atomik transaction modeli
-- PRG-01 duplicate transaction / same-ID conflict / lost-ACK idempotency
-- PRG-02 trophy/perk unlock ledger pattern'ı gerekiyorsa reuse
+- PRG-02 reward/item grant ve progression patterns
+- PRG-03 XP ledger, gate API ve local challenge idempotency
 - stable-ID `DefinitionRegistry`
 - tek `StatModifierPipeline`
-- primitive-safe DTO ve persistence/network sınırı
-- save migration zinciri
-- NET-04/PRG-01/02 host-authoritative session/transaction modeli
+- primitive-safe DTO ve save/network sınırı
+- NET-04/PRG-01..03 transaction ID / lost-ACK / same-ID conflict modeli
+- host-authoritative LAN ve presentation-only client mirror sınırı
 
-XP, skill/rank/challenge state'i authoritative progression altında tek sahipli kalmalı.
+Quest sistemi item/XP/reward truth'u kendi içinde çoğaltamaz; yalnız mevcut authoritative sistemlere intent/transaction üretir.
 
 ---
 
-# 3. XP ledger
+# 3. QuestDefinition
 
-Minimum XP modeli:
+Minimum `QuestDefinition` alanları:
 
-- player/owner stable ID
-- total XP — bounded non-negative integer
-- processed XP event ledger
-- event stable ID
-- source/category metadata yalnız primitive-safe
-- grant amount
-- resulting total / level/rank view
+- stable quest ID
+- quest type/tag
+- start NPC stable ID
+- turn-in NPC stable ID
+- prerequisite quest IDs
+- prerequisite gate/rank/license IDs gerektiğinde
+- region/sector/map constraints
+- ordered veya unordered objective listesi
+- reward bundle refs
+- optional time limit / version key
+- repeatability policy
+- party share policy
+- presentation title/description content-side
+
+Validator:
+
+- duplicate/missing quest ID reddi
+- missing start/turn-in NPC refs reddi
+- missing prerequisite quest/gate refs reddi
+- quest-chain cycle reddi
+- invalid region/sector refs reddi
+- objective definition/type mismatch reddi
+- zero/negative required count reddi
+- invalid time limit reddi
+- reward refs doğrulanır
+- Resource/Node/Object runtime DTO'ya taşınmaz
+
+---
+
+# 4. QuestInstance / lifecycle
+
+Runtime primitive-safe state:
+
+- quest stable ID
+- status: locked/available/active/completable/completed/failed gibi bounded state
+- objective progress
+- accepted/completed version metadata
+- timer/tick metadata
+- reward-claimed state
+- owner/player stable ID
+- required minimal event ledger
+
+Lifecycle:
+
+1. availability evaluation
+2. authoritative accept
+3. objective event application
+4. completable evaluation
+5. turn-in/completion validation
+6. reward transaction
+7. completed/reward ledger
+
+Kabul:
+
+- invalid transition reddedilir
+- completed quest duplicate reward üretemez
+- partial failure state bırakmaz
+- repeated completion/retry idempotent
+- save/load sonrası lifecycle state korunur
+
+---
+
+# 5. Objective event bus
+
+Objective eventleri pure-data, stable-ID ve authority-owned olmalı.
+
+Minimum objective türleri:
+
+- kill
+- damage
+- capture
+- collect
+- acquire
+- timed
+- escort
+- salvage
+- trade
+
+Her event minimum:
+
+- event ID / transaction ID
+- actor/player stable ID
+- objective type
+- target/source stable IDs
+- quantity/value
+- sector/region ID gerektiğinde
+- authoritative tick/time metadata gerektiğinde
 
 Kurallar:
 
-- XP grant yalnız authoritative event/transaction üzerinden
-- quantity 0/negative reddi
-- overflow reddi
-- aynı event ID ikinci XP üretmez
-- aynı event ID farklı actor/payload ile conflict
-- reject edilen event state değiştirmez
-- save/load sonrası processed ledger korunur
-- client XP miktarını veya outcome'u seçemez
-- global/online leaderboard yok
-
-Event ledger mevcut transaction/idempotency modelini reuse etsin; paralel duplicate sistemi kurma.
+- duplicate event ikinci progress üretmez
+- same-ID farklı payload conflict
+- wrong target/region/type progress üretmez
+- over-count bounded/clamped
+- reject edilen event quest state değiştirmez
+- client event outcome veya progress delta seçemez
+- objective bus simulation/presentation/network API'lerine sıkı bağımlı ikinci event sistemi kurmaz; mevcut domain events adapter ile bağlanır
 
 ---
 
-# 4. Level ve rank
+# 6. Objective semantics
 
-Level/rank progression veri odaklı olmalı.
+## Kill
+- stable target definition/category
+- count increment yalnız authoritative death eventinden
+- duplicate death ikinci progress üretmez
 
-Minimum definition:
+## Damage
+- authoritative applied damage miktarı
+- rejected/miss/immune damage progress üretmez
+- target/category/region filter
 
-- stable level/rank ID veya deterministic numeric tier
-- XP threshold
-- prerequisite/gate gerekiyorsa stable ID
-- unlock hooks
-- skill point grant
-- presentation label content-side olabilir
+## Capture
+- authoritative capture completion event
+- failed/aborted capture progress üretmez
 
-Validator:
+## Collect
+- quest için authoritative pickup/claim event
+- duplicate loot claim progress üretmez
 
-- threshold sırası monoton
-- duplicate threshold/ID policy açık
-- negative threshold yok
-- unreachable rank yok
-- integer overflow yok
+## Acquire
+- InventoryState mutation sonrası gerçekten elde edilen miktar
+- presentation sayımı değil
 
-Davranış:
+## Timed
+- wall-clock internet servisi yerine kanonik simulation/save contract
+- pause/reload davranışı açık
+- deadline bypass yok
 
-- XP → level/rank sonucu deterministic
-- tek XP grant birden çok level aşabiliyorsa doğru uygulanır
-- level düşüşü yalnız açık respec/reset policy varsa
-- skill point grant bir kez
-- save/load sonrası aynı XP aynı level/rank sonucu üretir
-- level/rank modifier ise `StatModifierPipeline` üzerinden
+## Escort
+- stable escort objective/entity/route sonucu
+- success/failure explicit domain event
+
+## Salvage
+- PRG-02 authoritative salvage transaction sonucu
+
+## Trade
+- future PRG-05 economy authority'ye bağımlı adapter contract; PRG-04 minimal event schema kurar, ekonomi sistemi geliştirmez
 
 ---
 
-# 5. Skill DAG
+# 7. Chain prerequisite ve region/map constraint
 
-Skill definitions stable-ID prerequisite DAG olmalı.
-
-Minimum skill:
-
-- stable skill ID
-- prerequisite skill IDs
-- rank/tier
-- point cost
-- max rank gerekiyorsa bounded
-- modifier source IDs veya unlock effect refs
-- license/test gate gerekiyorsa stable ID
-- mutually-exclusive branch yalnız gerçekten gerekiyorsa açık policy
-
-Validator:
+Quest chain DAG olmalı.
 
 - self-cycle reddi
 - indirect cycle reddi
 - missing prerequisite reddi
-- duplicate edge reddi
-- invalid rank/max rank reddi
-- negative/zero point cost policy açık
-- unreachable node policy açık
-- modifier refs valid
+- completed prerequisites doğru okunur
+- prerequisite reward claim ile completion state ayrımı açık
+- region/sector gate current authoritative sector üzerinden
+- client fake sector/region ile accept/complete edemez
+- safe-zone veya map constraint gerekiyorsa mevcut CORE-03 stable sector/region refs kullanılır
 
-Skill state runtime primitive-safe:
-
-- unlocked/learned ranks
-- available/unspent points
-- stable IDs
+PRG-03 gate API ile quest prerequisites entegre edilir; ikinci gate sistemi kurulmaz.
 
 ---
 
-# 6. Skill spend transaction
+# 8. NPC interaction authority
 
-Spend tek atomik transaction:
-
-1. host/actor authority
-2. skill stable ID
-3. prerequisite
-4. gate
-5. current rank/max rank
-6. available point
-7. modifier/effect validity
-8. commit
-
-Kabul:
-
-- failed spend point tüketmez
-- modifier apply failure rollback
-- duplicate transaction ikinci rank/point tüketmez
-- same-ID conflict reddi
-- save/load sonrası ledger idempotency
-- client skill sonucunu yazamaz
-
----
-
-# 7. Respec
-
-Respec atomik ve deterministic olmalı.
+NPC interaction pure-data command/intent üzerinden ilerler.
 
 Minimum:
 
-- full respec veya açık bounded subtree policy
-- refundable point calculation
-- non-refundable gate/cost varsa data-driven
-- dependency validation
-- modifier removal
-- restored point total
+- NPC stable ID
+- interaction type
+- actor/player stable ID
+- quest accept / turn-in intent
+- bounded choice ID gerekiyorsa
+- interaction range/availability validation
 
-Kabul:
+Host/offline authority:
 
-- respec sonrası prerequisite ihlali bırakılamaz
-- kısmi failure tüm state'i rollback eder
-- removed skill modifier'ları tek pipeline'dan kalkar
-- refunded points doğru ve bir kez
-- duplicate respec transaction tekrar refund üretmez
-- gerekiyorsa inventory cost PRG-01 InventoryState ile atomik tüketilir
+- NPC'nin quest sunup sunmadığını belirler
+- accept/turn-in prerequisite doğrular
+- reward sonucunu belirler
+- client yalnız intent gönderir
 
----
-
-# 8. License / test gates
-
-PRG-03 yalnız progression gate altyapısını kurar; quest/dialog content PRG-04 kapsamıdır.
-
-Gate minimum:
-
-- stable gate ID
-- gate type: license/test/milestone/rank gibi bounded enum/string
-- prerequisites
-- completion state
-- optional reward/unlock refs
-
-Kurallar:
-
-- gate bypass edilemez
-- completion duplicate reward üretmez
-- missing prerequisite reddedilir
-- cycle gerekiyorsa DAG validator ile reddedilir
-- save/load korunur
-- host-authoritative
-- future PRG-04 quest sistemi bu gate API'yi tüketebilmeli
+Dialogue Manager 4 bu görevde **varsayılan olarak eklenmez**. Yalnız dallı diyalog yazarlığı custom modelle gereksiz karmaşık hale gelirse ve Godot 4.7.2/Android/export sınırları doğrulanırsa değerlendir. Quest authority hiçbir addon nesnesine devredilmez.
 
 ---
 
-# 9. Local challenge / milestone
+# 9. Reward ledger
 
-M-035 / M-054 internet gerektirmeyen local meta olarak uygulanır.
+Quest reward bir kez ve atomik uygulanmalı.
 
-Minimum challenge definition:
+Reward bundle gerektiğinde:
 
-- stable challenge ID
-- version/reset key
-- objective counter/type
-- target value
-- reward refs
-- recurrence policy: once / session / daily-like local rotation gerekiyorsa explicit
-- deterministic local schedule/version metadata
+- item grants → PRG-01 InventoryState
+- XP → PRG-03 XP ledger
+- gate/license/perk unlock → mevcut progression/gate API
+- future reputation/economy hook → yalnız event/ref; PRG-05'i burada geliştirme
 
 Kurallar:
 
-- global backend/leaderboard yok
-- internet yokken tam çalışır
-- reward idempotent
-- version change/reset fixture deterministic
-- system clock exploit-resistant mutlak anti-cheat iddiası yok; policy açık
-- save/load progress korunur
-- challenge completion reward InventoryState/XP ledger üzerinden atomik
-- duplicate completion ikinci reward/XP üretmez
-
-“Daily” benzeri local içerik varsa online servis taklidi yapma; local version/seed contract olarak açık uygula.
+- completion + reward claim tek authoritative transaction sınırında
+- herhangi bir reward alt işlemi başarısızsa partial reward bırakılmaz
+- duplicate turn-in/reward retry ikinci grant üretmez
+- same-ID conflict reddi
+- reward ledger save/load sonrası korunur
+- client reward miktarı/type seçemez
 
 ---
 
-# 10. StatModifierPipeline entegrasyonu
+# 10. Party share policy / LAN
 
-Skill, rank, gate/perk kaynaklı stat etkileri:
+PRG-04 group system geliştirmez; yalnız açık policy contract kurar.
 
-`StatModifierPipeline`
+Policy minimum:
 
-üzerinden uygulanmalı.
+- owner-only
+- eligible-party
+- shared-progress / shared-completion ayrımı gerekiyorsa explicit
+- contribution event actor doğrulaması
 
-Kurallar:
+LAN:
 
-- ikinci stat engine yok
-- modifier source stable ID deterministic
-- duplicate source guard
-- spend/respec sonrası doğru add/remove
-- save/load sonrası aynı progression aynı stat sonucu
-- existing equipment/core/trophy modifier kaynaklarıyla deterministic order korunur
+- quest accept host
+- objective progress host
+- completion host
+- reward host
+- client journal mirror detached DTO
+
+Korunacak:
+
+- spoof/replay/malformed/pre-ready rejection
+- duplicate/lost-ACK idempotency
+- reconnect/late-join current quest snapshot
+- protocol mismatch
+
+Client başka oyuncu adına quest tamamlayamaz veya reward yazamaz.
 
 ---
 
@@ -297,106 +315,103 @@ Kurallar:
 
 Persist minimum:
 
-- total XP
-- processed XP ledger
-- level/rank state veya yalnız XP'den türetilebiliyorsa redundant truth yaratmadan gerekli metadata
-- skill ranks
-- unspent/earned point ledger
-- gate completion
-- local challenge progress/version/reward ledger
-- transaction terminal ledger gerektiği ölçüde
+- active/completed quest stable IDs
+- objective progress
+- accepted/completed status
+- timers/ticks/version
+- processed objective event ledger gerektiği kadar
+- reward claimed ledger
+- NPC interaction minimal continuation state gerekiyorsa
+- party-share policy sonucu gereken primitive state
 
-Yasak:
+Schema değişirse sequential migration.
 
-- Resource/Object/Node/RID/Callable
-- redundant authoritative level/rank truth drift riski
-- presentation cache
-- online-service dependency
+Kurallar:
 
-Schema değişirse sequential migration ekle. Corrupt/invalid DTO sessiz default ile kabul edilmez.
-
----
-
-# 12. LAN / authority
-
-Host-mutating PRG-03 işlemleri:
-
-- XP grant/event application
-- skill spend
-- respec
-- gate completion/reward
-- challenge completion/reward
-
-Client yalnız bounded intent/event request gönderir; authoritative amount/outcome seçemez.
-
-Korunacak:
-
-- spoof rejection
-- replay rejection
-- malformed/pre-ready rejection
-- lost-ACK retry idempotency
-- protocol mismatch
-- offline parity
-
-Wire contract değişirse protocol version gerektiği kadar bump edilir; save schema ile bağlanmaz.
+- invalid quest/objective refs açık failure
+- corrupt DTO sessiz default değil
+- old save deterministic empty PRG-04 state veya explicit migration
+- Resource/Object/Node/RID/Callable yok
+- presentation journal cache authoritative save değildir
 
 ---
 
-# 13. Minimal touch presentation
+# 12. Journal view model
 
-Final UI değil; doğrulanabilir touch akışı:
+Journal authority değildir.
 
-- XP / rank summary
-- skill tree view
-- zoom/pan
-- node select
-- spend confirm
-- respec confirm
-- license/test gate state
-- local challenge list/progress
+Minimum:
+
+- available/active/completable/completed groups
+- objective progress text model
+- region/target hints
+- reward preview
+- timer display
+- tracked quest stable ID
+
+Presentation yalnız detached snapshot tüketir.
+
+UI quest state'i doğrudan mutasyona uğratmaz; accept/turn-in/track işlemleri intent üretir.
+
+---
+
+# 13. Minimal touch UI
+
+Final POL-01 UI değil; doğrulanabilir akış:
+
+- quest list
+- quest detail
+- objective progress
+- accept
+- turn-in
+- journal tracking
+- NPC interaction prompt
+- timed quest countdown
 
 Kurallar:
 
 - safe area
 - fontScale 1.3
-- büyük hit target
-- presentation authority yazmaz
-- zoom/pan world command'a sızmaz
-- node seçimi ile camera gesture çakışmaz
-- icon placeholder kabul
-
-Final polish POL-01 kapsamıdır.
+- 48 px+ hit target
+- drag/drop yok
+- scroll ve touch world input çatışmaz
+- interaction prompt world movement'a sızmaz
+- icon/portrait placeholder kabul
 
 ---
 
 # 14. CI / test matrisi
 
-Exact PRG-03 code SHA üzerinde minimum:
+Exact PRG-04 code SHA üzerinde minimum:
 
-1. XP positive/boundary/overflow validation
-2. XP duplicate event idempotency
-3. same-event-ID payload conflict
-4. save/load XP ledger
-5. level/rank threshold validation
-6. multi-level gain
-7. one-time point grants
-8. skill DAG self/indirect cycle
-9. missing prerequisite/invalid ref
-10. skill spend success
-11. insufficient point/gate rejection rollback
-12. duplicate spend/lost-ACK retry
-13. respec atomic refund + modifier removal
-14. respec dependency consistency
-15. gate prerequisite/completion idempotency
-16. local challenge progress/completion/reward
-17. challenge version/reset fixture
-18. offline/no-internet dependency guard
-19. modifier deterministic/duplicate source guard
-20. save/load + migration + corrupt DTO
-21. LAN host authority/spoof/replay/malformed
-22. PRG-01 inventory/equipment regression
-23. PRG-02 craft/upgrade/core/trophy regression
-24. existing VS/CORE/AI/NET full regression
+1. QuestDefinition schema validation
+2. missing/duplicate quest/NPC/region refs
+3. quest-chain self/indirect cycle
+4. accept prerequisite success/rejection
+5. start/turn-in NPC validation
+6. region/map constraint
+7. kill objective
+8. damage objective
+9. capture objective
+10. collect objective
+11. acquire objective
+12. timed objective
+13. escort/salvage/trade adapter fixtures
+14. duplicate objective event idempotency
+15. same-event-ID payload conflict
+16. objective wrong target/region rejection
+17. completion state transition
+18. reward atomic success
+19. partial reward failure rollback
+20. duplicate turn-in/reward retry
+21. save/load + migration + corrupt DTO
+22. reconnect/late-join quest snapshot
+23. host authority/spoof/replay/malformed
+24. journal/NPC touch intent tests
+25. PRG-01 inventory regression
+26. PRG-02 craft/upgrade/core/trophy regression
+27. PRG-03 XP/skill/gate/challenge regression
+28. existing VS/CORE/AI/NET full regressions
 
 Parse/load/orphan/failing/ignored unexpected conditions failure sayılır.
 
@@ -415,15 +430,14 @@ Android:
 - arm64-v8a debug APK
 - package `com.osmanyildirim.seacraft`
 - targetSdk 37
-- INTERNET + ACCESS_LOCAL_NETWORK korunur
+- INTERNET + ACCESS_LOCAL_NETWORK
 - APK integrity/readback
 
 Artifact:
 
-`SeaCraft-PRG03-<exact SHA>`
+`SeaCraft-PRG04-<exact SHA>`
 
-Minimum içerik:
-
+Minimum:
 - Android APK
 - Linux executable/PCK
 - `COMMIT_SHA.txt`
@@ -437,14 +451,16 @@ Authenticated artifact readback zorunlu.
 
 Mümkünse:
 
-- skill tree zoom/pan
-- node select/spend
-- respec confirm
+- NPC interaction prompt
+- accept/turn-in
+- journal scrolling
+- objective tracking
+- timed countdown
 - fontScale 1.3
 - safe area
 - small-screen readability
-- save/reload progression
-- LAN retry/spend
+- save/reload quest state
+- LAN reconnect quest mirror
 
 Yapılmadıysa `not_run`; CI gerçek cihaz değildir.
 
@@ -455,16 +471,16 @@ Yapılmadıysa `not_run`; CI gerçek cihaz değildir.
 Tamamlandı demeden:
 
 1. exact code SHA
-2. full CI/test + PRG-03 verifier
-3. PRG-01/02 ve tüm eski regresyonlar
+2. full CI/test + PRG-04 verifier
+3. PRG-01/02/03 ve tüm eski regresyonlar
 4. Linux + Android export
 5. artifact upload + authenticated readback + hashes
 6. physical device yoksa `not_run`
-7. mevcut Avenox PRG-03 task strict done revision
+7. mevcut Avenox PRG-04 task strict done revision
 8. tek receipt ve readback
-9. `GOREV_RAPORU.md` tek PRG-03 kapanış bölümü
+9. `GOREV_RAPORU.md` tek PRG-04 kapanış bölümü
 10. `AKTIF_GOREV.md` KAPALI
-11. `SESSION_HANDOFF.md` PRG-03 kapanış / PRG-04 kapısı
-12. bütün kapılar geçmeden PRG-04'e başlama
+11. `SESSION_HANDOFF.md` PRG-04 kapanış / PRG-05 kapısı
+12. bütün kapılar geçmeden PRG-05'e başlama
 
 İlk commit veya workflow queue başarı değildir. Hata varsa kök nedeni düzelt ve exact teslim zincirini yeniden doğrula.
