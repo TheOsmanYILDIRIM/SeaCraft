@@ -26,3 +26,19 @@ Exact SHA üzerinde full GUT ve mevcut VS/CORE/AI/NET regresyonları, Linux expo
 ## Sonraki kapı
 
 Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi tekrar yapılmalıdır. Bu cihaz kanıtı tamamlanana kadar yalnız cihaz sonucu `awaiting_retest / not_run` kalır. PRG-05 ayrı kanonik görev açılmadan başlatılmaz.
+
+
+## Sprite üretim handoff — SC-07 / radial kaynak standardı
+
+- Son kanonik sprite rehber commit'i: `9e149b66c787ad9b126787b3a8a81b9206f1e060`.
+- SC-07 · Akıntı Bıçağı 8-yön radial kaynak üretildi, yönler ayrıldı ve manuel hizalama kullanıcı JSON'u ile düzeltildi.
+- Kullanıcı manuel hizalama dosyası değerleri final kabul kaynağıdır; otomatik support-anchor yalnız aday/QA'dır. Final rotation görselinde pivot oturuşu kullanıcı ayarıyla doğrulanır.
+- Final teslim paketi standardı artık **12 dosya**: 8 final yön PNG + 4×2 atlas + final rotation GIF + `manifest.json` + orijinal üretim kaynağı PNG.
+- Debug/extraction/normalize ara dosyaları final ZIP'e girmez.
+- Orijinal radial kaynak zorunlu arşiv öğesidir.
+- 8 yön tek kareden üretildiğinde kaynak yönlerin gerçek piksel yoğunluğu ayrıca kontrol edilir. Yetersizse açıkça **“AI upscale gerekli”** denir; ChatGPT/pipeline kendi başına AI upscale yapmaz. Kullanıcı kaliteli haricî upscaler ile ayrılmış 8 yönü yükseltir; upscale normalizasyon/ShowLook/final atlas öncesinde yapılır.
+- GitHub kanonik manuel hizalama aracı: `tools/sprite_manual_aligner_template.html`. Yeni gemilerde ad-hoc HTML yazılmaz; gerekiyorsa bu template kullanılır ve 8 PNG bunun içine gömülür.
+- Kanonik radial extractor: `tools/sprite_radial_extract.py`; yeni gemilerde ad-hoc kesim scripti yazılmaz.
+- Kanonik renk hattı: `sprite_normalize.py → seacraft_showlook.py --stage v3 → final PNG/atlas`.
+- SC-07 final oyun hücresi: 224×224; atlas sırası `N, NE, E, SE / S, SW, W, NW`.
+- Bu sprite işi PRG-04/PRG-05 gameplay görev durumunu değiştirmez; `AKTIF_GOREV.md` kapalı PRG-04 kaydı olarak bırakıldı.
