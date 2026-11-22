@@ -907,3 +907,45 @@ PRG-04 quest/objective authority, atomik reward, persistence/migration, detached
 
 **PRG-04 tamamlandı. PRG-05 başlatılmadı ve `not_started` olarak kalır.**
 
+
+
+## Android gerçek cihaz smoke hotfix — 2026-11-22
+
+Kullanıcının PRG-04 Android buildi üzerinde yaptığı ilk gerçek cihaz smoke testinde üç oynanış sorunu doğrulandı: denize dokunarak gemi hareket ettirilemedi, combat/core debug butonları başarısız işlemden sonra kalıcı `×` metninde kaldı ve NPC/gemi durum etiketi gemiyle birlikte döndü. Ayrıca Linux ve Android aynı artifact içindeydi.
+
+### Düzeltmeler
+
+- Android touch girişleri GUI tarafından yutulmadan önce güvenli world-touch yoluna alındı; görünür UI hit-test sınırı korunur. Parmak-ID ownership ile world üzerinde başlayan gesture UI alanına taşsa bile state takılı kalmaz; UI üzerinde başlayan touch world command üretmez.
+- Core/debug aksiyon geri bildirimi `✓/×` artık geçicidir ve 0.75 saniye sonra asıl buton etiketi geri gelir.
+- NPC state/name presenter global rotation'ı sıfırlar; etiket gemi dönüşünden bağımsız ekran-yukarı kalır.
+- Export presetleri kaynak `*.zip` arşivlerini dışlar.
+- GitHub Actions Android ve Linux çıktısını iki ayrı artifact olarak paketler ve her ikisini ayrı authenticated readback ile doğrular.
+
+### Exact doğrulama
+
+- Exact code/test SHA: `79f1367bbc91613f43f34ea696cbd4da87b45d51`
+- Actions run: `45048643091` — **success**
+- Full GUT + VS/CORE/AI/NET regresyonları: **success**
+- Linux export: **success**
+- Android arm64-v8a debug APK export: **success**
+- Platform artifact authenticated readback: **success**
+
+Android artifact:
+- ad: `SeaCraft-Android-79f1367bbc91613f43f34ea696cbd4da87b45d51`
+- ID: `14764866787`
+- artifact ZIP boyutu: `30173071` byte
+- artifact ZIP SHA-256: `fe6dd2bda392f8905efa47a3fda7c78f2dc52a1949dd4028b931b0bbc04fdfa9`
+
+Linux artifact:
+- ad: `SeaCraft-Linux-79f1367bbc91613f43f34ea696cbd4da87b45d51`
+- ID: `14763804453`
+- artifact ZIP boyutu: `28736757` byte
+- artifact ZIP SHA-256: `4865d8939406357ecaf6419fc64a8508c995d6f6d1fb4e93698f02e25c357708`
+
+Android artifact ayrıca indirildi ve içerik geri okundu. `SeaCraft-debug.apk` boyutu `80776800` byte, SHA-256 `70ac769d260bc90c993a5b4f4904337587e2eb53d82266bf71cf2f5853b0dcc0`. APK içinde kaynak SC sprite ZIP arşivleri artık bulunmuyor. APK boyutunun ana nedeni assetler değil, Godot debug engine binary'sidir: `lib/arm64-v8a/libgodot_android.so` tek başına `76181608` byte.
+
+### Cihaz kapısı
+
+Yeni exact APK fiziksel Android cihazda henüz tekrar çalıştırılmadı. Kod/regresyon/export/artifact zinciri yeşildir; gerçek cihazda hareket, transient buton geri bildirimi ve ekran-yukarı NPC etiketi sonucu **awaiting_retest / not_run** olarak kalır.
+
+PRG-05 başlatılmadı.
