@@ -9,6 +9,9 @@ signal command_accepted(sequence: int)
 signal command_rejected(sequence: int, reason: String)
 signal replication_snapshot_received(snapshot: Dictionary)
 signal replication_event_received(event: Dictionary)
+signal baseline_chunk_received(chunk: Dictionary)
+signal baseline_ready_received(payload: Dictionary)
+signal transaction_result_received(transaction_id: String, result: Dictionary)
 
 
 func send_client_hello(hello: Dictionary) -> void:
@@ -33,6 +36,18 @@ func send_command_accept(peer_id: int, sequence: int) -> void:
 
 func send_command_reject(peer_id: int, sequence: int, reason: String) -> void:
 	rpc_id(peer_id, "_rpc_command_reject", sequence, reason)
+
+
+func send_baseline_chunk(peer_id: int, chunk: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_baseline_chunk", chunk)
+
+
+func send_baseline_ready(peer_id: int, payload: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_baseline_ready", payload)
+
+
+func send_transaction_result(peer_id: int, transaction_id: String, result: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_transaction_result", transaction_id, result)
 
 
 func send_snapshot(peer_id: int, snapshot: Dictionary) -> void:
@@ -75,6 +90,21 @@ func _rpc_command_accept(sequence: int) -> void:
 @rpc("authority", "call_remote", "reliable", 0)
 func _rpc_command_reject(sequence: int, reason: String) -> void:
 	command_rejected.emit(sequence, reason)
+
+
+@rpc("authority", "call_remote", "reliable", 0)
+func _rpc_baseline_chunk(chunk: Dictionary) -> void:
+	baseline_chunk_received.emit(chunk)
+
+
+@rpc("authority", "call_remote", "reliable", 0)
+func _rpc_baseline_ready(payload: Dictionary) -> void:
+	baseline_ready_received.emit(payload)
+
+
+@rpc("authority", "call_remote", "reliable", 1)
+func _rpc_transaction_result(transaction_id: String, result: Dictionary) -> void:
+	transaction_result_received.emit(transaction_id, result)
 
 
 @rpc("authority", "call_remote", "unreliable_ordered", 2)
