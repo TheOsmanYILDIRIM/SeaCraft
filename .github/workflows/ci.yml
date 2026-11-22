@@ -436,7 +436,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/android
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          printf '%s\n' "$GITHUB_SHA" > seacraft_apk_commit.txt
+          trap 'rm -f seacraft_apk_commit.txt' EXIT
           godot --headless --path . --export-debug "Android Debug" build/android/SeaCraft-debug.apk
+          # Standard Godot Android exports ship raw project files as APK assets.
+          unzip -p build/android/SeaCraft-debug.apk assets/seacraft_apk_commit.txt | cmp - seacraft_apk_commit.txt
           test -s build/android/SeaCraft-debug.apk
           unzip -tq build/android/SeaCraft-debug.apk
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-badging.txt"

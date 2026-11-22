@@ -58,10 +58,16 @@ var _last_heading := 0.0
 var _observed_target := false
 var save_status: Dictionary = {}
 
+const ANDROID_TRACE := preload("res://src/presentation/input/android_input_trace.gd")
+var _diag_physics_left := 0
+var _diag_physics_origin := Vector2.ZERO
+
 @onready var _ship_motor: ShipMotor = $ShipMotor
 
 
 func _ready() -> void:
+	if ANDROID_TRACE.enabled():
+		ANDROID_TRACE.attach(self)
 	if ContentManifest.current_hash().is_empty():
 		_block_boot({"status": "content_registry_unavailable"})
 		return
@@ -114,6 +120,7 @@ func _ready() -> void:
 		_block_boot({"status": "sector_runtime_binding_failed"})
 		return
 	_setup_map_ui()
+	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
 	print(BOOT_MARKER)
 
@@ -126,6 +133,11 @@ func _physics_process(_delta: float) -> void:
 	if _combat != null:
 		_combat.advance_tick()
 	var position_now := _ship_motor.global_position
+	if _diag_physics_left > 0:
+		ANDROID_TRACE.record("physics", "frame=%s pos=%s displacement=%s velocity=%s target=%s collisions=%s" % [
+			Engine.get_physics_frames(), position_now, position_now - _diag_physics_origin,
+			_ship_motor.velocity, _ship_motor.has_target(), _ship_motor.get_slide_collision_count()])
+		_diag_physics_left -= 1
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
 	if _map_overlay != null:
 		_map_overlay.set_player_world_position(position_now)
@@ -146,6 +158,8 @@ func _physics_process(_delta: float) -> void:
 
 func _on_gameplay_command(command: Dictionary) -> void:
 	if active_sector() == null or command.get("domain") != GameplayCommand.DOMAIN_GAMEPLAY:
+		if active_sector() == null:
+			ANDROID_TRACE.record("bootstrap", "command blocked: no active sector")
 		return
 	if _combat != null:
 		match command.get("type"):
@@ -173,7 +187,14 @@ func _on_gameplay_command(command: Dictionary) -> void:
 			GameplayCommand.CANCEL:
 				_combat.clear_target(FoundationSector.PLAYER)
 				_refresh_combat_indicator()
-	if _ship_motor.apply_authoritative_command(command):
+	var accepted := _ship_motor.apply_authoritative_command(command)
+	if ANDROID_TRACE.enabled() and command.get("type") == GameplayCommand.MOVE_TO_WORLD_POSITION:
+		_diag_physics_origin = _ship_motor.global_position
+		ANDROID_TRACE.record("ShipMotor", "accepted=%s authority=%s physics_enabled=%s pos=%s target=%s" % [
+			accepted, _ship_motor.authority_enabled, _ship_motor.is_physics_processing(),
+			_diag_physics_origin, _ship_motor.has_target()])
+		_diag_physics_left = 12
+	if accepted:
 		_save_service.mark_dirty()
 
 
@@ -402,6 +423,8 @@ func _control_tree_captures_touch(node: Node, screen_position: Vector2) -> bool:
 			if not control.is_visible_in_tree():
 				continue
 			if control.mouse_filter != Control.MOUSE_FILTER_IGNORE and control.get_global_rect().has_point(screen_position):
+				if ANDROID_TRACE.enabled():
+					ANDROID_TRACE.record("ui_hit", "path=%s rect=%s filter=%s" % [control.get_path(), control.get_global_rect(), control.mouse_filter])
 				return true
 		if _control_tree_captures_touch(child, screen_position):
 			return true
@@ -513,6 +536,7 @@ func _refresh_combat_indicator() -> void:
 
 
 func _block_boot(reason: Dictionary) -> void:
+	ANDROID_TRACE.record("bootstrap", "boot blocked: %s" % reason.get("status", "unknown"))
 	save_status = reason
 	push_warning("SeaCraft checkpoint unavailable: %s" % reason)
 	set_process(false)

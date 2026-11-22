@@ -11,6 +11,9 @@ const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 @export var camera_path: NodePath
 @export var keyboard_pan_speed := 600.0
 
+const ANDROID_TRACE := preload("res://src/presentation/input/android_input_trace.gd")
+var _diag_mouse_pending: Dictionary = {}
+
 var combat_target_at: Callable
 var ui_hit_test: Callable
 var _camera: Node
@@ -42,6 +45,8 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if ANDROID_TRACE.enabled():
+		_trace_raw_pointer(event)
 	if event is InputEventMagnifyGesture:
 		if not _world_input_blocked and _camera != null:
 			_dispatch(MAPPER.map_camera_zoom(float(event.factor)))
@@ -57,18 +62,22 @@ func _input(event: InputEvent) -> void:
 		return
 	_last_native_touch_ms = Time.get_ticks_msec()
 	if _world_input_blocked or _camera == null:
+		ANDROID_TRACE.record("route", "native blocked: world_blocked=%s camera_present=%s" % [_world_input_blocked, _camera != null])
 		return
 
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if ui_hit_test.is_valid() and bool(ui_hit_test.call(event.position)):
 				_world_touch_indices.erase(event.index)
+				ANDROID_TRACE.record("route", "native press owned by UI")
 				return
+			ANDROID_TRACE.record("route", "native press owned by world")
 			_world_touch_indices[event.index] = true
 			process_device_event(event, false)
 			get_viewport().set_input_as_handled()
 			return
 		if not _world_touch_indices.has(event.index):
+			ANDROID_TRACE.record("route", "release blocked: no world owner")
 			return
 		process_device_event(event, false)
 		_world_touch_indices.erase(event.index)
@@ -89,22 +98,54 @@ func _unhandled_input(event: InputEvent) -> void:
 	# otherwise use it as a complete one-finger fallback for devices/ROMs where
 	# native ScreenTouch/ScreenDrag does not reach the gameplay node.
 	if OS.has_feature("android") and (event is InputEventMouseButton or event is InputEventMouseMotion):
+		if ANDROID_TRACE.enabled():
+			_diag_mouse_pending.erase(event.get_instance_id())
 		if Time.get_ticks_msec() - _last_native_touch_ms <= SYNTHETIC_MOUSE_SUPPRESS_MS:
+			if event is InputEventMouseButton:
+				ANDROID_TRACE.record("route", "mouse suppressed after native touch")
 			return
+		if event is InputEventMouseButton:
+			ANDROID_TRACE.record("route", "mouse reached fallback")
 		_process_android_mouse_fallback(event)
 		return
 	process_device_event(event, false)
 
 
 
+func _trace_raw_pointer(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		ANDROID_TRACE.record("raw_touch", "finger=%s pressed=%s canceled=%s pos=%s device=%s" % [
+			event.index, event.pressed, event.canceled, event.position, event.device])
+	elif event is InputEventScreenDrag:
+		ANDROID_TRACE.record("raw_drag", "finger=%s pos=%s owned=%s" % [event.index, event.position, _world_touch_indices.has(event.index)])
+	elif event is InputEventMouseButton:
+		ANDROID_TRACE.record("raw_mouse", "button=%s pressed=%s pos=%s device=%s emulated=%s" % [
+			event.button_index, event.pressed, event.position, event.device, event.device == InputEvent.DEVICE_ID_EMULATION])
+		var event_id := event.get_instance_id()
+		_diag_mouse_pending[event_id] = true
+		_trace_mouse_not_unhandled.call_deferred(event_id)
+	elif event is InputEventPanGesture or event is InputEventMagnifyGesture:
+		ANDROID_TRACE.record("raw_gesture", "%s blocked=%s camera_present=%s" % [event.get_class(), _world_input_blocked, _camera != null])
+
+
+func _trace_mouse_not_unhandled(event_id: int) -> void:
+	if not _diag_mouse_pending.erase(event_id):
+		return
+	var hovered := get_viewport().gui_get_hovered_control()
+	ANDROID_TRACE.record("route", "mouse did not reach _unhandled_input; hovered (not proof of consumer)=%s" % [
+		str(hovered.get_path()) if is_instance_valid(hovered) else "<none>"])
+
+
 func _process_android_mouse_fallback(event: InputEvent) -> void:
 	if _world_input_blocked or _camera == null:
+		ANDROID_TRACE.record("route", "mouse fallback blocked: world_blocked=%s camera_present=%s" % [_world_input_blocked, _camera != null])
 		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				if ui_hit_test.is_valid() and bool(ui_hit_test.call(event.position)):
 					_android_mouse_touch_active = false
+					ANDROID_TRACE.record("route", "mouse press owned by UI hit test")
 					return
 				_android_mouse_touch_active = true
 				_handle_touch_gestures(_touch.press(0, event.position))
@@ -168,6 +209,7 @@ func world_input_blocked() -> bool:
 
 
 func reset_touch() -> void:
+	ANDROID_TRACE.record("route", "touch state reset")
 	_touch.reset()
 	_world_touch_indices.clear()
 	_android_mouse_touch_active = false
@@ -222,6 +264,8 @@ func _handle_screen_drag(event: InputEventScreenDrag) -> void:
 
 
 func _handle_touch_gestures(gestures: Array[Dictionary]) -> void:
+	if ANDROID_TRACE.enabled():
+		ANDROID_TRACE.record("gesture", "none (candidate or rejected)" if gestures.is_empty() else str(gestures))
 	for gesture in gestures:
 		match str(gesture.get("kind", "")):
 			"tap":
@@ -259,6 +303,8 @@ func _emit_pointer_command(
 	# Combat hit-testing precedes world movement. Empty primary taps still sail.
 	if combat_target_at.is_valid():
 		var target_id: String = combat_target_at.call(world_position)
+		if ANDROID_TRACE.enabled():
+			ANDROID_TRACE.record("target", "screen=%s world=%s hit=%s selection=%s" % [screen_position, world_position, target_id, selection])
 		if selection or not target_id.is_empty():
 			_dispatch({"domain": COMMANDS.DOMAIN_GAMEPLAY, "type": CombatAuthority.SELECT, "target_id": target_id})
 			return
@@ -273,6 +319,8 @@ func _emit_pointer_command(
 
 
 func _dispatch(command: Dictionary) -> void:
+	if ANDROID_TRACE.enabled():
+		ANDROID_TRACE.record("dispatch", "mapper produced no command" if command.is_empty() else str(command))
 	if command.is_empty():
 		return
 	command_emitted.emit(command)
