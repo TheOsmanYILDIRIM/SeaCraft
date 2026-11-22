@@ -101,8 +101,6 @@ func validate_catalog() -> String:
 		for prerequisite in skill.prerequisite_ids:
 			if not _skills.has(prerequisite):
 				return "missing_skill_prerequisite"
-			if (_skills[prerequisite] as ProgressionSkillDefinition).tier >= skill.tier:
-				return "skill_tier_regression"
 		if not skill.gate_id.is_empty() and not _gates.has(skill.gate_id):
 			return "missing_skill_gate"
 		for row in skill.modifiers:
@@ -114,6 +112,11 @@ func validate_catalog() -> String:
 	for skill_id in _sorted_keys(_skills):
 		if _visit_skill(str(skill_id), skill_colors):
 			return "skill_cycle"
+	for skill_id in _skills:
+		var skill := _skills[skill_id] as ProgressionSkillDefinition
+		for prerequisite in skill.prerequisite_ids:
+			if (_skills[prerequisite] as ProgressionSkillDefinition).tier >= skill.tier:
+				return "skill_tier_regression"
 	for gate_id in _gates:
 		var gate := _gates[gate_id] as ProgressionGateDefinition
 		for prerequisite in gate.prerequisite_gate_ids:
