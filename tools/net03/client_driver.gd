@@ -119,7 +119,14 @@ func _run() -> void:
 		_abort("invalid combat mirror events")
 		return
 	print("NET03_COMBAT_REPLICATION_OK")
-	if not await _move(_position(drop_id)):
+	# Approach within the real pickup envelope, not the drop's exact center:
+	# a loot point may be closer to the sector boundary than the ship's hull.
+	var drop_position := _position(drop_id)
+	var pickup_approach := drop_position.move_toward(_position(PLAYER), LootAuthority.PICKUP_RADIUS * 0.5)
+	if not await _move(pickup_approach):
+		return
+	if _position(PLAYER).distance_to(drop_position) > LootAuthority.PICKUP_RADIUS:
+		_abort("authoritative pickup approach is out of range")
 		return
 	if not await _intent(P.PICKUP_LOOT, {"drop_id": drop_id}):
 		return
