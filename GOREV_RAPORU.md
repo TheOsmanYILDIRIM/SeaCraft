@@ -949,3 +949,25 @@ Android artifact ayrıca indirildi ve içerik geri okundu. `SeaCraft-debug.apk` 
 Yeni exact APK fiziksel Android cihazda henüz tekrar çalıştırılmadı. Kod/regresyon/export/artifact zinciri yeşildir; gerçek cihazda hareket, transient buton geri bildirimi ve ekran-yukarı NPC etiketi sonucu **awaiting_retest / not_run** olarak kalır.
 
 PRG-05 başlatılmadı.
+
+---
+
+## Android gemi görsel pilotu — SC-02 / SC-03
+
+**Durum:** SC-02 ve SC-03 ile erken pilot doğrulandı. SC-07: `missing_approved_atlas`. Fiziksel Android: `not_run`. PRG-05 ve tam POL-02 başlatılmadı.
+
+- Başlangıç `main`: `95a3862a8720061bb69f6a1734b23792b003fa26`. Exact pilot kodu ve Android export: `f0f254bdb179b1e5e01981fe82c17f2d1546f006`.
+- [GitHub Actions 45069957749](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45069957749): **success**, GUT **394/394**, ARM64 Android debug export ve authenticated artifact readback başarılı.
+- [Android artifact 14772826966](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45069957749/artifacts/14772826966): APK **81 165 486 bayt**, SHA-256 `88e94f08643ce3ce4b57dde20d4a709fa397c46b67f880e8d5cc7126154bb3e7`. ZIP SHA-256 `59a1d3050998051b2ed311792f41f782c4f8177ebc8c3ed93b36afd00d653e97`. İndirilen APK'nın arşiv bütünlüğü, gömülü exact commit, yalnız `arm64-v8a`, SC-02/SC-03 dokuları ve kaynak ZIP/orijinal master PNG yokluğu ayrıca denetlendi.
+- [Görsel kanıt 14772409496](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45069957749/artifacts/14772409496): iki deniz, 1×/2×, 8 yön; dört PNG açılıp karşılaştırıldı. Bu inceleme gerçek çalışma dokularının yazılımsal kompozitidir; Godot Android ekran görüntüsü, shader performansı veya cihaz oynanış kanıtı değildir.
+
+### Yerleşim ve yön
+
+SC-02 oyuncu: onaylı 4×2 master atlastan **160 px** hücre; SC-03 NPC: AUTO FINAL arşivindeki sekiz onaylı RGBA masterdan **224 px** hücre. SC-03'ün opak contact-sheet'i kullanılmadı. Sıra `N, NE, E, SE / S, SW, W, NW`; pivotlar sırasıyla `(80,80)` ve `(112,112)`. Toplu küçültme dışında karelerin hizasına, rengine veya yön sırasına müdahale edilmedi. Sprite ekranda ayrıca döndürülmüyor; gerçek yön 45° sektör olarak atlas karesini seçiyor. SC-07 arşivi bulunamadı; sahnede sahte varlık yok. Mevcut deniz ve GDQuest yaklaşımını temel alan basit shader, `Deniz` tuşuyla değişiyor. Hareket, çarpışma, savaş, köpük, wake ve final HUD değiştirilmedi.
+
+### 1× / 2× görsel karar
+
+- **Suya oturuş ve boyut:** SC-03 geniş ve ağır, SC-02 daha dar ve alçak okunuyor. Arma hariç E/W gövde uzunluğu görsel ölçümle 1×'ta yaklaşık SC-02 **70–78 px**, SC-03 **105–115 px**; 2×'ta yaklaşık **140–156 px** ve **210–230 px**. 2D zemin gövde-suyu ayırmaya yardımcı oluyor, gövde tabanını örten efekt yok. Bu ölçü gerçek telefon piksel ölçüsü değil.
+- **Yön/pivot:** Sekiz karenin merkez referansı aynı. E/W'de gövde oturuşu daha tutarlı; SC-02 N/S görünüşünde aynı pivot çevresinde pruva-kıç orta noktasında birkaç 1× piksel görünür fark var; SC-03 N/S ile çaprazları arasında da benzer küçük destek farkı görünüyor. Bunlar bake edilmiş perspektif/siluet farkı; canlı dönüşte cihaz doğrulaması yapılmadı. Master alfa sınır teması SC-02 **E/W**, SC-03 **SE/SW/W**; kaynak yerleşime dokunulmadı.
+- **Işık/kontrast:** İki zemin de yelken-gövde ayrımını koruyor. SC-02 E/W/NW yelken vurguları N/S'den daha güçlü; SC-03 sekiz yönde daha tutarlı ve koyu borda 1×'ta okunuyor. Önizleme suyu belirgin parlak çizgi üretmedi.
+- **Gerçek piksel yoğunluğu:** 1× E/W gövde izdüşümüne göre runtime atlasın gövdedeki örnek sayısı yaklaşık SC-02 **108–120**, SC-03 **178–195**; bu değerler hücre ölçüsü değildir. SC-03 normalizasyon arşivindeki **ham gövde ekseni** ölçüleri, yön sırasıyla **633 / 964 / 1031 / 883 / 675 / 956 / 1256 / 1251 px**. SC-02'nin ham, normalize öncesi görüntüleri bu arşivde yok; ham yoğunluk `unverified`. 2×'ta SC-02 E/W'nin ince kaplaması daha yumuşak; kullanılan 160 px runtime atlasın 208 px'e görüntülenmesi tek başına ham kaynakta AI upscale gerektiğini kanıtlamıyor. İncelenen karelerde zorunlu **AI upscale gerekli** kararı çıkmadı; SC-07 için karar `not_run`. AI upscale uygulanmadı.
