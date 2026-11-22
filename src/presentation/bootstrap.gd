@@ -120,9 +120,51 @@ func _ready() -> void:
 		_block_boot({"status": "sector_runtime_binding_failed"})
 		return
 	_setup_map_ui()
+	_setup_visual_pilot()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
 	print(BOOT_MARKER)
+
+
+const VISUAL_PILOT := preload("res://src/presentation/ship/visual_pilot.gd")
+var _pilot_water: Polygon2D
+var _pilot_water_enabled := false
+var _pilot_comparison: Sprite2D
+
+
+func _setup_visual_pilot() -> void:
+	var player_marker: Polygon2D = $BoatMarker
+	if VISUAL_PILOT.mount_atlas(player_marker, "SC-02", 104.0) != null:
+		player_marker.color.a = 0.0
+	if _practice_marker != null and VISUAL_PILOT.mount_atlas(_practice_marker, "SC-03", 132.0) != null:
+		# Keep the marker node and its child target ring/visibility contract.
+		_practice_marker.color.a = 0.0
+	_pilot_comparison = VISUAL_PILOT.mount_atlas(self, "SC-07", 120.0)
+	if _pilot_comparison != null:
+		_pilot_comparison.frame = 2
+		_pilot_comparison.set_process(false)
+		_pilot_comparison.visible = active_sector().sector_id == FoundationSector.ID
+		_pilot_comparison.position = _ship_motor.position + Vector2(190.0, 75.0)
+	var button := Button.new()
+	button.name = "PilotWaterButton"
+	button.text = "Deniz: mevcut"
+	button.size = Vector2(170.0, 48.0)
+	$UI.add_child(button)
+	button.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	button.offset_left = -85.0
+	button.offset_right = 85.0
+	button.offset_top = 24.0
+	button.offset_bottom = 72.0
+	button.pressed.connect(func() -> void:
+		_pilot_water_enabled = not _pilot_water_enabled
+		_apply_pilot_water()
+		button.text = "Deniz: 2D önizleme" if _pilot_water_enabled else "Deniz: mevcut"
+	)
+
+
+func _apply_pilot_water() -> void:
+	if is_instance_valid(_pilot_water):
+		_pilot_water.material = VISUAL_PILOT.water_material() if _pilot_water_enabled else null
 
 
 func active_sector() -> SectorRuntime:
@@ -689,6 +731,10 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 	_sector_geometry = geometry
 	add_child(geometry)
 	_add_rectangle(geometry, sector.bounds, Color(0.035, 0.095, 0.115))
+	_pilot_water = geometry.get_child(0) as Polygon2D
+	_apply_pilot_water()
+	if is_instance_valid(_pilot_comparison):
+		_pilot_comparison.visible = sector.sector_id == FoundationSector.ID
 	for obstacle in sector.navigation.obstacle_rects():
 		_add_rectangle(geometry, obstacle, Color(0.23, 0.26, 0.23))
 		_add_coast(geometry, obstacle)

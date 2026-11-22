@@ -2,3 +2,4 @@
 addons/gut/
 build/
 *.log
+/src/presentation/ship/pilot_atlases/
