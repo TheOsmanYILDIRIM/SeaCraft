@@ -20,8 +20,9 @@ window/handheld/orientation=0
 
 [input_devices]
 
-pointing/emulate_mouse_from_touch=false
+pointing/emulate_mouse_from_touch=true
 pointing/emulate_touch_from_mouse=false
+pointing/android/enable_pan_and_scale_gestures=true
 
 [rendering]
 
