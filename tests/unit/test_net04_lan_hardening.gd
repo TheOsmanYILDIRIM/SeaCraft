@@ -125,6 +125,12 @@ func test_net04_freed_mirror_handle_is_safe_and_disconnect_resets_registry() -> 
 	freed_proxy.free()
 	assert_null(registry.proxy("npc.freed"))
 	assert_false(registry.reconcile_mirror_baseline(payload))
+	registry.clear()
+	var replacement := PROXY.new() as NetworkEntityProxy
+	assert_true(replacement.configure_spawn(payload))
+	assert_true(registry.register_mirror(payload, replacement))
+	replacement.free()
+	registry.clear()
 
 	var client := SessionClient.new()
 	add_child_autofree(client)
@@ -136,7 +142,7 @@ func test_net04_freed_mirror_handle_is_safe_and_disconnect_resets_registry() -> 
 	client._on_server_disconnected()
 	assert_eq(client.network_entity_registry().active_count(), 0)
 	assert_eq(client.state(), SessionClient.STATE_DISCONNECTED)
-	print("NET04_DISCONNECT_MIRROR_RESET_OK freed_handle=1")
+	print("NET04_DISCONNECT_MIRROR_RESET_OK freed_handle=1 generation_reset=1")
 
 
 func test_net04_baseline_reconciles_prehandshake_mirror_same_sequence() -> void:

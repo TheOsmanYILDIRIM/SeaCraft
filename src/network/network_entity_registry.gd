@@ -247,7 +247,11 @@ func remove(entity_id: String, generation_value: int) -> bool:
 
 
 func clear() -> void:
+	# Full session reset: generation history is transport-session scoped.
+	# Entity despawn keeps generations via remove(); reconnect/session teardown
+	# must permit the authoritative baseline to re-register the same generation.
 	_entries.clear()
+	_generations.clear()
 	_spatial_by_sector.clear()
 
 
