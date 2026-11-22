@@ -603,3 +603,58 @@ Normalizer'ın ürettiği `rotation.gif`, **ShowLook öncesi hizalama/ölçek QA
 ShowLook katmanı yeni kir, benek, çizik, sharpen, clarity veya local-contrast dokusu üretmez. Kaynak üretim zaten aşırı kirli veya tekrarlı grunge ise bu sorun üretim/material referansında çözülür. Renk düzeltmesi kaynak dokuyu gereğinden sert gösteriyorsa gemiye özel ad-hoc grade yazılmaz; ham → normalize → ShowLook karşılaştırılır ve gerekiyorsa **kanonik `tools/seacraft_showlook.py`** global olarak düzeltilip rehber güncellenir.
 
 Git geçmişi rehberin her revizyonunu saklar; bu dosya kanonik operasyon kitabıdır ve pipeline değiştiği her commit'te güncel tutulur.
+
+## 18. Final pivot kabulü ve minimal teslim ZIP standardı
+
+Normalize aracının otomatik anchor sonucu **nihai gerçek kabul değildir**; rotation QA sonucudur. Her gemide final teslimden önce şu kapı zorunludur:
+
+1. master pivot hedefi `(512,512)` olarak doğrulanır;
+2. final hücrede aynı pivot tam hücre merkezine taşınır: `(C/2,C/2)`;
+3. N→NE→E→SE→S→SW→W→NW rotation önizlemesinde gövde merkezinin sıçramadığı görsel olarak doğrulanır;
+4. support-anchor sonucu belirgin pivot sıçraması üretiyorsa gemiye özel ad-hoc hizalama scripti yazılmaz; aynı kanonik `sprite_normalize.py` bu gemide `--no-support-anchor` ile yeniden çalıştırılır ve iki sonuç rotation QA ile karşılaştırılır;
+5. yalnız doğrulanmış hizalama final pakete girer.
+
+**Kural:** support-anchor varsayılan otomatik adaydır; rotation/contact-sheet QA onu veto edebilir. Final kabul ölçütü, sekiz yönün aynı fiziksel dönme noktasına oturmasıdır.
+
+### Final ZIP sözleşmesi
+
+Kullanıcıya verilen final gemi ZIP'i yalnız şu teslim dosyalarını içerir:
+
+- 8 final yön PNG: `N, NE, E, SE, S, SW, W, NW`
+- 1 final 4×2 atlas PNG
+- 1 final rotation GIF
+- 1 `manifest.json`
+
+Toplam standart içerik: **11 dosya**.
+
+`manifest.json` en az şunları kaydeder:
+
+- gemi ID/adı
+- final hücre boyutu
+- atlas boyutu ve yön sırası
+- master pivot ve final pivot
+- kullanılan normalize modu
+- ShowLook sürümü
+- minimum şeffaf padding
+- edge-alpha doğrulaması
+
+Final ZIP'e **girmez**:
+
+- radial extraction ara PNG/ZIP'leri
+- extraction contact-sheet/report
+- normalize ara ZIP'i/report/contact-sheet
+- ShowLook comparison görselleri
+- LUT/`.cube` dosyaları
+- profile/validation ara JSON'ları
+- çalışma klasörleri
+- kaynak üretim PNG'si
+- debug veya manuel hizalama dosyaları
+
+Bu ara çıktılar QA sırasında tutulabilir ancak kullanıcıya teslim edilen final ZIP'in parçası değildir.
+
+### Final küçültme kuralı
+
+1024 master doğrudan final hücreye küçültülürken pivotun hücre merkezine eşlenmesi korunur. Final hücre padding kapısı en az **8 px gerçek alpha-0** olmalıdır. Gerekirse bütün yönlerde aynı ortak küçültme uygulanır; frame başına ayrı fit yapılmaz.
+
+**Kural:** final paket üretimi de kanonik hattın parçasıdır. Her gemide farklı ZIP yapısı veya fazladan debug dosyaları üretme.
+
