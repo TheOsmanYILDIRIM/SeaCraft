@@ -180,6 +180,25 @@ func execute(actor_id: String, operation: String, payload: Dictionary) -> Dictio
 func total_xp(owner_id: String) -> int:
 	return int((_owners.get(owner_id, {}) as Dictionary).get("total_xp", 0))
 
+func has_rank_definition(rank_id: String) -> bool:
+	return _ranks.has(rank_id)
+
+func has_gate_definition(gate_id: String) -> bool:
+	return _gates.has(gate_id)
+
+func rank_satisfies(owner_id: String, rank_id: String) -> bool:
+	if not _owners.has(owner_id) or not _ranks.has(rank_id):
+		return false
+	var rank := _ranks[rank_id] as ProgressionRankDefinition
+	if total_xp(owner_id) < rank.xp_threshold:
+		return false
+	return rank.prerequisite_gate_id.is_empty() or gate_completed(owner_id, rank.prerequisite_gate_id)
+
+func complete_gate_authoritative(owner_id: String, gate_id: String) -> Dictionary:
+	if not _ensure_owner(owner_id):
+		return _reject(OP_GATE_COMPLETE, "progression_unavailable")
+	return _gate_complete(owner_id, {"gate_id": gate_id})
+
 func current_rank_id(owner_id: String) -> String:
 	var xp := total_xp(owner_id)
 	var best_id := ""

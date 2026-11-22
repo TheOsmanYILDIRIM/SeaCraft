@@ -3,8 +3,9 @@ extends RefCounted
 
 const PRG02 := preload("res://src/simulation/progression/prg02_progression_state.gd")
 const PRG03 := preload("res://src/simulation/progression/prg03_progression_state.gd")
+const PRG04 := preload("res://src/simulation/progression/prg04_quest_state.gd")
 
-const VERSION := 3
+const VERSION := 4
 const MAX_QUANTITY := 2147483647
 const MAX_ITEMS := 128
 const MAX_EQUIPMENT_SLOTS := 16
@@ -30,6 +31,8 @@ const OP_SKILL_SPEND := PRG03.OP_SKILL_SPEND
 const OP_RESPEC := PRG03.OP_RESPEC
 const OP_GATE_COMPLETE := PRG03.OP_GATE_COMPLETE
 const OP_CHALLENGE_EVENT := PRG03.OP_CHALLENGE_EVENT
+const OP_QUEST_ACCEPT := PRG04.OP_ACCEPT
+const OP_QUEST_TURN_IN := PRG04.OP_TURN_IN
 
 var _catalog: Dictionary = {}
 var _containers: Dictionary = {}
@@ -43,6 +46,8 @@ var _prg02
 var _pending_prg02_state: Dictionary = {}
 var _prg03
 var _pending_prg03_state: Dictionary = {}
+var _prg04
+var _pending_prg04_state: Dictionary = {}
 
 func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 1000000.0) -> bool:
 	if not SectorIds.valid(owner_id) or max_slots <= 0 or max_slots > MAX_ITEMS or not is_finite(max_weight) or max_weight < 0.0 or _containers.has(owner_id):
@@ -54,6 +59,8 @@ func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 10000
 	if _prg02 != null and not _prg02.bind_owner(owner_id):
 		return false
 	if _prg03 != null and not _prg03.bind_owner(owner_id):
+		return false
+	if _prg04 != null and not _prg04.bind_owner(owner_id):
 		return false
 	return true
 
@@ -71,6 +78,8 @@ func reassign_owner(from_id: String, to_id: String) -> bool:
 	if _prg02 != null and not _prg02.reassign_owner(from_id, to_id):
 		return false
 	if _prg03 != null and not _prg03.reassign_owner(from_id, to_id):
+		return false
+	if _prg04 != null and not _prg04.reassign_owner(from_id, to_id):
 		return false
 	return true
 
@@ -196,6 +205,81 @@ func grant_xp_authoritative(owner_id: String, event_id: String, source: String, 
 
 func prg03_state_snapshot() -> Dictionary:
 	return _prg03.snapshot_state() if _prg03 != null else PRG03.empty_state()
+
+func restore_prg03_state(value: Variant) -> bool:
+	return _prg03 != null and _prg03.restore_state(value)
+
+func has_progression_rank(rank_id: String) -> bool:
+	return _prg03 != null and _prg03.has_rank_definition(rank_id)
+
+func has_progression_gate(gate_id: String) -> bool:
+	return _prg03 != null and _prg03.has_gate_definition(gate_id)
+
+func progression_gate_completed(owner_id: String, gate_id: String) -> bool:
+	return _prg03 != null and _prg03.gate_completed(owner_id, gate_id)
+
+func progression_rank_satisfies(owner_id: String, rank_id: String) -> bool:
+	return _prg03 != null and _prg03.rank_satisfies(owner_id, rank_id)
+
+func complete_progression_gate_authoritative(owner_id: String, gate_id: String) -> Dictionary:
+	return _prg03.complete_gate_authoritative(owner_id, gate_id) if _prg03 != null else {"accepted": false, "reason": "progression_unavailable", "operation": OP_GATE_COMPLETE}
+
+func configure_prg04() -> bool:
+	if _prg04 != null:
+		return false
+	_prg04 = PRG04.new(self)
+	for owner_id in _containers:
+		if not _prg04.bind_owner(str(owner_id)):
+			_prg04 = null
+			return false
+	if not _pending_prg04_state.is_empty():
+		if not _prg04.restore_state(_pending_prg04_state):
+			_prg04 = null
+			return false
+		_pending_prg04_state.clear()
+	return true
+
+func register_quest_definition(definition: QuestDefinition) -> bool:
+	return _prg04 != null and _prg04.register_quest(definition)
+
+func register_quest_npc_ref(npc_id: String) -> bool:
+	return _prg04 != null and _prg04.register_npc_ref(npc_id)
+
+func register_quest_region_ref(region_id: String) -> bool:
+	return _prg04 != null and _prg04.register_region_ref(region_id)
+
+func register_quest_sector_ref(sector_id: String) -> bool:
+	return _prg04 != null and _prg04.register_sector_ref(sector_id)
+
+func validate_prg04_catalog() -> String:
+	return _prg04.validate_catalog() if _prg04 != null else "quest_unavailable"
+
+func set_quest_authoritative_context(owner_id: String, sector_id: String, region_id: String, nearby_npc_ids: PackedStringArray, tick: int) -> bool:
+	return _prg04 != null and _prg04.set_authoritative_context(owner_id, sector_id, region_id, nearby_npc_ids, tick)
+
+func set_quest_eligible_party_members(owner_id: String, members: PackedStringArray) -> bool:
+	return _prg04 != null and _prg04.set_eligible_party_members(owner_id, members)
+
+func apply_quest_objective_event_authoritative(owner_id: String, event: Dictionary) -> Dictionary:
+	return _prg04.apply_objective_event_authoritative(owner_id, event) if _prg04 != null else {"accepted": false, "reason": "quest_unavailable"}
+
+func advance_quest_tick_authoritative(owner_id: String, tick: int) -> Dictionary:
+	return _prg04.advance_tick_authoritative(owner_id, tick) if _prg04 != null else {"accepted": false, "reason": "quest_unavailable", "failed_quests": []}
+
+func quest_status(owner_id: String, quest_id: String) -> String:
+	return _prg04.quest_status(owner_id, quest_id) if _prg04 != null else "locked"
+
+func quest_journal_snapshot(owner_id: String) -> Dictionary:
+	return _prg04.journal_snapshot(owner_id) if _prg04 != null else PRG04.empty_journal(owner_id)
+
+func prg04_state_snapshot() -> Dictionary:
+	return _prg04.snapshot_state() if _prg04 != null else PRG04.empty_state()
+
+static func empty_quest_journal_snapshot(owner_id: String) -> Dictionary:
+	return PRG04.empty_journal(owner_id)
+
+static func validate_quest_journal_snapshot(value: Variant) -> bool:
+	return PRG04.validate_journal(value)
 
 func progression_view(owner_id: String) -> Dictionary:
 	if _prg03 == null:
@@ -324,6 +408,7 @@ func progression_snapshot() -> Dictionary:
 		"transactions": _transactions.duplicate(true),
 		"prg02": _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state(),
 		"prg03": _prg03.snapshot_state() if _prg03 != null else PRG03.empty_state(),
+		"prg04": _prg04.snapshot_state() if _prg04 != null else PRG04.empty_state(),
 	}
 
 func restore_progression(value: Variant) -> bool:
@@ -335,9 +420,14 @@ func restore_progression(value: Variant) -> bool:
 	if source_version == 1:
 		state["prg02"] = PRG02.empty_state()
 		state["prg03"] = PRG03.empty_state()
+		state["prg04"] = PRG04.empty_state()
 		state["version"] = VERSION
 	elif source_version == 2:
 		state["prg03"] = PRG03.empty_state()
+		state["prg04"] = PRG04.empty_state()
+		state["version"] = VERSION
+	elif source_version == 3:
+		state["prg04"] = PRG04.empty_state()
 		state["version"] = VERSION
 	var prg02_state: Dictionary = state["prg02"]
 	if _prg02 != null:
@@ -351,6 +441,12 @@ func restore_progression(value: Variant) -> bool:
 			return false
 	else:
 		_pending_prg03_state = prg03_state.duplicate(true)
+	var prg04_state: Dictionary = state["prg04"]
+	if _prg04 != null:
+		if not _prg04.restore_state(prg04_state):
+			return false
+	else:
+		_pending_prg04_state = prg04_state.duplicate(true)
 	for owner_id in state["equipment"]:
 		if not _containers.has(owner_id):
 			return false
@@ -371,8 +467,11 @@ static func validate_progression_state(value: Variant, catalog: Dictionary = {})
 	elif version == 2:
 		if state.size() != 6 or not PRG02.validate_state(state.get("prg02")):
 			return false
-	elif version == VERSION:
+	elif version == 3:
 		if state.size() != 7 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")):
+			return false
+	elif version == VERSION:
+		if state.size() != 8 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")) or not PRG04.validate_state(state.get("prg04")):
 			return false
 	else:
 		return false
@@ -417,6 +516,11 @@ func stat_value(owner_id: String, stat_id: String, base_value: float) -> float:
 
 func _execute_uncached(actor_id: String, operation: String, payload: Dictionary) -> Dictionary:
 	var result := {"accepted": false, "reason": "", "operation": operation}
+	if PRG04.supports_operation(operation):
+		if _prg04 == null:
+			result["reason"] = "quest_unavailable"
+			return result
+		return _prg04.execute(actor_id, operation, payload)
 	if PRG03.supports_operation(operation):
 		if _prg03 == null:
 			result["reason"] = "progression_unavailable"

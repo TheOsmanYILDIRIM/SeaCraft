@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 6
+const PROTOCOL_VERSION: int = 7
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -111,10 +111,13 @@ const PROGRESSION_SKILL_SPEND := InventoryState.OP_SKILL_SPEND
 const PROGRESSION_RESPEC := InventoryState.OP_RESPEC
 const PROGRESSION_GATE_COMPLETE := InventoryState.OP_GATE_COMPLETE
 const PROGRESSION_CHALLENGE_EVENT := InventoryState.OP_CHALLENGE_EVENT
+const QUEST_ACCEPT := InventoryState.OP_QUEST_ACCEPT
+const QUEST_TURN_IN := InventoryState.OP_QUEST_TURN_IN
 const PROGRESSION_INTENTS := [
 	INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY,
 	PROGRESSION_CRAFT, PROGRESSION_SALVAGE, PROGRESSION_SHIP_UPGRADE, PROGRESSION_CORE_INSERT, PROGRESSION_CORE_REMOVE, PROGRESSION_CORE_REPLACE, PROGRESSION_TROPHY_UNLOCK,
 	PROGRESSION_SKILL_SPEND, PROGRESSION_RESPEC, PROGRESSION_GATE_COMPLETE, PROGRESSION_CHALLENGE_EVENT,
+	QUEST_ACCEPT, QUEST_TURN_IN,
 ]
 const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT] + PROGRESSION_INTENTS
 const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
@@ -646,6 +649,9 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 				return REJECT_MALFORMED_PAYLOAD
 		PROGRESSION_CHALLENGE_EVENT:
 			if not _has_exact_keys(payload, ["transaction_id", "challenge_id", "event_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["challenge_id"]) or not valid_stable_id(payload["event_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		QUEST_ACCEPT, QUEST_TURN_IN:
+			if not _has_exact_keys(payload, ["transaction_id", "quest_id", "npc_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["quest_id"]) or not valid_stable_id(payload["npc_id"]):
 				return REJECT_MALFORMED_PAYLOAD
 		BASELINE_ACK:
 			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):

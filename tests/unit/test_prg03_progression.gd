@@ -268,7 +268,7 @@ func test_prg03_persistence_v3_v2_migration_and_corrupt_rejection() -> void:
 	print("PRG03_PERSISTENCE_MIGRATION_OK")
 
 func test_prg03_protocol_v6_host_authority_spoof_replay_and_malformed_guards() -> void:
-	assert_eq(SessionProtocol.PROTOCOL_VERSION, 6)
+	assert_eq(SessionProtocol.PROTOCOL_VERSION, 7)
 	var envelopes := [
 		SessionProtocol.make_envelope(1, SessionProtocol.PROGRESSION_SKILL_SPEND, {"transaction_id":"txn.net.skill","skill_id":SKILL_ROOT}),
 		SessionProtocol.make_envelope(2, SessionProtocol.PROGRESSION_RESPEC, {"transaction_id":"txn.net.respec"}),

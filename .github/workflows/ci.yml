@@ -24,7 +24,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 + NET-01 + NET-02 + NET-03 + NET-04 + PRG-01 + PRG-02 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 + NET-01 + NET-02 + NET-03 + NET-04 + PRG-01 + PRG-02 + PRG-03 + PRG-04 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -46,7 +46,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${api}" \
-            -d "{\"state\":\"pending\",\"context\":\"seacraft-prg03-evidence\",\"description\":\"PRG-03 CI run ${GITHUB_RUN_ID}\",\"target_url\":\"${target}\"}"
+            -d "{\"state\":\"pending\",\"context\":\"seacraft-prg04-evidence\",\"description\":\"PRG-04 CI run ${GITHUB_RUN_ID}\",\"target_url\":\"${target}\"}"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -106,7 +106,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT full suite through PRG-03
+      - name: GUT full suite through PRG-04
         shell: bash
         run: |
           set -euo pipefail
@@ -130,6 +130,7 @@ jobs:
           grep -Fq "test_prg01_progression.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg02_progression.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg03_progression.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_prg04_quest.gd" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"
@@ -145,6 +146,7 @@ jobs:
           python3 tools/ci/verify_prg01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_prg02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_prg03_suite.py "$RUNNER_TEMP/gut.log"
+          python3 tools/ci/verify_prg04_suite.py "$RUNNER_TEMP/gut.log"
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|([Oo]rphans?[[:space:]]+[1-9][0-9]*|[1-9][0-9]*[[:space:]]+[Oo]rphans?)' "$RUNNER_TEMP/gut.log"; then
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
@@ -458,7 +460,7 @@ jobs:
         id: build_artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SeaCraft-PRG03-${{ github.sha }}
+          name: SeaCraft-PRG04-${{ github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -481,7 +483,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          archive="$RUNNER_TEMP/prg03-artifact.zip"
+          archive="$RUNNER_TEMP/prg04-artifact.zip"
           api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
           ok=0
           for attempt in {1..12}; do
@@ -502,14 +504,14 @@ jobs:
           zip_sha="$(sha256sum "$archive" | awk '{print $1}')"
           [[ "$zip_sha" =~ ^[a-f0-9]{64}$ ]]
           [[ "$zip_sha" == "${UPLOAD_DIGEST#sha256:}" ]]
-          unpack="$RUNNER_TEMP/prg03-readback"
+          unpack="$RUNNER_TEMP/prg04-readback"
           rm -rf "$unpack"
           mkdir -p "$unpack"
           unzip -q "$archive" -d "$unpack"
           printf '%s\n' "$GITHUB_SHA" | cmp - "$unpack/COMMIT_SHA.txt"
           cmp build/SHA256SUMS.txt "$unpack/SHA256SUMS.txt"
           (cd "$unpack" && sha256sum -c SHA256SUMS.txt)
-          echo "PRG03_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
+          echo "PRG04_ARTIFACT_READBACK_OK artifact_id=$ARTIFACT_ID rest_zip_sha256=$zip_sha upload_digest=${UPLOAD_DIGEST#sha256:} sha=$GITHUB_SHA"
 
       - name: Publish final CI status
         if: always()
@@ -531,4 +533,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${api}" \
-            -d "{\"state\":\"${state}\",\"context\":\"seacraft-prg03-evidence\",\"description\":\"PRG-03 verified CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"
+            -d "{\"state\":\"${state}\",\"context\":\"seacraft-prg04-evidence\",\"description\":\"PRG-04 verified CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"

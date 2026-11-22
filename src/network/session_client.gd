@@ -18,6 +18,7 @@ signal session_ready(player_id: String)
 signal session_rejected(reason: String)
 signal command_accepted(sequence: int)
 signal command_rejected(sequence: int, reason: String)
+signal quest_snapshot_received(snapshot: Dictionary)
 
 var _peer: ENetMultiplayerPeer
 var _bridge: SessionRpcBridge
@@ -34,6 +35,7 @@ var _resume_session_id := ""
 var _resume_token := ""
 var _pending_baseline_id := ""
 var _transaction_results: Dictionary = {}
+var _quest_snapshot: Dictionary = InventoryState.empty_quest_journal_snapshot("entity.player")
 
 
 func _ready() -> void:
@@ -92,6 +94,9 @@ func resume_session_id() -> String:
 
 func transaction_result(transaction_id: String) -> Dictionary:
 	return (_transaction_results.get(transaction_id, {}) as Dictionary).duplicate(true)
+
+func quest_journal_snapshot() -> Dictionary:
+	return _quest_snapshot.duplicate(true)
 
 
 func _connect(address: String, port: int) -> Error:
@@ -233,17 +238,17 @@ func _on_server_disconnected() -> void:
 
 
 func _on_handshake_accepted(payload: Dictionary) -> void:
-	if _state != STATE_HANDSHAKING or payload.size() != 5:
+	if _state != STATE_HANDSHAKING or payload.size() != 6:
 		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
-	for key in ["protocol_version", "player_id", "session_id", "resume_token", "resume_sequence"]:
+	for key in ["protocol_version", "player_id", "session_id", "resume_token", "resume_sequence", "quest_snapshot"]:
 		if not payload.has(key):
 			_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 			return
 	if typeof(payload["protocol_version"]) != TYPE_INT or int(payload["protocol_version"]) != PROTOCOL.PROTOCOL_VERSION:
 		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
-	if not payload["player_id"] is String or not payload["session_id"] is String or not payload["resume_token"] is String or typeof(payload["resume_sequence"]) != TYPE_INT:
+	if not payload["player_id"] is String or not payload["session_id"] is String or not payload["resume_token"] is String or typeof(payload["resume_sequence"]) != TYPE_INT or not payload["quest_snapshot"] is Dictionary:
 		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
 	var player_id := str(payload["player_id"])
@@ -253,6 +258,11 @@ func _on_handshake_accepted(payload: Dictionary) -> void:
 	if player_id.is_empty() or not SectorIds.valid(player_id) or not session_id.begins_with("session.") or not SectorIds.valid(session_id) or not PROTOCOL.valid_resume_token(token) or resume_sequence < 0:
 		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
+	if not InventoryState.validate_quest_journal_snapshot(payload["quest_snapshot"]) or str((payload["quest_snapshot"] as Dictionary).get("owner_id", "")) != player_id:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
+		return
+	_quest_snapshot = (payload["quest_snapshot"] as Dictionary).duplicate(true)
+	quest_snapshot_received.emit(_quest_snapshot.duplicate(true))
 	_assigned_player_id = player_id
 	_resume_session_id = session_id
 	_resume_token = token
@@ -297,6 +307,9 @@ func _on_baseline_ready(payload: Dictionary) -> void:
 func _on_transaction_result(transaction_id: String, result: Dictionary) -> void:
 	if PROTOCOL.valid_transaction_id(transaction_id) and PROTOCOL.primitive_safe(result):
 		_transaction_results[transaction_id] = result.duplicate(true)
+		if result.has("journal") and InventoryState.validate_quest_journal_snapshot(result["journal"]):
+			_quest_snapshot = (result["journal"] as Dictionary).duplicate(true)
+			quest_snapshot_received.emit(_quest_snapshot.duplicate(true))
 
 
 func _reject_local(reason: String) -> void:

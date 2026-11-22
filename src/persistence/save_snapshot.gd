@@ -234,6 +234,9 @@ static func _validate_authoritative_content(authoritative: Dictionary, registry:
 				return "unknown_progression_content"
 			if not Prg03ProgressionState.validate_content_refs((progression as Dictionary).get("prg03"), registry):
 				return "unknown_progression_content"
+		if progression is Dictionary and int((progression as Dictionary).get("version", 0)) == InventoryState.VERSION:
+			if not Prg04QuestState.validate_content_refs((progression as Dictionary).get("prg04"), registry):
+				return "unknown_quest_content"
 	if authoritative.has("entity_index"):
 		var index_error := PersistentEntityIndex.validate(authoritative["entity_index"], registry)
 		if not index_error.is_empty():

@@ -311,6 +311,7 @@ func _on_client_hello(peer_id: int, hello: Dictionary) -> void:
 				"session_id": _session_id,
 				"resume_token": raw_token,
 				"resume_sequence": resume_sequence,
+				"quest_snapshot": _inventory_state.quest_journal_snapshot(player_id) if _inventory_state != null else InventoryState.empty_quest_journal_snapshot(player_id),
 			})
 			peer_state_changed.emit(peer_id, STATE_BASELINING)
 			var chunks := _replication.build_baseline_chunks(peer_id, baseline_id, _session_id, player_id, resume_sequence)
