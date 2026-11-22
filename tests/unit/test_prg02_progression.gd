@@ -338,6 +338,7 @@ func test_prg02_progression_save_restore_legacy_migration_and_corrupt_rejection(
 	var legacy := progression.duplicate(true)
 	legacy["version"] = 1
 	legacy.erase("prg02")
+	legacy.erase("prg03")
 	assert_true(InventoryState.validate_progression_state(legacy))
 	var legacy_bundle := _state(4)
 	var legacy_inventory := legacy_bundle["inventory"] as InventoryState
