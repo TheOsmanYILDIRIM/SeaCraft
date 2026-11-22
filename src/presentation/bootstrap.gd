@@ -114,6 +114,7 @@ func _ready() -> void:
 		_block_boot({"status": "sector_runtime_binding_failed"})
 		return
 	_setup_map_ui()
+	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
 	print(BOOT_MARKER)
 
 
@@ -373,9 +374,33 @@ func _layout_fire_control() -> void:
 func _on_core_pressed(button: CombatFireButton, label: String, kind: String, id: String) -> void:
 	var target := _combat.locked_target(FoundationSector.PLAYER) if kind == CombatAuthority.BOARD else id
 	var result := _combat.transact(FoundationSector.PLAYER, CombatAuthority.intent(kind, target))
-	button.text = label + (" ✓" if result["success"] else " ×")
+	_show_core_feedback(button, label, bool(result["success"]))
 	if result["accepted"]:
 		_save_service.mark_dirty()
+
+
+func _show_core_feedback(button: CombatFireButton, label: String, success: bool) -> void:
+	var token := Time.get_ticks_msec()
+	button.set_meta("feedback_token", token)
+	button.text = label + (" ✓" if success else " ×")
+	await get_tree().create_timer(0.75).timeout
+	if is_instance_valid(button) and int(button.get_meta("feedback_token", -1)) == token:
+		button.text = label
+
+
+func _ui_captures_touch(screen_position: Vector2) -> bool:
+	return _control_tree_captures_touch($UI, screen_position)
+
+
+func _control_tree_captures_touch(node: Node, screen_position: Vector2) -> bool:
+	for child in node.get_children():
+		if child is Control:
+			var control := child as Control
+			if control.visible and control.mouse_filter != Control.MOUSE_FILTER_IGNORE and control.get_global_rect().has_point(screen_position):
+				return true
+		if _control_tree_captures_touch(child, screen_position):
+			return true
+	return false
 
 
 func _on_fire_pressed() -> void:
