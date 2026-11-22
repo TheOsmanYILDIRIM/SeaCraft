@@ -274,7 +274,6 @@ func _on_replication_baseline_complete(baseline_id: String, resume_sequence: int
 		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
 		return
 	_bridge.send_client_intent(envelope)
-	_next_sequence += 1
 
 
 func _on_baseline_ready(payload: Dictionary) -> void:
