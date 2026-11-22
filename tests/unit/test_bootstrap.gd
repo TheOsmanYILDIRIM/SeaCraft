@@ -47,3 +47,41 @@ func test_npc_presenter_keeps_label_screen_upright() -> void:
 	parent.add_child(presenter)
 	presenter._process(0.0)
 	assert_almost_eq(presenter.global_rotation, 0.0, 0.0001)
+
+
+func test_hidden_fullscreen_ui_subtree_does_not_capture_world_touch() -> void:
+	var scene := preload("res://src/presentation/bootstrap.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+
+	var hidden_panel := Control.new()
+	hidden_panel.name = "HiddenFullscreenPanel"
+	hidden_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hidden_panel.hide()
+	scene.get_node("UI").add_child(hidden_panel)
+
+	var child := Control.new()
+	child.name = "LocallyVisibleChild"
+	child.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	child.mouse_filter = Control.MOUSE_FILTER_STOP
+	hidden_panel.add_child(child)
+
+	assert_true(child.visible)
+	assert_false(child.is_visible_in_tree())
+	assert_false(scene._ui_captures_touch(Vector2(640.0, 360.0)))
+
+
+func test_visible_control_still_captures_world_touch() -> void:
+	var scene := preload("res://src/presentation/bootstrap.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+
+	var panel := Control.new()
+	panel.position = Vector2(300.0, 200.0)
+	panel.size = Vector2(200.0, 120.0)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	scene.get_node("UI").add_child(panel)
+
+	assert_true(panel.is_visible_in_tree())
+	assert_true(scene._ui_captures_touch(Vector2(350.0, 250.0)))
+	assert_false(scene._ui_captures_touch(Vector2(800.0, 500.0)))
