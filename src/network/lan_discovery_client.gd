@@ -40,21 +40,29 @@ func poll(now_ms: int = -1) -> int:
 		var packet := _socket.get_packet()
 		var source := _socket.get_packet_ip()
 		processed += 1
-		if not _allow_source(source):
-			continue
-		var beacon := LanDiscoveryProtocol.parse_packet(packet)
-		if beacon.is_empty():
-			continue
-		var session_id := str(beacon["session_id"])
-		if not _sessions.has(session_id) and _sessions.size() >= LanDiscoveryProtocol.MAX_VISIBLE_SESSIONS:
-			continue
-		var row := beacon.duplicate(true)
-		row["address"] = source
-		row["compatible"] = LanDiscoveryProtocol.compatible(beacon)
-		row["last_seen_ms"] = now
-		_sessions[session_id] = row
+		ingest_packet(packet, source, now)
 	expire(now)
 	return processed
+
+
+func ingest_packet(packet: PackedByteArray, source: String, now_ms: int) -> bool:
+	if source.is_empty() or now_ms < 0:
+		return false
+	_reset_budget_if_needed(now_ms)
+	if not _allow_source(source):
+		return false
+	var beacon := LanDiscoveryProtocol.parse_packet(packet)
+	if beacon.is_empty():
+		return false
+	var session_id := str(beacon["session_id"])
+	if not _sessions.has(session_id) and _sessions.size() >= LanDiscoveryProtocol.MAX_VISIBLE_SESSIONS:
+		return false
+	var row := beacon.duplicate(true)
+	row["address"] = source
+	row["compatible"] = LanDiscoveryProtocol.compatible(beacon)
+	row["last_seen_ms"] = now_ms
+	_sessions[session_id] = row
+	return true
 
 
 func expire(now_ms: int = -1) -> int:
