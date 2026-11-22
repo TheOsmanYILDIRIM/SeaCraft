@@ -282,3 +282,56 @@ func test_world_touch_release_over_ui_finishes_gesture_without_sticking() -> voi
 	controller._input(second_release)
 	assert_eq(commands.size(), after_crossing + 1)
 	assert_eq(commands[-1]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
+
+
+func test_android_jittery_tap_still_commands_ship_motion() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var camera := GameplayCamera.new()
+	camera.name = "Camera"
+	root.add_child(camera)
+	var motor := ShipMotor.new()
+	motor.name = "Motor"
+	root.add_child(motor)
+	var controller := GameplayInputController.new()
+	controller.name = "Controller"
+	controller.camera_path = NodePath("../Camera")
+	root.add_child(controller)
+	await get_tree().process_frame
+	controller.ui_hit_test = func(_position: Vector2) -> bool: return false
+	controller.command_emitted.connect(func(command: Dictionary) -> void:
+		motor.apply_authoritative_command(command)
+	)
+
+	var press := InputEventScreenTouch.new()
+	press.index = 3
+	press.position = Vector2(900.0, 420.0)
+	press.pressed = true
+	controller._input(press)
+
+	var jitter := InputEventScreenDrag.new()
+	jitter.index = 3
+	jitter.position = Vector2(924.0, 432.0)
+	jitter.relative = Vector2(24.0, 12.0)
+	controller._input(jitter)
+
+	var release := InputEventScreenTouch.new()
+	release.index = 3
+	release.position = Vector2(924.0, 432.0)
+	release.pressed = false
+	controller._input(release)
+
+	assert_true(motor.has_target())
+	var start := motor.global_position
+	for _i in range(30):
+		motor.step_authoritative(1.0 / 60.0, false)
+	assert_gt(motor.global_position.distance_to(start), 1.0)
+
+
+func test_large_single_finger_drag_remains_camera_pan_not_ship_move() -> void:
+	var touch := TOUCH.new()
+	touch.press(2, Vector2(300.0, 300.0))
+	var gestures := touch.drag(2, Vector2(360.0, 300.0))
+	assert_eq(gestures.size(), 1)
+	assert_eq(gestures[0]["kind"], "pan")
+	assert_true(touch.release(2, Vector2(360.0, 300.0)).is_empty())
