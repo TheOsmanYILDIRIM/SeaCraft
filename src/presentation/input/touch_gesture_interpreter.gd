@@ -1,7 +1,7 @@
 class_name TouchGestureInterpreter
 extends RefCounted
 
-const TAP_MOVE_THRESHOLD := 12.0
+const TAP_MOVE_THRESHOLD := 40.0
 
 var _touch_positions: Dictionary = {}
 var _tap_candidate_index := -1
