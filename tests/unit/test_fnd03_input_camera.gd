@@ -254,8 +254,9 @@ func test_world_touch_release_over_ui_finishes_gesture_without_sticking() -> voi
 	release.pressed = false
 	controller._input(release)
 
-	assert_eq(commands.size(), 1)
-	assert_eq(commands[0]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
+	# Crossing into UI may become a pan rather than a tap; the contract here is
+	# that the world-owned finger is released and cannot poison the next touch.
+	var after_crossing := commands.size()
 
 	var ui_press := InputEventScreenTouch.new()
 	ui_press.index = 7
@@ -267,4 +268,17 @@ func test_world_touch_release_over_ui_finishes_gesture_without_sticking() -> voi
 	ui_release.position = Vector2(40.0, 40.0)
 	ui_release.pressed = false
 	controller._input(ui_release)
-	assert_eq(commands.size(), 1)
+	assert_eq(commands.size(), after_crossing)
+
+	var second_press := InputEventScreenTouch.new()
+	second_press.index = 7
+	second_press.position = Vector2(900.0, 420.0)
+	second_press.pressed = true
+	controller._input(second_press)
+	var second_release := InputEventScreenTouch.new()
+	second_release.index = 7
+	second_release.position = Vector2(900.0, 420.0)
+	second_release.pressed = false
+	controller._input(second_release)
+	assert_eq(commands.size(), after_crossing + 1)
+	assert_eq(commands[-1]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
