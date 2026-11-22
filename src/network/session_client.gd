@@ -223,6 +223,11 @@ func _on_connection_failed() -> void:
 
 func _on_server_disconnected() -> void:
 	_peer = null
+	# A reconnect starts from a fresh authoritative baseline. MultiplayerSpawner
+	# can free mirrored nodes as the transport drops, so discard the old mirror
+	# registry before any resume baseline or snapshot can observe stale handles.
+	if _replication != null:
+		_replication.reset_session()
 	if _state != STATE_REJECTED:
 		_set_state(STATE_DISCONNECTED)
 

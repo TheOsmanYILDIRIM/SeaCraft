@@ -89,7 +89,7 @@ func active_count() -> int:
 func proxy(entity_id: String) -> NetworkEntityProxy:
 	if not _entries.has(entity_id):
 		return null
-	return (_entries[entity_id] as Dictionary).get("proxy") as NetworkEntityProxy
+	return _live_proxy(_entries[entity_id] as Dictionary)
 
 
 func state_row(entity_id: String) -> Dictionary:
@@ -124,8 +124,8 @@ func reconcile_mirror_baseline(payload: Dictionary) -> bool:
 	var entry: Dictionary = _entries[entity_id]
 	if bool(entry["authority"]) or int(entry["generation"]) != int(payload["generation"]):
 		return false
-	var proxy := entry.get("proxy") as NetworkEntityProxy
-	if proxy == null or not is_instance_valid(proxy):
+	var proxy := _live_proxy(entry)
+	if proxy == null:
 		return false
 	var previous: Dictionary = entry["row"]
 	var row := _row_from_spawn(payload)
@@ -175,8 +175,8 @@ func update_authority_state(entity_id: String, changes: Dictionary) -> bool:
 		if spatial == null or not spatial.move(entity_id, new_position):
 			return false
 	entry["row"] = row
-	var node := entry.get("proxy") as NetworkEntityProxy
-	if node != null and is_instance_valid(node) and bool(entry["authority"]):
+	var node := _live_proxy(entry)
+	if node != null and bool(entry["authority"]):
 		node.sector_id = new_sector
 	return true
 
@@ -193,8 +193,8 @@ func apply_snapshot_row(row: Dictionary, snapshot_sequence: int, server_tick: in
 	var current: Dictionary = entry["row"]
 	if str(current["entity_kind"]) != str(row["entity_kind"]):
 		return false
-	var node := entry.get("proxy") as NetworkEntityProxy
-	if node == null or not is_instance_valid(node) or not node.apply_snapshot(row, snapshot_sequence, server_tick):
+	var node := _live_proxy(entry)
+	if node == null or not node.apply_snapshot(row, snapshot_sequence, server_tick):
 		return false
 	var old_sector := str(current["sector_id"])
 	var old_position := Vector2(float(current["x"]), float(current["y"]))
@@ -262,6 +262,13 @@ func _row_from_spawn(payload: Dictionary) -> Dictionary:
 		"hull_ratio": float(payload["hull_ratio"]),
 		"alive": bool(payload["alive"]),
 	}
+
+
+func _live_proxy(entry: Dictionary) -> NetworkEntityProxy:
+	var raw: Variant = entry.get("proxy")
+	if raw == null or not is_instance_valid(raw):
+		return null
+	return raw as NetworkEntityProxy
 
 
 func _spatial(sector_id: String) -> SectorSpatialHash:

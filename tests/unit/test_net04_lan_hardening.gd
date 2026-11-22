@@ -116,6 +116,29 @@ func test_net04_late_join_baseline_exact_current_truth() -> void:
 	print("NET04_LATE_JOIN_BASELINE_OK entities=1 watermarks=1")
 
 
+func test_net04_freed_mirror_handle_is_safe_and_disconnect_resets_registry() -> void:
+	var registry := REGISTRY.new()
+	var payload := _spawn("npc.freed", 5.0)
+	var freed_proxy := PROXY.new() as NetworkEntityProxy
+	assert_true(freed_proxy.configure_spawn(payload))
+	assert_true(registry.register_mirror(payload, freed_proxy))
+	freed_proxy.free()
+	assert_null(registry.proxy("npc.freed"))
+	assert_false(registry.reconcile_mirror_baseline(payload))
+
+	var client := SessionClient.new()
+	add_child_autofree(client)
+	var live_payload := _spawn("npc.disconnect", 8.0)
+	var live_proxy := PROXY.new() as NetworkEntityProxy
+	assert_true(live_proxy.configure_spawn(live_payload))
+	assert_true(client.network_entity_registry().register_mirror(live_payload, live_proxy))
+	assert_eq(client.network_entity_registry().active_count(), 1)
+	client._on_server_disconnected()
+	assert_eq(client.network_entity_registry().active_count(), 0)
+	assert_eq(client.state(), SessionClient.STATE_DISCONNECTED)
+	print("NET04_DISCONNECT_MIRROR_RESET_OK freed_handle=1")
+
+
 func test_net04_baseline_reconciles_prehandshake_mirror_same_sequence() -> void:
 	var registry := REGISTRY.new()
 	var initial := _spawn("npc.prehandshake", 1.0)
