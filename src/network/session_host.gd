@@ -5,10 +5,14 @@ const PROTOCOL := preload("res://src/network/session_protocol.gd")
 const RPC_BRIDGE := preload("res://src/network/session_rpc_bridge.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 const REPLICATION := preload("res://src/network/network_replication_peer.gd")
+const LEDGER := preload("res://src/network/host_transaction_ledger.gd")
 
 const STATE_CONNECTED := "connected"
 const STATE_HANDSHAKING := "handshaking"
+const STATE_BASELINING := "baselining"
 const STATE_READY := "ready"
+const RECONNECT_GRACE_MS := 30000
+const MAX_TOKEN_HISTORY := 64
 const STATE_REJECTED := "rejected"
 
 signal peer_state_changed(peer_id: int, state: String)
@@ -26,6 +30,13 @@ var _player_ids: Array[String] = []
 var _peer_states: Dictionary = {}
 var _peer_to_player: Dictionary = {}
 var _last_sequence: Dictionary = {}
+var _session_id := ""
+var _active_token_digests: Dictionary = {}
+var _reservations: Dictionary = {}
+var _consumed_tokens: Dictionary = {}
+var _expired_tokens: Dictionary = {}
+var _pending_baselines: Dictionary = {}
+var _ledger: HostTransactionLedger = LEDGER.new()
 var _running: bool = false
 var _listen_port: int = 0
 var _telemetry := {
@@ -81,6 +92,12 @@ func start(port: int) -> Error:
 		return error
 	multiplayer.multiplayer_peer = _peer
 	_replication.set_host_enabled(true)
+	_session_id = _new_stable_random("session")
+	if _session_id.is_empty():
+		_peer.close()
+		_peer = null
+		multiplayer.multiplayer_peer = null
+		return ERR_CANT_CREATE
 	_running = true
 	_listen_port = port
 	return OK
@@ -105,10 +122,34 @@ func stop() -> void:
 	_peer_states.clear()
 	_peer_to_player.clear()
 	_last_sequence.clear()
+	_active_token_digests.clear()
+	_reservations.clear()
+	_consumed_tokens.clear()
+	_expired_tokens.clear()
+	_pending_baselines.clear()
+	_session_id = ""
+	_ledger = LEDGER.new()
 
 
 func is_running() -> bool:
 	return _running
+
+
+func session_id() -> String:
+	return _session_id
+
+
+func transaction_ledger_snapshot() -> Dictionary:
+	return _ledger.snapshot_state()
+
+
+func restore_transaction_ledger(value: Variant) -> bool:
+	return not _running and _ledger.restore_state(value)
+
+
+func reservation_count() -> int:
+	_cleanup_reservations()
+	return _reservations.size()
 
 
 func mapped_player_id(peer_id: int) -> String:
@@ -126,6 +167,9 @@ func snapshot() -> Dictionary:
 		"peer_states": _peer_states.duplicate(true),
 		"peer_to_player": _peer_to_player.duplicate(true),
 		"last_sequence": _last_sequence.duplicate(true),
+		"session_id": _session_id,
+		"reservation_count": _reservations.size(),
+		"transaction_watermark": _ledger.commit_sequence(),
 	}
 
 
@@ -178,10 +222,28 @@ func _on_peer_connected(peer_id: int) -> void:
 	peer_state_changed.emit(peer_id, STATE_CONNECTED)
 
 
+func _process(_delta: float) -> void:
+	if _running:
+		_cleanup_reservations()
+
+
 func _on_peer_disconnected(peer_id: int) -> void:
+	var player_id := str(_peer_to_player.get(peer_id, ""))
+	if not player_id.is_empty() and _active_token_digests.has(player_id):
+		var digest := str(_active_token_digests[player_id])
+		_reservations[digest] = {
+			"session_id": _session_id,
+			"player_id": player_id,
+			"token_digest": digest,
+			"expires_at": Time.get_ticks_msec() + RECONNECT_GRACE_MS,
+			"last_sequence": int(_last_sequence.get(peer_id, -1)),
+			"transaction_watermark": _ledger.commit_sequence(),
+		}
+		_active_token_digests.erase(player_id)
 	_peer_states.erase(peer_id)
 	_peer_to_player.erase(peer_id)
 	_last_sequence.erase(peer_id)
+	_pending_baselines.erase(peer_id)
 	if _replication != null:
 		_replication.remove_peer(peer_id)
 
@@ -191,30 +253,76 @@ func _on_client_hello(peer_id: int, hello: Dictionary) -> void:
 		_peer_states[peer_id] = STATE_CONNECTED
 	_peer_states[peer_id] = STATE_HANDSHAKING
 	peer_state_changed.emit(peer_id, STATE_HANDSHAKING)
+	_cleanup_reservations()
 	var reason := PROTOCOL.validate_handshake(hello)
-	if reason.is_empty():
-		var mapped_ids: Array[String] = []
-		for value in _peer_to_player.values():
-			mapped_ids.append(str(value))
-		if _peer_to_player.size() >= PROTOCOL.MAX_PEERS:
-			reason = PROTOCOL.REJECT_SERVER_FULL
+	var player_id := ""
+	var resume_last_sequence := -1
+	var resume_session := str(hello.get("session_id", ""))
+	var resume_token := str(hello.get("resume_token", ""))
+	if reason.is_empty() and not resume_session.is_empty():
+		if resume_session != _session_id:
+			reason = PROTOCOL.REJECT_SESSION_MISMATCH
+		elif not PROTOCOL.valid_resume_token(resume_token):
+			reason = PROTOCOL.REJECT_TOKEN_MALFORMED
 		else:
-			var player_id := PROTOCOL.next_available_player_id(_player_ids, mapped_ids)
-			if player_id.is_empty():
-				reason = PROTOCOL.REJECT_SERVER_FULL
+			var digest := resume_token.sha256_text()
+			if _reservations.has(digest):
+				var reservation: Dictionary = _reservations[digest]
+				player_id = str(reservation["player_id"])
+				resume_last_sequence = int(reservation["last_sequence"])
+				_reservations.erase(digest)
+				_remember_token(_consumed_tokens, digest)
+			elif _expired_tokens.has(digest):
+				reason = PROTOCOL.REJECT_TOKEN_EXPIRED
+			elif _consumed_tokens.has(digest):
+				reason = PROTOCOL.REJECT_TOKEN_CONSUMED
 			else:
-				_peer_to_player[peer_id] = player_id
-				_last_sequence[peer_id] = -1
-				_peer_states[peer_id] = STATE_READY
-				_replication.set_peer_player(peer_id, player_id)
-				_telemetry["ready"] = int(_telemetry["ready"]) + 1
-				_bridge.send_handshake_accept(peer_id, {
-					"protocol_version": PROTOCOL.PROTOCOL_VERSION,
-					"player_id": player_id,
-				})
-				peer_state_changed.emit(peer_id, STATE_READY)
-				peer_ready.emit(peer_id, player_id)
+				reason = PROTOCOL.REJECT_TOKEN_UNKNOWN
+	if reason.is_empty() and player_id.is_empty():
+		var unavailable: Array[String] = []
+		for value in _peer_to_player.values():
+			unavailable.append(str(value))
+		for reservation_value in _reservations.values():
+			var reserved: Dictionary = reservation_value
+			var reserved_id := str(reserved["player_id"])
+			if not unavailable.has(reserved_id):
+				unavailable.append(reserved_id)
+		player_id = PROTOCOL.next_available_player_id(_player_ids, unavailable)
+		if player_id.is_empty():
+			reason = PROTOCOL.REJECT_SERVER_FULL
+	if reason.is_empty():
+		_peer_to_player[peer_id] = player_id
+		_last_sequence[peer_id] = resume_last_sequence
+		_peer_states[peer_id] = STATE_BASELINING
+		if not _replication.set_peer_player(peer_id, player_id):
+			reason = PROTOCOL.REJECT_AUTHORITY_COMMAND
+		else:
+			var raw_token := _new_token()
+			var digest := raw_token.sha256_text()
+			_active_token_digests[player_id] = digest
+			var baseline_id := _new_stable_random("baseline")
+			var resume_sequence := resume_last_sequence + 1
+			_pending_baselines[peer_id] = baseline_id
+			_bridge.send_handshake_accept(peer_id, {
+				"protocol_version": PROTOCOL.PROTOCOL_VERSION,
+				"player_id": player_id,
+				"session_id": _session_id,
+				"resume_token": raw_token,
+				"resume_sequence": resume_sequence,
+			})
+			peer_state_changed.emit(peer_id, STATE_BASELINING)
+			var chunks := _replication.build_baseline_chunks(peer_id, baseline_id, _session_id, player_id, resume_sequence)
+			if chunks.is_empty():
+				reason = PROTOCOL.REJECT_MALFORMED_BASELINE
+			else:
+				for chunk in chunks:
+					_bridge.send_baseline_chunk(peer_id, chunk)
 				return
+	if not player_id.is_empty():
+		_peer_to_player.erase(peer_id)
+		_last_sequence.erase(peer_id)
+		_active_token_digests.erase(player_id)
+		_replication.remove_peer(peer_id)
 	_peer_states[peer_id] = STATE_REJECTED
 	_telemetry["rejected_handshakes"] = int(_telemetry["rejected_handshakes"]) + 1
 	_bridge.send_handshake_reject(peer_id, reason)
@@ -225,14 +333,33 @@ func _on_client_intent(peer_id: int, envelope: Dictionary) -> void:
 	var sequence := -1
 	if envelope.has("client_sequence") and typeof(envelope["client_sequence"]) == TYPE_INT:
 		sequence = int(envelope["client_sequence"])
-	if str(_peer_states.get(peer_id, "")) != STATE_READY:
-		_reject_intent(peer_id, sequence, PROTOCOL.REJECT_PRE_HANDSHAKE)
-		return
 	var reason := PROTOCOL.validate_envelope(envelope)
 	if not reason.is_empty():
 		_reject_intent(peer_id, sequence, reason)
 		return
 	sequence = int(envelope["client_sequence"])
+	var state := str(_peer_states.get(peer_id, ""))
+	var intent_type := str(envelope["intent_type"])
+	if state == STATE_BASELINING and intent_type == PROTOCOL.BASELINE_ACK:
+		reason = PROTOCOL.validate_sequence(sequence, int(_last_sequence.get(peer_id, -1)))
+		if not reason.is_empty():
+			_reject_intent(peer_id, sequence, reason)
+			return
+		var baseline_id := str((envelope["payload"] as Dictionary)["baseline_id"])
+		if baseline_id != str(_pending_baselines.get(peer_id, "")):
+			_reject_intent(peer_id, sequence, PROTOCOL.REJECT_MALFORMED_BASELINE)
+			return
+		_last_sequence[peer_id] = sequence
+		_pending_baselines.erase(peer_id)
+		_peer_states[peer_id] = STATE_READY
+		_telemetry["ready"] = int(_telemetry["ready"]) + 1
+		_bridge.send_baseline_ready(peer_id, {"baseline_id": baseline_id, "next_sequence": sequence + 1})
+		peer_state_changed.emit(peer_id, STATE_READY)
+		peer_ready.emit(peer_id, str(_peer_to_player[peer_id]))
+		return
+	if state != STATE_READY:
+		_reject_intent(peer_id, sequence, PROTOCOL.REJECT_PRE_HANDSHAKE)
+		return
 	reason = PROTOCOL.validate_sequence(sequence, int(_last_sequence.get(peer_id, -1)))
 	if not reason.is_empty():
 		_reject_intent(peer_id, sequence, reason)
@@ -241,9 +368,7 @@ func _on_client_intent(peer_id: int, envelope: Dictionary) -> void:
 	if player_id.is_empty() or not _player_motors.has(player_id):
 		_reject_intent(peer_id, sequence, PROTOCOL.REJECT_AUTHORITY_COMMAND)
 		return
-	var intent_type := str(envelope["intent_type"])
 	if intent_type in PROTOCOL.AUTHORITY_INTENTS:
-		# Consume validated envelopes before executing, even when authority rejects them.
 		_last_sequence[peer_id] = sequence
 		var payload: Dictionary = envelope["payload"]
 		reason = _execute_gameplay_intent(peer_id, player_id, intent_type, payload)
@@ -296,13 +421,34 @@ func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: Stri
 		return PROTOCOL.REJECT_AUTHORITY_COMMAND
 	if intent_type == PROTOCOL.PICKUP_LOOT:
 		var drop_id := str(payload["drop_id"])
+		var transaction_id := str(payload["transaction_id"])
+		var operation_payload := {"drop_id": drop_id}
+		var fingerprint := LEDGER.fingerprint(PROTOCOL.PICKUP_LOOT, operation_payload)
+		var lookup := _ledger.inspect(player_id, transaction_id, PROTOCOL.PICKUP_LOOT, fingerprint)
+		var status := str(lookup["status"])
+		if status == LEDGER.STATUS_CONFLICT:
+			return PROTOCOL.REJECT_TRANSACTION_CONFLICT
+		if status == LEDGER.STATUS_FULL:
+			return PROTOCOL.REJECT_TRANSACTION_LEDGER_FULL
+		if status == LEDGER.STATUS_CACHED:
+			_bridge.send_transaction_result(peer_id, transaction_id, lookup["result"])
+			return ""
 		var visible := _replication.is_visible_to_peer(peer_id, drop_id, "loot")
-		# Despawned claims may only reach the real idempotence guard for their
-		# original inventory owner. Unknown and hidden drops remain opaque.
 		if not visible and not _loot_authority.claimed_by_inventory_owner(player_id, drop_id):
 			return PROTOCOL.REJECT_AOI
 		var pickup := _loot_authority.pickup(player_id, LootAuthority.pickup_intent(drop_id))
-		return "" if pickup["accepted"] else str(pickup["reason"])
+		if not bool(pickup["accepted"]):
+			return str(pickup["reason"])
+		var result := {
+			"accepted": true,
+			"drop_id": drop_id,
+			"item_id": str(pickup["item_id"]),
+			"quantity": int(pickup["quantity"]),
+		}
+		if not _ledger.commit(player_id, transaction_id, PROTOCOL.PICKUP_LOOT, fingerprint, result):
+			return PROTOCOL.REJECT_TRANSACTION_CONFLICT
+		_bridge.send_transaction_result(peer_id, transaction_id, result)
+		return ""
 	var target_id := str(payload["target_id"])
 	if not _replication.is_visible_to_peer(peer_id, target_id):
 		return PROTOCOL.REJECT_AOI
@@ -315,6 +461,37 @@ func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: Stri
 		var shot := _combat_authority.fire(player_id, motor.current_heading(), CombatAuthority.fire_intent(target_id))
 		return "" if shot["accepted"] else str(shot["reason"])
 	return PROTOCOL.REJECT_UNSUPPORTED_INTENT
+
+
+func _new_token() -> String:
+	var bytes := Crypto.new().generate_random_bytes(16)
+	return bytes.hex_encode() if bytes.size() == 16 else ""
+
+
+func _new_stable_random(prefix: String) -> String:
+	var token := _new_token()
+	return ("%s.%s" % [prefix, token]) if not token.is_empty() else ""
+
+
+func _cleanup_reservations() -> void:
+	var now := Time.get_ticks_msec()
+	for digest in _reservations.keys():
+		var reservation: Dictionary = _reservations[digest]
+		if now >= int(reservation["expires_at"]):
+			_reservations.erase(digest)
+			_remember_token(_expired_tokens, str(digest))
+
+
+func _remember_token(store: Dictionary, digest: String) -> void:
+	store[digest] = Time.get_ticks_msec()
+	if store.size() <= MAX_TOKEN_HISTORY:
+		return
+	var rows: Array = []
+	for key in store:
+		rows.append({"key": key, "at": int(store[key])})
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["at"]) < int(b["at"]))
+	while store.size() > MAX_TOKEN_HISTORY:
+		store.erase(str(rows.pop_front()["key"]))
 
 
 func _on_gameplay_drop_created(drop: Dictionary) -> void:
