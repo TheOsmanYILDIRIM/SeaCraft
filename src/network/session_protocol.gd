@@ -184,7 +184,7 @@ static func valid_resume_token(value: String) -> bool:
 
 
 static func valid_transaction_id(value: String) -> bool:
-	return HostTransactionLedger.valid_transaction_id(value)
+	return not value.is_empty() and value.length() <= 96 and value.begins_with("txn.") and valid_stable_id(value)
 
 
 static func make_baseline_chunk(baseline_id: String, session_id: String, player_id: String,
