@@ -1,37 +1,30 @@
-# AKTİF GÖREV — PRG-02
+# AKTİF GÖREV — PRG-03
 
 > Bu dosya SeaCraft'ın kanonik aktif uygulama briefidir. Sohbette uzun brief tekrarlanmaz.
 >
-> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-02 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
+> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-03 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — KAPALI / DOĞRULANDI
+## Durum — AKTİF
 
-PRG-02 exact kod teslimi, final CI/export/artifact readback ve Avenox Beyin strict kapanışı doğrulandı. PRG-03 bu kapanışla birlikte **başlatılmadı** ve `not_started` olarak kalır.
+PRG-02 doğrulanmış biçimde kapalıdır. WAVE 6'nın üçüncü görevi PRG-03 başlatılmıştır. PRG-04, PRG-03 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
 
 ## Kimlik
 
-- Sohbet etiketi: `[SOHBET-33 | SeaCraft PRG-02 — Crafting, Reclamation, Ship Upgrade ve Cores/Trophies]`
+- Sohbet etiketi: `[SOHBET-34 | SeaCraft PRG-03 — XP, Skill Tree, Rank ve Local Challenge Meta]`
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
 - Dal: yalnız `main`
-- Uygulama başlangıç HEAD'i: `160e159a69182cdd4cac6d65a3d3d345de02ec5f`
-- PRG-01 exact kod kapanışı: `a3344909e489adc93800f6591238eb7102561542`
-- PRG-01 Actions: `45015026436` — `success`
-- PRG-01 artifact ID: `14750439866`
+- Uygulama başlangıç HEAD'i: `c1dd69644e7dc77ece909eb62c1cfb1691730eb4`
+- PRG-02 exact kod kapanışı: `d6ddfb014ee83ef9826563441453152d15d7d789`
+- PRG-02 Actions: `45019833696` — `success`
+- PRG-02 artifact ID: `14753292824`
 - Godot: `4.7.2-stable`
-- Bağımlılık: PRG-01 tamamlandı
-- Avenox Beyin görevi: `tasks/seacraft-prg02-crafting-reclamation-ship-upgrade-cores-trophies-20261122.md`
-- PRG-02 exact kod SHA: `d6ddfb014ee83ef9826563441453152d15d7d789`
-- Final Actions: `45019833696` — `success`
-- Final artifact: `SeaCraft-PRG02-d6ddfb014ee83ef9826563441453152d15d7d789`, ID `14753292824`
-- Artifact ZIP SHA-256: `ef205786cd23ee69910235446a63e0a0571ae8c64096a1b23b7e1c2e0015f5a8`
-- Avenox Beyin: `done`, revision `2`, commit `29cebab9b10cd7164d9366c75c647a3d77d71e67`
-- Receipt: `receipts/0f69a7954949a09d7b5131e46b0efbf1f24d389fee5c18b84e9c6b79077adce2.md`
-- Fiziksel Android cihaz testi: `not_run`
-- Sonraki görev: PRG-03 — `not_started`; ayrı kanonik görev olmadan başlama
+- Bağımlılık: PRG-02 tamamlandı
+- Avenox Beyin görevi: `tasks/seacraft-prg03-xp-skill-tree-rank-local-challenge-meta-20261122.md`
+- Sonraki görev: PRG-04 — PRG-03 kapanmadan başlama
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 
-Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-02 kapsamını güvenli biçimde uygula.
+Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-03 kapsamını güvenli biçimde uygula.
 
 ---
 
@@ -39,437 +32,437 @@ Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GO
 
 Plan:
 
-**PRG-02 — Crafting, reclamation, ship upgrade ve cores/trophies**
+**PRG-03 — XP, skill tree, rank ve local challenge meta**
 
 Amaç:
 
-- PRG-01'in tek authoritative `InventoryState` gerçeği üzerinde gerçek crafting ve reclamation/salvage loop'u kurmak
-- recipe doğrulama, input tüketimi ve output grant işlemlerini tek atomik transaction sınırında çalıştırmak
-- salvage/reclamation sonucunu deterministic RNG stream ve persisted RNG state ile üretmek
-- ship upgrade progression'ını cycle-free, veri odaklı bir DAG olarak kurmak
-- core slotları ve core uygunluk kurallarını build/progression sistemine eklemek
-- trophy/perk unlock ledger'ını idempotent ve primitive-safe yapmak
-- bütün stat etkilerini mevcut tek `StatModifierPipeline` üzerinden geçirmek
-- offline-first davranışı korurken LAN'da craft/salvage/upgrade/core/trophy mutasyonlarını host-authoritative yapmak
+- player growth'u offline-first ve deterministic progression state olarak kurmak
+- XP gain'i idempotent ledger ile tek authoritative progression truth içinde tutmak
+- level/rank hesaplamasını veri odaklı, bounded ve deterministic yapmak
+- skill tree'yi cycle-free prerequisite DAG olarak kurmak
+- skill point spend ve respec işlemlerini atomik transaction yapmak
+- license/test gates ile progression unlock koşullarını stable-ID sözleşmesiyle bağlamak
+- internet gerektirmeyen local challenge/milestone meta sistemi kurmak
+- progression kaynaklı bütün stat etkilerini mevcut tek `StatModifierPipeline` üzerinden geçirmek
+- LAN'da XP/spend/respec/challenge reward mutasyonlarını host-authoritative yapmak
 
 Mekanik katalog:
 
-- M-022
-- M-023
-- M-024
-- M-025
-- M-026
+- M-021
+- M-032
+- M-033
+- M-035
+- M-054
 
-Güncel 767 kayıtlı forum araştırması yalnız kategori, çeşitlilik, progression pattern ve objective/stat ilişki referansıdır. Forumdaki exact isim/değer/görsel veya ekonomik oran SeaCraft final içeriğine doğrudan kopyalanmaz.
+Forum araştırması yalnız progression pattern, objective ve kategori referansıdır. Exact isim, XP eğrisi, rank değeri, challenge ödülü veya görsel doğrudan production içeriğine kopyalanmaz.
 
 ---
 
-# 2. PRG-01 sözleşmelerini koru
+# 2. PRG-01 / PRG-02 sözleşmelerini koru
 
-PRG-02 yeni bir inventory veya modifier sistemi kurmaz.
+Yeni ikinci progression/inventory/modifier truth oluşturma.
 
 Zorunlu reuse:
 
-- `InventoryState` tek authoritative item miktar/container/build truth
-- PRG-01 transaction ID / duplicate retry / conflict / rollback modeli
-- `ItemDefinition` + stable-ID `DefinitionRegistry`
-- `StatModifierPipeline` tek stat modifier implementation'ı
-- primitive-safe DTO ve stable-ID persistence/network sınırı
+- PRG-01 `InventoryState` ve atomik transaction modeli
+- PRG-01 duplicate transaction / same-ID conflict / lost-ACK idempotency
+- PRG-02 trophy/perk unlock ledger pattern'ı gerekiyorsa reuse
+- stable-ID `DefinitionRegistry`
+- tek `StatModifierPipeline`
+- primitive-safe DTO ve persistence/network sınırı
 - save migration zinciri
-- loot/crafting/reclamation sonucunun aynı authoritative inventory'ye grant edilmesi
-- NET-04/PRG-01 host-authoritative LAN ve lost-ACK idempotency modeli
-- presentation-only client mirror sınırı
+- NET-04/PRG-01/02 host-authoritative session/transaction modeli
 
-Crafting, salvage, upgrade, core veya trophy state'i ikinci bir authoritative item gerçeği oluşturamaz.
+XP, skill/rank/challenge state'i authoritative progression altında tek sahipli kalmalı.
 
 ---
 
-# 3. RecipeDefinition ve crafting veri modeli
+# 3. XP ledger
 
-Minimum `RecipeDefinition`:
+Minimum XP modeli:
 
-- stable recipe ID
-- input listesi: stable item ID + pozitif integer quantity
-- output listesi: stable item ID + pozitif integer quantity
-- gerekiyorsa bounded craft count
-- prerequisite listesi
-- ship/upgrade tier veya unlock requirement yalnız gerekli minimumda
-- recipe category/tag
-- deterministic validation metadata
+- player/owner stable ID
+- total XP — bounded non-negative integer
+- processed XP event ledger
+- event stable ID
+- source/category metadata yalnız primitive-safe
+- grant amount
+- resulting total / level/rank view
 
 Kurallar:
 
-- duplicate/missing recipe ID reddedilir
-- missing item definition reddedilir
-- quantity 0/negative reddedilir
-- integer overflow reddedilir
-- aynı recipe'nin input/output toplamları primitive-safe kalır
-- input ile output aynı stable ID olabilir fakat net mutation transaction içinde doğru hesaplanır
-- recipe runtime Node/Resource referansı persist edilmez
-- içerik Resource olabilir; runtime intent ve save stable ID/primitive değer taşır
+- XP grant yalnız authoritative event/transaction üzerinden
+- quantity 0/negative reddi
+- overflow reddi
+- aynı event ID ikinci XP üretmez
+- aynı event ID farklı actor/payload ile conflict
+- reject edilen event state değiştirmez
+- save/load sonrası processed ledger korunur
+- client XP miktarını veya outcome'u seçemez
+- global/online leaderboard yok
 
-Recipe validator registry/content validation zincirine eklenmeli; dağınık UI string karşılaştırmalarıyla uygulanmamalı.
-
----
-
-# 4. CraftTransaction — atomik consume + grant
-
-Craft tek transaction olarak doğrulanmalı.
-
-Minimum sıra:
-
-1. actor/session/authority doğrulaması
-2. recipe stable ID doğrulaması
-3. prerequisite doğrulaması
-4. craft count boundary
-5. bütün input miktarlarının mevcut olması
-6. bütün output grant/stack/capacity kurallarının önceden doğrulanması
-7. tek atomik commit
-8. deterministic result DTO
-9. transaction ledger terminal result kaydı
-
-Kabul:
-
-- herhangi bir input eksikse hiçbir şey tüketilmez
-- output inventory kapasitesi/stack/weight yüzünden sığmıyorsa inputlar tüketilmez
-- multi-count craft kısmi uygulanmaz
-- duplicate transaction ID aynı actor/payload için cached result döndürür
-- aynı ID farklı actor/payload ile conflict reddedilir
-- lost-ACK retry ikinci tüketim veya grant üretmez
-- snapshot/restore sonrası idempotency korunur
-
-PRG-01 InventoryState transaction primitive'lerini mümkün olduğunca reuse et; crafting için paralel item ledger kurma.
+Event ledger mevcut transaction/idempotency modelini reuse etsin; paralel duplicate sistemi kurma.
 
 ---
 
-# 5. Reclamation / salvage
+# 4. Level ve rank
 
-`SalvageTable` veri odaklı olmalı.
+Level/rank progression veri odaklı olmalı.
 
-Minimum:
+Minimum definition:
 
-- salvage table stable ID
-- izinli source item/category
-- deterministic reward entries
-- bounded min/max quantity
-- probability/weight alanları
-- prerequisite/tag yalnız gerekli minimumda
-- source item consume policy
-
-RNG:
-
-- mevcut kanonik RNG stream altyapısını kullan
-- yeni bağımsız gizli/random seed kaynağı kurma
-- salvage sonucu authority tarafından üretilir
-- RNG state save/load ile devam eder
-- reject edilen salvage RNG tüketmez
-- duplicate retry RNG'yi ikinci kez ilerletmez
-- deterministic fixture aynı seed/state + aynı input için aynı sonucu üretir
-
-Salvage atomikliği:
-
-- source consume + reward grant tek transaction
-- reward kapasiteye sığmıyorsa hiçbir mutasyon bırakma
-- invalid table/item/category reddedilir
-- aynı itemin ekipman/locked state'i varsa uygun policy açık doğrulanmalı
-- equipped item doğrudan salvage edilemez; önce authoritative unequip veya explicit policy gerekir
-
----
-
-# 6. Ship upgrade board — cycle-free DAG
-
-Upgrade progression veri odaklı directed acyclic graph olmalı.
-
-Minimum node:
-
-- stable upgrade ID
-- prerequisite upgrade IDs
-- material/item cost
-- gerekiyorsa currency-benzeri maliyet yalnız mevcut inventory stable item sistemiyle
-- tier/level
-- unlock effect veya modifier source IDs
-- core slot count/type değişikliği gerekiyorsa açık effect
-- mutually-exclusive/branch policy yalnız gerekiyorsa
+- stable level/rank ID veya deterministic numeric tier
+- XP threshold
+- prerequisite/gate gerekiyorsa stable ID
+- unlock hooks
+- skill point grant
+- presentation label content-side olabilir
 
 Validator:
 
-- missing prerequisite reddi
+- threshold sırası monoton
+- duplicate threshold/ID policy açık
+- negative threshold yok
+- unreachable rank yok
+- integer overflow yok
+
+Davranış:
+
+- XP → level/rank sonucu deterministic
+- tek XP grant birden çok level aşabiliyorsa doğru uygulanır
+- level düşüşü yalnız açık respec/reset policy varsa
+- skill point grant bir kez
+- save/load sonrası aynı XP aynı level/rank sonucu üretir
+- level/rank modifier ise `StatModifierPipeline` üzerinden
+
+---
+
+# 5. Skill DAG
+
+Skill definitions stable-ID prerequisite DAG olmalı.
+
+Minimum skill:
+
+- stable skill ID
+- prerequisite skill IDs
+- rank/tier
+- point cost
+- max rank gerekiyorsa bounded
+- modifier source IDs veya unlock effect refs
+- license/test gate gerekiyorsa stable ID
+- mutually-exclusive branch yalnız gerçekten gerekiyorsa açık policy
+
+Validator:
+
 - self-cycle reddi
 - indirect cycle reddi
-- duplicate edge/node reddi
-- unreachable/invalid root policy açık
-- tier regression veya bounded level ihlali reddi
+- missing prerequisite reddi
+- duplicate edge reddi
+- invalid rank/max rank reddi
+- negative/zero point cost policy açık
+- unreachable node policy açık
+- modifier refs valid
 
-Upgrade transaction:
+Skill state runtime primitive-safe:
 
-- prerequisite'ler tamamlanmadan uygulanmaz
-- cost consume + unlock ledger + modifier update tek atomik commit
-- duplicate transaction ikinci cost tüketmez
-- başarısız modifier/core-slot application tam rollback
-- save/load sonrası graph unlock state korunur
-- graph tanımı content'tir; unlocked state runtime primitive-safe'dir
+- unlocked/learned ranks
+- available/unspent points
+- stable IDs
 
 ---
 
-# 7. Core slots
+# 6. Skill spend transaction
 
-Core sistemi yeni stat engine değildir.
+Spend tek atomik transaction:
+
+1. host/actor authority
+2. skill stable ID
+3. prerequisite
+4. gate
+5. current rank/max rank
+6. available point
+7. modifier/effect validity
+8. commit
+
+Kabul:
+
+- failed spend point tüketmez
+- modifier apply failure rollback
+- duplicate transaction ikinci rank/point tüketmez
+- same-ID conflict reddi
+- save/load sonrası ledger idempotency
+- client skill sonucunu yazamaz
+
+---
+
+# 7. Respec
+
+Respec atomik ve deterministic olmalı.
 
 Minimum:
 
-- core item/category definition veya mevcut ItemDefinition uzantısı
-- core slot type
-- allowed core category/type
-- bounded slot count
-- unique/duplicate policy
-- modifier source IDs
-- prerequisite/upgrade gate gerekiyorsa stable ID
+- full respec veya açık bounded subtree policy
+- refundable point calculation
+- non-refundable gate/cost varsa data-driven
+- dependency validation
+- modifier removal
+- restored point total
 
-Kurallar:
+Kabul:
 
-- yanlış core yanlış slota takılamaz
-- core inventory'de gerçekten bulunmalı
-- insert/remove/replace atomik
-- remove sonucu inventory kapasitesi yüzünden sığmıyorsa slot değişmez
-- slot unlock ship upgrade DAG'den geliyorsa deterministic ve testli
-- core statları yalnız `StatModifierPipeline` üzerinden uygulanır
-- aynı core source modifier duplicate uygulanmaz
-- preset sistemi core state'i kapsıyorsa PRG-01 preset atomicity sözleşmesini bozma; kapsam gerektirmiyorsa preset şemasını gereksiz genişletme
+- respec sonrası prerequisite ihlali bırakılamaz
+- kısmi failure tüm state'i rollback eder
+- removed skill modifier'ları tek pipeline'dan kalkar
+- refunded points doğru ve bir kez
+- duplicate respec transaction tekrar refund üretmez
+- gerekiyorsa inventory cost PRG-01 InventoryState ile atomik tüketilir
 
 ---
 
-# 8. Trophy / perk unlock ledger
+# 8. License / test gates
 
-Trophy/perk burada progression unlock ledger olarak kurulur; PRG-03 skill tree'nin yerine geçmez.
+PRG-03 yalnız progression gate altyapısını kurar; quest/dialog content PRG-04 kapsamıdır.
 
-Minimum:
+Gate minimum:
 
-- stable trophy/perk ID
-- unlock prerequisites veya event key
-- unlock state
-- optional modifier/reward refs
-- idempotent event ledger
+- stable gate ID
+- gate type: license/test/milestone/rank gibi bounded enum/string
+- prerequisites
+- completion state
+- optional reward/unlock refs
 
 Kurallar:
 
-- aynı unlock event ikinci unlock/reward üretmez
-- invalid/missing trophy/perk ID reddedilir
-- unlock prerequisite bypass edilemez
-- reward varsa InventoryState üzerinden atomik grant
-- modifier varsa tek `StatModifierPipeline`
-- save/load sonrası unlock ledger korunur
-- client unlock sonucunu seçemez veya authoritative state yazamaz
-
-PRG-03 XP/skill/rank sistemlerini burada geliştirme.
+- gate bypass edilemez
+- completion duplicate reward üretmez
+- missing prerequisite reddedilir
+- cycle gerekiyorsa DAG validator ile reddedilir
+- save/load korunur
+- host-authoritative
+- future PRG-04 quest sistemi bu gate API'yi tüketebilmeli
 
 ---
 
-# 9. Persistence ve migration
+# 9. Local challenge / milestone
 
-Crafting/progression state existing save chain'e eklenir.
+M-035 / M-054 internet gerektirmeyen local meta olarak uygulanır.
 
-Persist edilecek minimum:
+Minimum challenge definition:
 
-- unlocked ship upgrades
-- installed cores
-- trophy/perk unlock ledger
-- craft/salvage transaction terminal ledger gerektiği ölçüde
-- salvage RNG continuation mevcut RNG snapshot içinde
-- gerekli runtime progression metadata
+- stable challenge ID
+- version/reset key
+- objective counter/type
+- target value
+- reward refs
+- recurrence policy: once / session / daily-like local rotation gerekiyorsa explicit
+- deterministic local schedule/version metadata
+
+Kurallar:
+
+- global backend/leaderboard yok
+- internet yokken tam çalışır
+- reward idempotent
+- version change/reset fixture deterministic
+- system clock exploit-resistant mutlak anti-cheat iddiası yok; policy açık
+- save/load progress korunur
+- challenge completion reward InventoryState/XP ledger üzerinden atomik
+- duplicate completion ikinci reward/XP üretmez
+
+“Daily” benzeri local içerik varsa online servis taklidi yapma; local version/seed contract olarak açık uygula.
+
+---
+
+# 10. StatModifierPipeline entegrasyonu
+
+Skill, rank, gate/perk kaynaklı stat etkileri:
+
+`StatModifierPipeline`
+
+üzerinden uygulanmalı.
+
+Kurallar:
+
+- ikinci stat engine yok
+- modifier source stable ID deterministic
+- duplicate source guard
+- spend/respec sonrası doğru add/remove
+- save/load sonrası aynı progression aynı stat sonucu
+- existing equipment/core/trophy modifier kaynaklarıyla deterministic order korunur
+
+---
+
+# 11. Persistence / migration
+
+Persist minimum:
+
+- total XP
+- processed XP ledger
+- level/rank state veya yalnız XP'den türetilebiliyorsa redundant truth yaratmadan gerekli metadata
+- skill ranks
+- unspent/earned point ledger
+- gate completion
+- local challenge progress/version/reward ledger
+- transaction terminal ledger gerektiği ölçüde
 
 Yasak:
 
 - Resource/Object/Node/RID/Callable
-- duplicate inventory truth
-- client presentation cache'i authoritative save'e taşımak
-- network protocol version ile save schema version'ı birbirine bağlamak
+- redundant authoritative level/rank truth drift riski
+- presentation cache
+- online-service dependency
 
-Schema değişirse sequential migration ekle.
-
-Old saves:
-
-- deterministic empty PRG-02 progression default veya açık migration
-- corrupt/invalid DTO sessizce kabul edilmez
-- missing stable IDs açık validation failure veya documented migration davranışı üretir
+Schema değişirse sequential migration ekle. Corrupt/invalid DTO sessiz default ile kabul edilmez.
 
 ---
 
-# 10. LAN / authority
+# 12. LAN / authority
 
-Host-mutating PRG-02 işlemleri:
+Host-mutating PRG-03 işlemleri:
 
-- craft
-- salvage/reclamation
-- ship upgrade
-- core insert/remove/replace
-- trophy/perk unlock/reward mutation
+- XP grant/event application
+- skill spend
+- respec
+- gate completion/reward
+- challenge completion/reward
 
-Client intent yalnız bounded primitive data taşır:
+Client yalnız bounded intent/event request gönderir; authoritative amount/outcome seçemez.
 
-- transaction ID
-- recipe/table/upgrade/core/trophy stable ID
-- craft count/slot index gibi bounded değerler
-- gerekli target owner/player stable ID ancak host mapping ile doğrulanmış biçimde
+Korunacak:
 
-Client:
+- spoof rejection
+- replay rejection
+- malformed/pre-ready rejection
+- lost-ACK retry idempotency
+- protocol mismatch
+- offline parity
 
-- RNG sonucu seçemez
-- output miktarı seçemez
-- unlock sonucunu seçemez
-- inventory/stat/progression authoritative yazamaz
-
-NET-04/PRG-01 transaction ledger'ı reuse/extend et. Wire contract değişirse protocol version yalnız gerçekten gerektiğinde bump edilir ve mismatch açık reddedilir.
-
-Spoof/replay/malformed/pre-ready/lost-ACK regresyonlarını koru.
+Wire contract değişirse protocol version gerektiği kadar bump edilir; save schema ile bağlanmaz.
 
 ---
 
-# 11. Minimal touch presentation
+# 13. Minimal touch presentation
 
-PRG-02 için final UI değil, doğrulanabilir touch akışı yeterlidir.
+Final UI değil; doğrulanabilir touch akışı:
 
-Minimum:
-
-- recipe list/select
-- craft action
-- salvage/reclamation select + confirm
-- upgrade board select/apply
-- core slot select/insert/remove
-- trophy/perk unlock status görünümü
+- XP / rank summary
+- skill tree view
+- zoom/pan
+- node select
+- spend confirm
+- respec confirm
+- license/test gate state
+- local challenge list/progress
 
 Kurallar:
 
-- drag/drop zorunlu değil
-- 48 px veya mevcut mobil contract'a uygun büyük hit target
-- safe-area uyumu
-- fontScale 1.3 okunabilirlik metadata/test
+- safe area
+- fontScale 1.3
+- büyük hit target
 - presentation authority yazmaz
-- confirm/destructive action açık olmalı
-- çok adımlı craft UI düşük bellekli, bounded data listeleri kullanmalı
+- zoom/pan world command'a sızmaz
+- node seçimi ile camera gesture çakışmaz
+- icon placeholder kabul
 
 Final polish POL-01 kapsamıdır.
 
 ---
 
-# 12. CI / test matrisi
+# 14. CI / test matrisi
 
-Exact PRG-02 code SHA üzerinde minimum yeni kapılar:
+Exact PRG-03 code SHA üzerinde minimum:
 
-1. RecipeDefinition schema/registry validation
-2. missing/duplicate recipe/item refs
-3. craft quantity boundaries
-4. atomic craft consume+grant success
-5. craft missing input rejection
-6. craft output-capacity failure full rollback
-7. duplicate craft transaction + same-ID conflict
-8. lost-ACK craft retry idempotency
-9. SalvageTable schema validation
-10. deterministic salvage fixture with persisted RNG continuation
-11. rejected salvage consumes no RNG
-12. salvage consume+reward rollback
-13. upgrade DAG self/indirect cycle rejection
-14. missing prerequisite/invalid edge
-15. upgrade cost + unlock atomicity
-16. core slot compatibility + insert/remove rollback
-17. core modifier pipeline deterministic/duplicate guard
-18. trophy/perk unlock idempotency
-19. save/load + migration + corrupt DTO
-20. LAN host authority / spoof/replay/malformed rejection
-21. PRG-01 inventory/equipment/preset regression
-22. existing VS/CORE/AI/NET regression suite
+1. XP positive/boundary/overflow validation
+2. XP duplicate event idempotency
+3. same-event-ID payload conflict
+4. save/load XP ledger
+5. level/rank threshold validation
+6. multi-level gain
+7. one-time point grants
+8. skill DAG self/indirect cycle
+9. missing prerequisite/invalid ref
+10. skill spend success
+11. insufficient point/gate rejection rollback
+12. duplicate spend/lost-ACK retry
+13. respec atomic refund + modifier removal
+14. respec dependency consistency
+15. gate prerequisite/completion idempotency
+16. local challenge progress/completion/reward
+17. challenge version/reset fixture
+18. offline/no-internet dependency guard
+19. modifier deterministic/duplicate source guard
+20. save/load + migration + corrupt DTO
+21. LAN host authority/spoof/replay/malformed
+22. PRG-01 inventory/equipment regression
+23. PRG-02 craft/upgrade/core/trophy regression
+24. existing VS/CORE/AI/NET full regression
 
-Testleri veya güvenlik kapılarını gevşeterek yeşil sonuç alma. Parse/load/orphan/failing/ignored beklenmeyen durumları başarısızlık say.
+Parse/load/orphan/failing/ignored unexpected conditions failure sayılır.
 
 ---
 
-# 13. Export / artifact
+# 15. Export / artifact
 
-Exact green SHA için:
+Exact green SHA:
 
 Linux:
-
 - debug export
-- executable + PCK doğrulaması
+- executable + PCK
 - exported executable headless boot
 
 Android:
-
 - arm64-v8a debug APK
 - package `com.osmanyildirim.seacraft`
 - targetSdk 37
-- INTERNET ve ACCESS_LOCAL_NETWORK izinleri korunur
+- INTERNET + ACCESS_LOCAL_NETWORK korunur
 - APK integrity/readback
 
 Artifact:
 
-`SeaCraft-PRG02-<exact SHA>`
+`SeaCraft-PRG03-<exact SHA>`
 
-İçerik minimum:
+Minimum içerik:
 
 - Android APK
 - Linux executable/PCK
 - `COMMIT_SHA.txt`
 - `SHA256SUMS.txt`
 
-Actions artifact authenticated readback ile yeniden doğrulanır; artifact adı, ID, exact SHA ve hashler `GOREV_RAPORU.md` kapanışına işlenir.
+Authenticated artifact readback zorunlu.
 
 ---
 
-# 14. Gerçek Android cihaz kapısı
-
-CI gerçek cihaz değildir.
+# 16. Gerçek Android cihaz
 
 Mümkünse:
 
-- recipe list/select/craft
-- salvage confirmation
-- upgrade board touch navigation
-- core insert/remove
-- inventory ↔ craft ekran geçişi
+- skill tree zoom/pan
+- node select/spend
+- respec confirm
 - fontScale 1.3
-- safe area / küçük ekran
+- safe area
+- small-screen readability
 - save/reload progression
-- LAN host/client duplicate retry
+- LAN retry/spend
 
-Fiziksel cihaz yoksa açıkça `not_run` bırak. CI/export'u cihaz kanıtı gibi gösterme.
-
----
-
-# 15. Çalışma sohbeti / GitHub iletişim protokolü
-
-SOHBET-33 başlamadan:
-
-- güncel `main` HEAD'i ve kanonik briefi yeniden oku
-- başka sohbetin commit'ini ezme
-- yalnız PRG-02 kapsamını değiştir
-
-Çalışırken:
-
-- PRG-01 sözleşmelerini koru
-- başkasının bağımsız değişikliklerini koru
-- HEAD ilerlerse günceli yeniden oku ve yalnız çakışmayan alanı yeniden uygula
-- sonuç/test/commit/engel kanıtını GitHub'daki mevcut kanonik kayda işle
-- uzun sonuç raporunu sohbete dökme
-
-Bağımlı PRG-03 ancak PRG-02 exact GitHub kapanışı doğrulandıktan sonra açılır.
+Yapılmadıysa `not_run`; CI gerçek cihaz değildir.
 
 ---
 
-# 16. Kapanış
+# 17. Kapanış
 
 Tamamlandı demeden:
 
-1. exact code SHA'yı doğrula
-2. full CI/test ve PRG-02 verifier marker'larını doğrula
-3. PRG-01 ve eski regresyonların geçtiğini doğrula
-4. Linux + Android exportu doğrula
-5. artifact upload + authenticated readback + hashleri doğrula
-6. fiziksel cihaz yoksa `not_run` yaz
-7. mevcut Avenox PRG-02 taskını duplicate yaratmadan strict done revision ile kapat
-8. tek kapanış receipt üret ve geri oku
-9. `GOREV_RAPORU.md` içine geçmişi koruyan tek PRG-02 bölümü ekle ve geri oku
-10. `AKTIF_GOREV.md` durumunu KAPALI yap
-11. `SESSION_HANDOFF.md` PRG-02 kapanışını ve PRG-03 kapısını yansıtsın
-12. bütün kapılar geçmeden PRG-03'e başlama
+1. exact code SHA
+2. full CI/test + PRG-03 verifier
+3. PRG-01/02 ve tüm eski regresyonlar
+4. Linux + Android export
+5. artifact upload + authenticated readback + hashes
+6. physical device yoksa `not_run`
+7. mevcut Avenox PRG-03 task strict done revision
+8. tek receipt ve readback
+9. `GOREV_RAPORU.md` tek PRG-03 kapanış bölümü
+10. `AKTIF_GOREV.md` KAPALI
+11. `SESSION_HANDOFF.md` PRG-03 kapanış / PRG-04 kapısı
+12. bütün kapılar geçmeden PRG-04'e başlama
 
-İlk commit/workflow queue başarı değildir. Hata varsa logu aç, kök nedeni düzelt ve exact teslim zincirini yeniden doğrula.
+İlk commit veya workflow queue başarı değildir. Hata varsa kök nedeni düzelt ve exact teslim zincirini yeniden doğrula.
