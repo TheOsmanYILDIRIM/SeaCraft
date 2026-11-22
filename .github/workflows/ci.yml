@@ -345,8 +345,22 @@ jobs:
           unzip -q -j "$RUNNER_TEMP/$templates" 'templates/*' -d "$target"
           test -f "$target/linux_debug.x86_64"
           test -f "$target/android_debug.apk"
-          godot --headless --path . --install-android-build-template
+          test -f "$target/android_source.zip"
+
+          # The editor command can hang in headless CI while importing the
+          # freshly installed Gradle tree. Install the exact official template
+          # deterministically instead: this is the same on-disk layout Godot
+          # creates for a custom Android build, with the tree hidden from the
+          # resource scanner.
+          rm -rf android
+          mkdir -p android/build android/plugins
+          unzip -q "$target/android_source.zip" -d android/build
+          touch android/build/.gdignore
+          printf '%s\n' "${GODOT_VERSION}.${GODOT_STATUS}" > android/.build_version
+          chmod +x android/build/gradlew
+          test -x android/build/gradlew
           test -f android/build/build.gradle
+          grep -Fxq "${GODOT_VERSION}.${GODOT_STATUS}" android/.build_version
 
       - name: Install Godot 4.7 Android SDK components
         shell: bash
