@@ -1,6 +1,6 @@
 # SeaCraft — Geliştirme Görev ve Bağımlılık Planı
 
-> Plan snapshot: main @ 50fbbf9783f16652fca4f28e6da24477bcb7df30  
+> Plan revizyon girdisi: main @ 02f0571c762f8ab4c7893227e153e1570dd68627  
 > Hedef motor: Godot 4.7  
 > Platform: Android + masaüstü  
 > Ağ: tamamen offline oynanabilir, isteğe bağlı LAN, host-authoritative  
@@ -9,7 +9,7 @@
 
 ## 0. Planlama ilkeleri
 
-Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR_ASSET_ARASTIRMASI.md ve GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md birlikte okunarak oluşturulmuştur.
+Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR_ASSET_ARASTIRMASI.md ve GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md birlikte okunarak oluşturulmuştur. 22 Kasım 2026 revizyonu, 767 kayda genişleyen resmî forum içerik araştırmasını ve seçilen GDQuest tabanlı 2D deniz yönünü plana işler; görev sırasını değiştirmez.
 
 İstenen temel sıra korunur: proje iskeleti → veri modeli → input/kamera → gemi hareketi → dünya/sector → save → combat → NPC/monster → AI → LAN → loot/equipment/crafting/progression → görev/faction/economy → raid/boss → UI → optimizasyon → içerik doldurma.
 
@@ -33,7 +33,9 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 - M-035 ve M-054 canlı servis olarak kopyalanmaz: global league, login streak ve internet leaderboard yerine save-bazlı challenge/milestone kullanılır.
 - M-036 global guild yerine offline/LAN local company/crew yapısına uyarlanır.
 - M-034 LAN PvP opsiyoneldir; ana progression PvE’ye bağlı kalır.
-- Tüm 661 ICERIK_KATALOGU kaydı doğrudan oyun içeriği değildir. Katalog arketip, stat aralığı ve içerik çeşitliliği kaynağıdır; telifli isim/görsel birebir taşınmaz.
+- Deniz sunumu tamamen 2D CanvasItem kalır. T31 için seçilen referans GDQuest `godot-shaders` içindeki **2D water in top-down view** yaklaşımıdır; yalnız uygun MIT shader/kod yaklaşımı uyarlanır, demo sanat varlıkları alınmaz. Pruva/borda köpüğü, kıç türbülansı, hız ve dönüşe bağlı kıvrılan V-wake ile birkaç saniyede dağılan iz SeaCraft'a özel 2D sistemdir; 3D ocean/FFT/buoyancy kapsam dışıdır.
+- Resmî Seafight EN/TR forumundaki sayı, görsel ve görev akışları **tasarım/veri şeması referansıdır**; SeaCraft'ın final denge değerleri, isimleri ve görselleri özgün kalır. Quest araştırmasındaki başlangıç/bitiş NPC'si, hedef türü, harita/elde-etme koşulu, süre ve ödül alanları PRG-04 şemasına taşınır.
+- Güncel ICERIK_KATALOGU **767** somut kayıt içerir. Katalog arketip, stat aralığı, objective biçimi ve içerik çeşitliliği kaynağıdır; telifli isim/görsel birebir taşınmaz.
 
 ## 2. Görsel üretim ile kod bağımlılığı
 
@@ -652,7 +654,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **BUILT_IN / RECOMMENDED_ADDON:** T22 RECOMMENDED_ADDON A11 GLoot yalnız grid/weight/multi-container ihtiyacı doğrulanırsa; T23 BUILT_IN item/resource DB.
 
-**Sistemler:** InventoryState, stack/slot transaction, weapon/structure/crew slots, extension modifiers, gem/socket/preset, companion slot.
+**Sistemler:** InventoryState, stack/slot transaction, weapon/structure/sail/figurehead/crew/trainer/pet slotları, extension modifiers, ship/pet gem ve socket progression, preset, companion slot.
 
 **Görsel/asset bağımlılığı:** Item ikonları placeholder olabilir; gerçek icon seti polish/content aşamasında.
 
@@ -660,9 +662,9 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **LAN gereksinimi:** Equip/transfer transaction host doğrular; istemci GLoot nesnesi replike edilmez.
 
-**Kabul kriterleri:** Slot type/weight/quantity kuralları atomik; preset savaş/safe-state kuralını ihlal edemez.
+**Kabul kriterleri:** Slot type/weight/quantity kuralları atomik; preset savaş/safe-state kuralını ihlal edemez; equipment/crew/pet/gem statları tek modifier pipeline'dan geçer ve kaynak forum değerleri SeaCraft final dengesi olarak doğrudan kopyalanmaz.
 
-**GitHub Actions doğrulaması:** Equip compatibility; transfer rollback; stack boundaries; preset restrictions; duplicate transaction.
+**GitHub Actions doğrulaması:** Equip compatibility ve kategori/slot şema doğrulaması; transfer rollback; stack boundaries; gem/socket progression; preset restrictions; duplicate transaction.
 
 **Gerçek cihaz doğrulaması:** Touch inventory akışı ve fontScale 1.3.
 
@@ -722,7 +724,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 ## PRG-04 — Quest, journal ve NPC interaction
 
-**Amaç:** Data-driven görevler, bounty/escort/salvage/trade objective’leri ve ödül ledger’ı kurmak.
+**Amaç:** Data-driven görevler, bounty/escort/salvage/trade/capture/damage/collect objective’leri ve ödül ledger’ı kurmak; resmî forum araştırmasında görülen görev zinciri alanlarını SeaCraft'a özgü veri modeline dönüştürmek.
 
 **Mekanik katalog ID’leri:** M-031, M-032.
 
@@ -730,7 +732,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **BUILT_IN / RECOMMENDED_ADDON:** T21 CUSTOM_REQUIRED quest model; T25 A12 Dialogue Manager 4 RECOMMENDED_ADDON yalnız dallı yazarlık büyürse.
 
-**Sistemler:** QuestDefinition, QuestInstance, objective event bus, reward ledger, NPC interaction authority, journal view model.
+**Sistemler:** QuestDefinition, QuestInstance, objective event bus, reward ledger, NPC interaction authority, journal view model; start/turn-in NPC ID, chain prerequisite, region/map constraint, target/acquisition rule, optional time limit, reward bundle ve daily/raid/Atlantis tür etiketleri.
 
 **Görsel/asset bağımlılığı:** Portre/diyalog sanatı zorunlu değil.
 
@@ -738,9 +740,9 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **LAN gereksinimi:** Party share policy açık; completion/reward host doğrular.
 
-**Kabul kriterleri:** Objective eventleri stable ID ile işler; reward bir kez; save/load quest progress korunur; invalid remote completion reddedilir.
+**Kabul kriterleri:** Kill/damage/capture/collect/acquire ve süreli objective eventleri stable ID ile işler; quest chain prerequisite ve region kısıtı doğrulanır; reward bir kez; save/load quest progress korunur; invalid remote completion reddedilir.
 
-**GitHub Actions doğrulaması:** Objective types; branching prerequisite; reward idempotency; save/load; host spoof rejection.
+**GitHub Actions doğrulaması:** Objective type matrisi (kill/damage/capture/collect/acquire/timed); chain/region prerequisite; reward idempotency; save/load; host spoof rejection.
 
 **Gerçek cihaz doğrulaması:** Quest tracking ve dialog UI okunabilirliği.
 
@@ -782,7 +784,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **BUILT_IN / RECOMMENDED_ADDON:** T18 shared combat profiles; T19 sector layers; T21 progression gates; T22/T23 inventory/data; T27 progression.
 
-**Sistemler:** mode tag, submarine loadout, torpedo/breach profile, auto-fire intent, sub sector/transition, shared progression bridge.
+**Sistemler:** mode tag, submarine tier/loadout, launcher + torpedo/breach profile, submarine gem/socket progression, auto-fire intent, sub sector/Deep Haven geçişi, shared progression bridge.
 
 **Görsel/asset bağımlılığı:** Submarine production art ayrı lane; placeholder ile sistem doğrulanabilir.
 
@@ -790,7 +792,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **LAN gereksinimi:** Mode transition ve combat host-authoritative.
 
-**Kabul kriterleri:** Surface ve sub aynı entity/save/network çekirdeğini kullanır; özel silah target/range kuralları ayrı profile’dır.
+**Kabul kriterleri:** Surface ve sub aynı entity/save/network çekirdeğini kullanır; launcher/torpedo/breach ve submarine gem kuralları veri odaklı ayrı profillerdir; forumdaki exact Atlantis değerleri yalnız referans olup SeaCraft dengesi bağımsızdır.
 
 **GitHub Actions doğrulaması:** Mode transition; torpedo/breach; shared inventory/progression; save/load; LAN mode mismatch rejection.
 
@@ -918,21 +920,21 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **Bağımlılıklar:** POL-01.
 
-**BUILT_IN / RECOMMENDED_ADDON:** T31 BUILT_IN CanvasItem shader/wake/foam; T33 audio/localization. Hazır asset raporundaki lisanslı/CC0 kaynaklar yalnız gereken boşluklarda.
+**BUILT_IN / RECOMMENDED_ADDON:** T31 RECOMMENDED_REFERENCE + CUSTOM_REQUIRED: GDQuest `godot-shaders` **2D water in top-down view** CanvasItem yaklaşımı; A13 yalnız shader/kod referansı, demo sanatı kullanılmaz. T33 audio/localization. Hazır asset raporundaki lisanslı/CC0 kaynaklar yalnız gereken boşluklarda.
 
-**Sistemler:** visual profile resolver, 8-direction AtlasTexture mapping, pivot/socket binding, wake/foam, cannon/hit/fire/smoke, sinking presentation, audio buses.
+**Sistemler:** visual profile resolver, 8-direction AtlasTexture mapping, pivot/socket binding, 2D water surface shader, ship-water interaction emitter/mask sistemi, pruva ve borda köpüğü, kıç türbülansı, hız/dönüşe bağlı kıvrılan V-wake, birkaç saniyede dağılan trail, cannon/hit/fire/smoke, sinking presentation, audio buses.
 
 **Görsel/asset bağımlılığı:** İlk zorunlu production kabul: SC-02, SC-03 ve SC-08 pilotları. Ardından minimum set. SC-14 S boss için; tam 15 gemi bu görevin ilk alt kapısını engellemez.
 
-**Android gereksinimi:** Texture residency, overdraw, mip/filter testi, alpha fringe, low-quality VFX mode.
+**Android gereksinimi:** Texture residency, water shader fill-rate/overdraw, trail-mask çözünürlük ve yaşam süresi bütçesi, mip/filter testi, alpha fringe, low-quality water/VFX mode.
 
 **LAN gereksinimi:** Görseller local presentation; gerçek heading/combat/intent host state’inden gelir.
 
-**Kabul kriterleri:** 4×2 N,NE,E,SE/S,SW,W,NW atlas mapping doğru; pivot ≤1 final px; socket/occlusion yönleri doğru; VFX gameplay hitbox değiştirmez.
+**Kabul kriterleri:** 4×2 N,NE,E,SE/S,SW,W,NW atlas mapping doğru; pivot ≤1 final px; socket/occlusion yönleri doğru; GDQuest tabanlı su shader'ı Godot 4.7.2 Compatibility'de parse/render eder; wake hız ve dönüşle tutarlı kıvrılır, köpük katmanları doğru gemi bölgelerinden çıkar ve iz bounded sürede söner; VFX gameplay hitbox/physics değiştirmez; 3D/FFT ocean yoktur.
 
-**GitHub Actions doğrulaması:** Asset path/atlas dimension validation; missing socket/profile checks; import smoke; audio reference completeness.
+**GitHub Actions doğrulaması:** Asset path/atlas dimension validation; missing socket/profile checks; water shader parse/import smoke; wake parameter/range ve bounded trail-lifetime contract testleri; audio reference completeness.
 
-**Gerçek cihaz doğrulaması:** Android Compatibility’de pilot üç gemi 360° dönüş, socket, wake/VFX, shimmer/overdraw ve yoğun filo testi.
+**Gerçek cihaz doğrulaması:** Android Compatibility’de pilot üç gemi 360° dönüş, socket, bow/side/stern foam, kıvrılan V-wake, trail decay, water shimmer/overdraw ve yoğun filo testi.
 
 **Sonraki görevi engelleyen kapı:** Pilot üç gemi teknik art kapısını geçmeden geniş sprite üretimi production-ready sayılmaz.
 
@@ -946,7 +948,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **BUILT_IN / RECOMMENDED_ADDON:** T14 AI LOD; T15 spatial hash; T16 pooling yalnız profiler gerekçesiyle; T29 mobile; T32 profiler; T33 Android export.
 
-**Sistemler:** quality tiers, AI/path budgets, snapshot budgets, VFX cap, optional pools, texture/audio budget, load-time telemetry.
+**Sistemler:** quality tiers, AI/path budgets, snapshot budgets, VFX cap, water shader/wake quality tierleri, trail resolution/lifetime ve eşzamanlı wake bütçesi, optional pools, texture/audio budget, load-time telemetry.
 
 **Görsel/asset bağımlılığı:** Minimum sprite/VFX setinin gerçek dosyaları ölçülür.
 
@@ -954,7 +956,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **LAN gereksinimi:** Android host/client throughput ve reconnect soak.
 
-**Kabul kriterleri:** Hedef cihaz sınıfında tanımlanmış frame/memory/network bütçeleri aşılırsa içerik yoğunluğu otomatik/ayar ile düşebilir; gameplay authority korunur.
+**Kabul kriterleri:** Hedef cihaz sınıfında tanımlanmış frame/memory/network ve water/VFX fill-rate bütçeleri aşılırsa trail çözünürlüğü/yaşam süresi, wake yoğunluğu ve içerik yoğunluğu kalite katmanıyla düşebilir; gameplay authority korunur.
 
 **GitHub Actions doğrulaması:** Performance regression için deterministic entity-count benchmark; headless soak; export artifact size budget; leak-like growth checks mümkün olduğu ölçüde.
 
@@ -972,7 +974,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **BUILT_IN / RECOMMENDED_ADDON:** T17 seed; T21 quest; T23 data registry; T26 economy; T27 progression; T28 loot; T32 test/profiling; T33 localization/audio.
 
-**Sistemler:** content packs, balance tables, region escalation, local challenge rotations, validation reports, offline/LAN acceptance suite.
+**Sistemler:** content packs, özgün balance tables, source/reference metadata, equipment/crew/pet/gem veri paketleri, quest-chain content packs, region escalation, local challenge rotations, validation reports, offline/LAN acceptance suite.
 
 **Görsel/asset bağımlılığı:** Minimum ship set önce; tam 15 gemi ve ileri boss/monster içerikleri katmanlı olarak doldurulur. Hazır assetlerin lisans kaydı dosya-bazlı tutulur.
 
@@ -980,7 +982,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **LAN gereksinimi:** Aynı content hash zorunlu; mismatch join reddi.
 
-**Kabul kriterleri:** M-001…M-060 her biri ya implemented/adapted ya da açıkça out-of-scope adaptation olarak izlenir; offline internet yokken tam oynanabilir; LAN host-authoritative acceptance suite geçer.
+**Kabul kriterleri:** M-001…M-060 her biri ya implemented/adapted ya da açıkça out-of-scope adaptation olarak izlenir; 767 kayıtlı araştırma girdisi source metadata ile izlenir ve SeaCraft'a özgü içerik/balance paketlerine dönüştürülür, forumdaki exact ad/değer/görsel doğrudan production içeriği sayılmaz; offline internet yokken tam oynanabilir; LAN host-authoritative acceptance suite geçer.
 
 **GitHub Actions doğrulaması:** Content schema/ID/ref validation; mechanics coverage manifest; deterministic balance smoke; full offline vertical + LAN parity regression; Android export.
 
@@ -1012,6 +1014,7 @@ Vertical slice tamamlanmış sayılmak için aşağıdaki tek akış doğrulanı
 | A06 Beehave | RECOMMENDED_ADDON | VS-02 pilot, AI-01 genel kullanım | Godot 4.7 testleri + Android export/cihaz; yalnız host AI |
 | A11 GLoot | RECOMMENDED_ADDON | PRG-01 | Grid/weight/multi-container gerçekten gerekiyorsa; basit slotta özel model tercih |
 | A12 Dialogue Manager 4 | RECOMMENDED_ADDON | PRG-04 | Dallı yazarlık büyürse; Android UI/import doğrulaması |
+| A13 GDQuest Godot Shaders | RECOMMENDED_REFERENCE | POL-02 | `2D water in top-down view` shader/kod yaklaşımı; MIT kod tarafı uyarlanabilir, demo sanat varlıkları alınmaz; Godot 4.7.2 Compatibility + Android cihaz doğrulaması zorunlu |
 | A14 GUT | RECOMMENDED_ADDON | FND-01 | Headless Godot 4.7 CI; release export’a dahil edilmez |
 | A01 LANServerBroadcast | OPTIONAL, varsayılan değil | NET-04 | PacketPeerUDP özel çözüm yetersizse ve 4.7/Android doğrulanırsa |
 | A02 netfox | OPTIONAL, varsayılan değil | NET-02 sonrası ölçüm | Yalnız ölçülen interpolation/prediction ihtiyacı varsa |
@@ -1060,7 +1063,7 @@ Vertical slice tamamlanmış sayılmak için aşağıdaki tek akış doğrulanı
 
 ## 6. Kapsama kontrolü
 
-Bu plan M-001’den M-060’a kadar mekanik kataloğunun tamamını en az bir görev paketine bağlar. AI-01…AI-30 maddeleri ise VS-02 ve AI-01…AI-04 görevlerinde uygulanabilir alt davranışlar olarak izlenir. İçerik kataloğunun 661 somut kaydı, ilk vertical slice’ın ön koşulu değildir; POL-04’e kadar veri paketleri halinde kademeli doldurulur.
+Bu plan M-001’den M-060’a kadar mekanik kataloğunun tamamını en az bir görev paketine bağlar. AI-01…AI-30 maddeleri ise VS-02 ve AI-01…AI-04 görevlerinde uygulanabilir alt davranışlar olarak izlenir. İçerik kataloğunun güncel **767** somut kaydı, ilk vertical slice’ın ön koşulu değildir; resmî forumdan gelen exact değer/görseller doğrudan SeaCraft içeriğine kopyalanmadan, schema ve denge referansı olarak POL-04’e kadar veri paketleri halinde kademeli işlenir.
 
 En kritik sıra kapısı şudur:
 
