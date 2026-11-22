@@ -15,7 +15,8 @@ var _item: ItemDefinition
 var _authority_enabled := true
 var _drops: Dictionary = {}
 var _claimed: Dictionary = {}
-var _inventory: Dictionary = {}
+const UNBOUND_INVENTORY_OWNER := "inventory.unbound"
+var _inventory_state: InventoryState = InventoryState.new()
 var _extra_inventory_ids: Dictionary = {}
 var _inventory_owner := ""
 var _reserved_by_item: Dictionary = {}
@@ -30,6 +31,9 @@ func _init(sector: SectorRuntime, streams: SeedStreams, table: LootTable, item: 
 	_table = table
 	_item = item
 	_authority_enabled = authority_enabled
+	_inventory_state.bind_owner(UNBOUND_INVENTORY_OWNER, 128, 1000000000.0)
+	if _item != null and _item.valid():
+		_inventory_state.register_item_definition(_item)
 
 
 func rebind_sector(sector: SectorRuntime) -> bool:
@@ -100,8 +104,7 @@ func grant_from_table(actor: String, event_id: String, table: LootTable) -> Dict
 		if entry == null or not _valid_inventory_item(entry.item_id):
 			result["reason"] = "invalid_reward"
 			return result
-		var current: int = _inventory.get(entry.item_id, 0)
-		if current < 0 or current > MAX_QUANTITY - entry.max_quantity:
+		if not _inventory_state.can_add(_current_inventory_owner(), entry.item_id, entry.max_quantity):
 			result["reason"] = "quantity_overflow"
 			return result
 	var rolled := table.roll(_streams)
@@ -110,7 +113,9 @@ func grant_from_table(actor: String, event_id: String, table: LootTable) -> Dict
 		return result
 	var item_id: String = rolled["item_id"]
 	var quantity := int(rolled["quantity"])
-	_inventory[item_id] = int(_inventory.get(item_id, 0)) + quantity
+	if not _inventory_state.grant_authoritative(_current_inventory_owner(), item_id, quantity):
+		result["reason"] = "quantity_overflow"
+		return result
 	_processed_events[event_id] = event_id
 	result["accepted"] = true
 	result["item_id"] = item_id
@@ -159,12 +164,14 @@ func pickup(player_id: String, command: Dictionary) -> Dictionary:
 	if not quantity is int or not _valid_quantity(quantity):
 		result["reason"] = "invalid_quantity"
 		return result
-	var current: int = _inventory.get(item_id, 0)
-	if current < 0 or current > MAX_QUANTITY - quantity:
+	if not _inventory_state.can_add(_current_inventory_owner(), item_id, int(quantity)):
 		result["reason"] = "quantity_overflow"
 		return result
 	_claimed[drop_id] = true
-	_inventory[item_id] = current + quantity
+	if not _inventory_state.grant_authoritative(_current_inventory_owner(), item_id, int(quantity)):
+		_claimed.erase(drop_id)
+		result["reason"] = "quantity_overflow"
+		return result
 	_drops.erase(drop_id)
 	_sector.remove_entity(drop_id)
 	result["accepted"] = true
@@ -208,7 +215,7 @@ func snapshot_state() -> Dictionary:
 	event_ids.sort()
 	for event_id in event_ids:
 		events[event_id] = _processed_events[event_id]
-	return {"drops": drops, "claimed_ids": claimed_ids, "inventory": _inventory.duplicate(true), "processed_events": events}
+	return {"drops": drops, "claimed_ids": claimed_ids, "inventory": _inventory_state.quantities_snapshot(_current_inventory_owner()), "processed_events": events}
 
 
 func restore_state(value: Variant) -> bool:
@@ -219,13 +226,12 @@ func restore_state(value: Variant) -> bool:
 			_sector.remove_entity(id)
 	_drops.clear()
 	_claimed.clear()
-	_inventory.clear()
 	_processed_events.clear()
 	var state: Dictionary = value
 	for id in state["claimed_ids"]:
 		_claimed[id] = true
-	for item_id in state["inventory"]:
-		_inventory[item_id] = int(state["inventory"][item_id])
+	if not _inventory_state.restore_quantities(_current_inventory_owner(), state["inventory"]):
+		return false
 	for event_id in state["processed_events"]:
 		_processed_events[event_id] = state["processed_events"][event_id]
 	for raw in state["drops"]:
@@ -285,7 +291,15 @@ func validate_state(value: Variant) -> bool:
 
 
 func inventory_quantity(item_id: String) -> int:
-	return _inventory.get(item_id, 0)
+	return _inventory_state.quantity(_current_inventory_owner(), item_id)
+
+
+func inventory_state() -> InventoryState:
+	return _inventory_state
+
+
+func inventory_owner_id() -> String:
+	return _current_inventory_owner()
 
 
 # Trusted world setup only; gameplay cannot grant stock through an intent.
@@ -295,9 +309,14 @@ func bind_inventory_owner(actor: String, initial_stock: Dictionary) -> bool:
 	for item in initial_stock:
 		if not item is String or not SectorIds.valid(item) or not initial_stock[item] is int or not _integer_inventory_quantity(initial_stock[item]):
 			return false
+	if not _inventory_state.reassign_owner(UNBOUND_INVENTORY_OWNER, actor):
+		return false
 	_inventory_owner = actor
 	for item in initial_stock:
 		_extra_inventory_ids[item] = true
+		if not _inventory_state.has_item_spec(item):
+			if not _inventory_state.register_item_spec(item, "material", MAX_QUANTITY):
+				return false
 	return true
 
 
@@ -308,13 +327,15 @@ func reserve_inventory_item(actor: String, item: String) -> bool:
 		return false
 	_extra_inventory_ids[item] = true
 	_reserved_by_item[item] = actor
+	if not _inventory_state.has_item_spec(item) and not _inventory_state.register_item_spec(item, "material", MAX_QUANTITY):
+		return false
 	return true
 
 
 func initialize_missing_stock(initial_stock: Dictionary) -> void:
 	for item in initial_stock:
-		if _extra_inventory_ids.has(item) and not _inventory.has(item) and initial_stock[item] is int and _integer_inventory_quantity(initial_stock[item]):
-			_inventory[item] = initial_stock[item]
+		if _extra_inventory_ids.has(item) and inventory_quantity(item) == 0 and initial_stock[item] is int and _integer_inventory_quantity(initial_stock[item]):
+			_inventory_state.grant_authoritative(_current_inventory_owner(), item, int(initial_stock[item]))
 
 
 func can_consume(actor: String, item: String, amount: int) -> bool:
@@ -324,8 +345,7 @@ func can_consume(actor: String, item: String, amount: int) -> bool:
 func consume(actor: String, item: String, amount: int) -> bool:
 	if not can_consume(actor, item, amount):
 		return false
-	_inventory[item] = inventory_quantity(item) - amount
-	return true
+	return _inventory_state.consume_authoritative(_current_inventory_owner(), item, amount)
 
 
 func claimed_by_inventory_owner(player_id: String, drop_id: String) -> bool:
@@ -380,6 +400,10 @@ static func _integer_inventory_quantity(value: Variant) -> bool:
 		return false
 	var number := float(value)
 	return is_finite(number) and number == floorf(number) and number >= 0.0 and number <= float(MAX_QUANTITY)
+
+
+func _current_inventory_owner() -> String:
+	return _inventory_owner if not _inventory_owner.is_empty() else UNBOUND_INVENTORY_OWNER
 
 
 static func _drop_id(entity_id: String, sequence_id: int) -> String:
