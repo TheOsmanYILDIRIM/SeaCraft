@@ -1,1523 +1,429 @@
-# AKTİF GÖREV — NET-04
+# AKTİF GÖREV — PRG-01
 
 > Bu dosya SeaCraft'ın kanonik aktif uygulama briefidir. Sohbette uzun brief tekrarlanmaz.
 >
-> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir NET-04 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
+> Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-01 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — KAPALI
+## Durum — AKTİF
 
-NET-04 tamamlandı. Exact kod SHA `ba5fd180b9e359b0dcc146b58c52254fe537f317`; Actions #196 / run `45007820093` sonucu `success`; GUT `339/339`; real-process, Linux/Android export ve artifact readback doğrulandı. Avenox Beyin taskı `done` revision 2 olarak kapatıldı. Ayrıntılı kapanış `GOREV_RAPORU.md` içindedir. Bu brief artık tarihsel kapanmış görev sözleşmesidir. Fiziksel Android cihaz matrisi `not_run`; **WAVE 6 başlatılmadı.**
+NET-04 doğrulanmış biçimde kapalıdır. WAVE 6'nın ilk görevi PRG-01 başlatılmıştır. PRG-02, PRG-01 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
 
 ## Kimlik
 
-- Sohbet etiketi: `[SOHBET-31 | SeaCraft NET-04 — Discovery, Reconnect, Late Join ve LAN Transaction Hardening]`
+- Sohbet etiketi: `[SOHBET-32 | SeaCraft PRG-01 — Inventory, Equipment, Crew, Pet/Companion ve Preset]`
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
 - Dal: yalnız `main`
-- Başlangıç HEAD: `64768818e577e2a452aa45cebad90f53d86f9b3e`
-- NET-03 exact kod kapanışı: `f0cd18727870d6d49b961c758e49660e53770479`
+- Uygulama başlangıç kod tabanı: `916d87167ecd6f99c99212f4aae29fb615da041f`
+- NET-04 exact kod kapanışı: `ba5fd180b9e359b0dcc146b58c52254fe537f317`
 - Godot: `4.7.2-stable`
-- Bağımlılık: NET-03 tamamlandı
-- Sonraki göreve geçme: **WAVE 6 / progression görevlerine başlama**
-
-Başlangıç HEAD, NET-03 exact kod SHA'nın yalnız `GOREV_RAPORU.md` kapanış commit'i kadar ilerisindedir. Geçmiş raporu koru.
+- Bağımlılık: NET-04 tamamlandı
+- Avenox Beyin görevi: `tasks/seacraft-prg01-inventory-equipment-crew-pet-preset-20261122.md`
+- Sonraki görev: PRG-02 — PRG-01 kapanmadan başlama
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 
-## Yürütme
-
-İşi aynı oturumda uygula → doğrula → hata varsa kök nedeni toplu düzelt → exact-commit Actions → export → artifact readback → Beyin kapanışı → `GOREV_RAPORU.md` NET-04 bölümü şeklinde tamamla.
-
-Başlamadan güncel `main` HEAD'i yeniden doğrula. Başka sohbetin değişikliğini ezme.
-
-Avenox Beyin'de NET-04 görevi varsa onu kullan; yoksa tek kanonik task aç. Mükerrer task/receipt oluşturma.
+Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-01 kapsamını güvenli biçimde uygula.
 
 ---
 
-# 1. Hız protokolü
-
-NET-03 iki kod commit'i / iki Actions run ile kapandı. NET-04 hedefi:
-
-**1 implementation commit + 1 successful Actions run.**
-
-Gerçek zorunluluk çıkarsa bütün kök nedenleri mümkün olduğunca tek correction commit'inde çöz.
-
-İlk committen önce gerçek diff üzerinde preflight yap. Önceki NET görevlerindeki bilinen hata sınıflarını tekrar etme:
-
-- Godot 4.7 API imzaları
-- SceneTree gerektiren multiplayer/RPC kodunu custom MainLoop altında çalıştırma
-- typed `Array[String]` / Dictionary uyumsuzluğu
-- JSON int/float normalization
-- exact DTO key/field sayıları
-- `var_to_bytes()` Godot 4.7 tek-arg contract
-- event/stable ID biçimi
-- sequence rollover / stale sequence
-- parser ANSI normalization
-- shell readiness/timeout/PID cleanup
-- native/built-in method isim çakışmaları
-- bare `quit()`
-
-NET-01/02/03'ün çalışan process harness'larını ve verifier normalizasyonunu yeniden icat etme.
-
-Diagnostic commit üretme.
-
----
-
-# 2. Kanonik amaç
+# 1. Kanonik amaç
 
 Plan:
 
-**NET-04 — Discovery, reconnect, late join ve LAN transaction hardening**
+**PRG-01 — Inventory, equipment, crew, pet/companion ve preset**
 
 Amaç:
 
-- LAN hostlarını UDP discovery ile bulmak
-- manuel IPv4 yolunu korumak
-- kısa bağlantı kopuşundan sonra aynı oyuncuyu güvenli biçimde resume etmek
-- late join clienta güncel authoritative baseline vermek
-- reconnect/retry altında loot ve sonraki host-mutating progression işlemlerinin duplicate reward üretmesini engellemek
-- Android 17 / target SDK 37 local-network permission davranışına hazırlanmak
-- bozuk/sahte discovery paketlerinin ENet oturumunu etkilemesini engellemek
+- mevcut loot'u gerçek build/progression sisteminin tek inventory truth'una dönüştürmek
+- stack, slot, kapasite/weight ve transfer kurallarını atomik transaction olarak kurmak
+- weapon, structure, sail, figurehead, crew, trainer, pet/companion ekipman katmanlarını veri odaklı hale getirmek
+- ship/pet gem ve socket progression'ı eklemek
+- preset uygulamasını güvenli ve atomik yapmak
+- equipment/crew/pet/gem kaynaklı tüm stat değişikliklerini mevcut tek `StatModifierPipeline` üzerinden geçirmek
+- offline davranışı korurken LAN'da bütün host-mutating işlemleri host-authoritative ve idempotent yapmak
 
 Mekanik katalog:
 
-- M-027
-- M-028
-- M-031
-- M-047
-- M-056
-- M-058
+- M-016
+- M-017
+- M-018
+- M-019
+- M-020
+- M-052
 
-**WAVE 6 progression/quest sistemini burada geliştirme.**
-
----
-
-# 3. Mevcut sözleşmeleri koru
-
-Korunacak production katmanları:
-
-- `SessionProtocol`
-- `SessionHost`
-- `SessionClient`
-- `SessionRpcBridge`
-- `NetworkEntityRegistry`
-- `NetworkEntityProxy`
-- `NetworkReplicationPeer`
-
-NET-01:
-
-- compatibility handshake
-- host-owned peer→player mapping
-- spoof/replay guard
-- manual IPv4
-
-NET-02:
-
-- stable-ID lifecycle
-- snapshot sequencing
-- AOI
-- reliable semantic events
-
-NET-03:
-
-- remote move/target/fire/loot intents
-- host-derived actor/heading
-- host-only AI
-- once-only loot semantics
-- combat disconnect behavior
-
-zayıflatılmayacak.
-
-Simulation/data/persistence katmanlarına ENet/RPC/PacketPeerUDP bağımlılığı ekleme.
+Güncel 767 kayıtlı forum araştırması yalnız şema, kategori, çeşitlilik ve objective/stat ilişki referansıdır. Forumdaki exact isim/değer/görsel SeaCraft final içeriğine veya dengesine doğrudan kopyalanmaz.
 
 ---
 
-# 4. Protocol version
+# 2. Mevcut sözleşmeleri koru
 
-NET-04 reconnect/baseline handshake alanları mevcut exact-shape wire contract'ı değiştireceği için `SessionProtocol.PROTOCOL_VERSION` bump et.
+Korunacak production doğruları:
 
-Eski NET-03 client build'i yeni hostla sessizce bağlanmamalı.
+- `ItemDefinition` ve stable-ID/DefinitionRegistry yaklaşımı
+- `StatModifierPipeline` tek modifier-order implementation'ı
+- primitive-safe DTO ve stable-ID persistence/network sınırı
+- FND-06/CORE save migration zinciri
+- VS-03 / CORE loot akışı
+- CORE-02 world-object/loot idempotency
+- NET-04 transaction ID + lost-ACK retry/idempotency modeli
+- host-authoritative LAN ve presentation-only client mirror sınırı
+- simulation katmanında ENet/RPC/UI/render/input API yasağı
 
-Protocol mismatch mevcut deterministic reject davranışını korusun.
+Mevcut `LootAuthority` içindeki `_inventory: Dictionary` PRG-01'de ikinci bir inventory truth olarak kalmamalı. Loot drop/claimed/processed-event sorumlulukları korunabilir; item miktarı ve build/equipment gerçeği tek bir authoritative `InventoryState` tarafından sahiplenilmeli.
 
-Save schema ile network protocol versionı birbirine bağlama.
-
----
-
-# 5. Discovery mimarisi
-
-Godot built-in:
-
-`PacketPeerUDP`
-
-kullan.
-
-Discovery socket'i ENet game socket'inden tamamen ayrı olmalı.
-
-Minimum üretim sınıfları:
-
-- `LanDiscoveryProtocol` — pure encode/parse/validate
-- `LanDiscoveryHost` — beacon yayınlar
-- `LanDiscoveryClient` — listen/cache/TTL
-- gerekiyorsa küçük `LanPermissionGate`
-
-Discovery sınıfları `src/network/**` altında kalmalı.
-
-mDNS/SSDP/A01 üçüncü parti çözüm ilk tercih değildir.
+`EntityRuntimeState.inventory`, presentation cache, network mirror veya üçüncü parti addon nesnesi ikinci authoritative inventory kaynağına dönüşmemeli.
 
 ---
 
-# 6. Discovery port
+# 3. InventoryState ve atomik transaction çekirdeği
 
-Discovery port game ENet portundan ayrı sabit/konfigüre port olmalı.
+Minimum üretim modeli:
+
+- `InventoryState` — authoritative miktar/stack/container/slot gerçeği
+- bounded stack/slot kayıtları
+- item stable ID
+- quantity
+- container/owner stable ID
+- gerekiyorsa weight/capacity metadata
+- deterministic snapshot/restore
+- primitive-safe validation
+
+İşlemler mümkün olduğunca tek bir transaction sınırından geçmeli:
+
+- add/grant
+- remove/consume
+- transfer
+- equip
+- unequip
+- gem/socket insert/upgrade/remove
+- preset apply
 
 Kurallar:
 
-- game port ile discovery port aynı olamaz
-- `SessionProtocol.valid_port()` benzeri bounded validation
-- bind failure açık sonuç verir
-- port collision session hostu bozmaz
-- discovery kapatılsa manuel IPv4 ENet yolu değişmeden kalır
+- quantity 0/negative reddedilir
+- stack_limit aşılmaz
+- integer overflow yok
+- invalid/missing stable ID reddedilir
+- başarısız transaction hiçbir kısmi mutasyon bırakmaz
+- transfer kaynakta azaltıp hedefte başarısız olursa tam rollback
+- duplicate transaction ID aynı actor/payload için cached terminal result döndürür; ikinci item/stat ödülü üretmez
+- aynı transaction ID farklı payload/actor ile conflict olarak reddedilir
+- snapshot/restore sonrası transaction idempotency devam eder
 
-CI test portları environment üzerinden override edilebilir.
-
----
-
-# 7. Discovery beacon
-
-Beacon raw UDP bytes olarak gönderilsin.
-
-Object/Variant deserialization kullanma; bounded UTF-8 JSON veya eşdeğer object-free encoding tercih et.
-
-Maximum beacon:
-
-**512 byte**
-
-Exact packet alanları minimum:
-
-- magic
-- discovery_version
-- protocol_version
-- schema_version
-- content_version
-- rng_stream_version
-- content_manifest_algorithm
-- content_hash
-- manifest_entry_count
-- session_id
-- host_name
-- game_port
-- player_count
-- max_players
-
-Host name maksimum 32 UTF-8 karakter/byte sınırıyla sanitize edilmeli.
-
-Beacon içinde ASLA bulunmayacak:
-
-- reconnect/resume token
-- save path
-- filesystem data
-- player inventory
-- peer ID
-- auth secret
-- machine username
-- absolute path
+Weight veya multi-container gerçekten gerekiyorsa bounded ve testli uygula. Sırf A11 listede olduğu için GLoot ekleme.
 
 ---
 
-# 8. Discovery compatibility
+# 4. GLoot kararı
 
-Client beaconı parse ettikten sonra mevcut canonical compatibility stamp ile karşılaştırsın.
+A11 GLoot yalnız **grid/weight/multi-container ihtiyacı mevcut custom modelle gereksiz karmaşık hale geliyorsa** ve Godot 4.7.2 + Android + save/LAN sınırlarına uygunluğu kanıtlanabiliyorsa kullanılır.
 
-Compatible olmak için minimum:
+Varsayılan karar:
 
-- discovery version
-- protocol version
-- schema version
-- content version
-- RNG stream version
-- manifest algorithm/hash/count
+- PRG-01'i custom pure-data `InventoryState` ile uygula
+- GLoot'u authoritative/network replicated object olarak kullanma
+- client GLoot nesnesi replike etme
+- addon eklenmezse bunu eksiklik sayma
 
-eşleşmeli.
-
-Incompatible beacon:
-
-- crash oluşturmaz
-- otomatik connect edilmez
-- istenirse `compatible=false` olarak UI/model için tutulabilir
-- ENet handshake'i bypass edemez
-
-Discovery compatibility ENet handshake'in yerine geçmez; handshake yine zorunlu.
+GLoot eklenirse neden gerekli olduğu, lisans/pin, import, export ve authoritative ownership açık testle kanıtlanmalı.
 
 ---
 
-# 9. Discovery cadence / TTL / budget
+# 5. Item/equipment veri şeması
 
-Mobile-first bounded değerler tanımla.
+Mevcut `ItemDefinition` stable-ID sözleşmesini genişletirken backwards compatibility ve registry doğrulamasını koru.
 
-Önerilen production başlangıcı:
+Minimum kategoriler/slot hedefleri:
 
-- beacon interval: 500 ms
-- TTL: 2000–3000 ms
-- max visible sessions: 16
-- max packets processed/frame: 8
-- per-source/global packet rate budget
+- material / consumable / ammo gibi inventory-only öğeler gerektiği kadar
+- weapon
+- structure
+- sail
+- figurehead
+- crew
+- trainer
+- pet / companion
+- ship gem
+- pet gem
 
-Kesin değerleri kodda constant ve testable yap.
+Her equippable item için veri odaklı uygunluk:
 
-TTL göndericinin timestamp'ine güvenmez.
+- izinli slot türü
+- gerekli item/category class
+- stackability
+- unique/duplicate policy gerekiyorsa açık
+- modifier source IDs
+- gem/socket compatibility gerekiyorsa açık
+- requirement/prerequisite alanları yalnız PRG-01 kapsamı için gerekli minimumda
 
-Client kendi monotonic `Time.get_ticks_msec()` last-seen zamanını kullanır.
-
-Expired session cache'den deterministik çıkar.
-
----
-
-# 10. Broadcast davranışı
-
-Production discovery default:
-
-- `PacketPeerUDP.set_broadcast_enabled(true)`
-- LAN broadcast destination
-- ayrı discovery port
-
-olabilir.
-
-CI'da broadcast routing flakiness yaratmamak için production sınıfına **test-only olmayan**, genel configurable destination API verilebilir ve process testinde `127.0.0.1` kullanılır.
-
-Parser/socket yolu aynı production kodu olmalı; mock discovery başarı sayılmaz.
-
-Manual IPv4 fallback her zaman korunmalı çünkü guest Wi-Fi/AP isolation broadcastı engelleyebilir.
+String karşılaştırmalarını dağınık UI koduna gömme; tek şema/validator kullan.
 
 ---
 
-# 11. Discovery güvenlik sınırı
+# 6. Equipment / crew / trainer / pet
 
-Discovery internet-auth, encryption veya secure service discovery değildir.
+Authoritative build state inventory ile aynı sahiplik modelinde kalmalı.
 
-Sahte LAN beaconı mümkün kabul edilir.
+Slotlar:
 
-Bu nedenle beacon:
+- weapon
+- structure
+- sail
+- figurehead
+- crew
+- trainer
+- pet/companion
 
-- yalnız öneri/listing
-- authority vermez
-- reconnect token taşımaz
-- ENet compatibility handshake'i bypass etmez
+Kabul davranışı:
 
-Host adını güvenilir kimlik sayma.
-
----
-
-# 12. Discovery parser hardening
-
-`LanDiscoveryProtocol.parse_packet()` pure/bounded olmalı.
-
-Reddet:
-
-- empty packet
-- >512 byte
-- invalid UTF-8
-- invalid JSON/encoding
-- array/scalar root
-- missing key
-- extra key
-- wrong type
-- NaN/Inf
-- huge string
-- invalid port
-- invalid session ID
-- invalid content hash
-- negative player count
-- player_count > max_players
-- max_players > protocol max
-- wrong magic/version
-
-Parser hiçbir durumda ENet/session state mutate etmemeli.
+- yanlış kategori yanlış slota equip edilemez
+- equip item inventory'de gerçekten bulunmalı
+- equip/unequip atomik olmalı
+- aynı item instance/quantity iki yerde birden authoritative olarak bulunamaz
+- unequip hedef inventory kapasitesi/stack kuralı yüzünden başarısız olursa equipped state değişmemeli
+- crew/trainer/pet yalnız veri/modifier source'tur; ayrı stat sistemi kurmaz
+- pet/companion slotu tek authoritative build truth içinde tutulur
 
 ---
 
-# 13. Discovery fuzz
+# 7. Gem / socket progression
 
-Deterministic fuzz corpus çalıştır.
+Ship ve pet gem progression veri odaklı ayrı profile/category kurallarıyla çalışmalı.
+
+Minimum doğrulamalar:
+
+- socket sahibi stable ID
+- socket türü / gem türü uyumluluğu
+- bounded socket count
+- bounded progression/level
+- upgrade prerequisite ve cost doğrulaması
+- invalid level/type/socket reddi
+- consume + progression mutation tek atomik transaction
+- duplicate transaction ikinci tüketim veya ikinci upgrade üretmez
+- save/load sonrası socket/progression korunur
+
+Exact forum gem değerleri final denge olarak taşınmaz. SeaCraft test fixture değerleri özgün ve küçük tutulur.
+
+---
+
+# 8. Tek modifier pipeline
+
+Equipment, crew, trainer, pet ve gem kaynaklı bütün stat etkileri:
+
+`StatModifierPipeline`
+
+üzerinden uygulanmalı.
+
+Kurallar:
+
+- paralel ikinci modifier engine yok
+- modifier stable ID deterministik
+- aynı kaynak duplicate uygulanmaz
+- equip/unequip sonrası doğru ekle/çıkar
+- preset uygulaması sonunda pipeline tek tutarlı build state görür
+- save/load sonrası aynı build aynı modifier sonucunu üretir
+
+Movement/combat gibi mevcut stat tüketicilerini kırma; yalnız gerekli adapter/source katmanını ekle.
+
+---
+
+# 9. Preset
+
+Preset pure-data stable-ID referanslarıyla çalışmalı.
 
 Minimum:
 
-- fixed seed
-- >= 2000 malformed/random packets
-- edge-length packets
-- nested JSON
-- invalid UTF-8
-- valid packet mutations
-- duplicate/extra/missing fields
+- preset ID
+- hedef equipment/crew/trainer/pet/gem seçimleri
+- validation
+- atomik apply
+- save/load
 
-Kabul:
+Restriction:
 
-- crash yok
-- hang yok
-- oversized allocation yok
-- invalid packet accepted değil
-- mevcut ENet session etkilenmiyor
+- savaşta preset değişimi reddedilir
+- gerekli safe-state/port kuralı açık ve testli olmalı
+- reddedilen preset hiçbir item/equipment/stat durumunu kısmen değiştirmez
+- missing item / incompatible slot / full return inventory gibi herhangi bir alt hata tüm preset transaction'ını rollback eder
+- duplicate transaction idempotent kalır
 
-Marker:
-
-`NET04_DISCOVERY_FUZZ_OK`
+PRG-01 yalnız restriction contract'ını kurar; daha sonraki faction/economy sistemlerini burada geliştirme.
 
 ---
 
-# 14. Session identity
+# 10. Persistence ve migration
 
-Host start edildiğinde tek session-scoped stable ID üret.
+Mevcut save snapshot/migration zincirini kullan.
 
-Format:
+- inventory/build/equipment/pet/gem/preset state primitive-safe olmalı
+- stable ID dışı Resource/Object/Node/RID/Callable persist edilmez
+- save schema değişmesi gerekiyorsa canonical sequential migration ekle
+- eski fixture/save'ler açık deterministic migration veya açık unsupported davranışı göstermeli
+- loot snapshot ile inventory arasında iki kopya authoritative miktar saklama
+- invalid/corrupt inventory DTO sessiz default ile kabul edilmez
+- restore transaction ledger/idempotency tutarlılığını korur
 
-`session.<bounded-random-id>`
-
-ve `SectorIds.valid()` contractına uyumlu olsun.
-
-Aynı host process/session süresince sabit.
-
-Host stop/restart yeni session ID üretir.
-
-Bu ID mevcut `SaveSnapshot.ownership.session_id` contractıyla uyumlu kullanılmalı; ikinci session-ID sistemi yaratma.
+Network protocol version ile save schema version'ı birbirine bağlama.
 
 ---
 
-# 15. Reconnect capability token
+# 11. LAN / NET-04 entegrasyonu
 
-İlk başarılı client sessionında host:
+Host-mutating PRG-01 işlemleri:
 
-- session_id
-- reconnect/resume token
-- mapped player_id
-- sequence resume bilgisi
+- transfer
+- equip/unequip
+- gem/socket mutation
+- preset apply
 
-döndürsün.
-
-Token:
-
-- en az 128 bit unpredictable entropy
-- `Crypto.generate_random_bytes()` veya Godot 4.7'de doğrulanmış eşdeğer
-- bounded text encoding
-- beacon/log/telemetry'de raw yazılmaz
-- hostta tercihen raw yerine hash/digest tutulur
-
-Token **LAN capability token**dır; encryption/login/anti-cheat değildir.
-
----
-
-# 16. Handshake reconnect alanları
-
-Client hello exact-shape sözleşmesine bounded resume alanları ekle.
-
-Fresh join:
-
-- session_id = empty
-- resume_token = empty
-
-Reconnect:
-
-- önceki session_id
-- resume_token
-
-gönderir.
-
-Client player_id göndermez.
-
-Host actor mapping yine kendi reservation state'inden türetilir.
-
----
-
-# 17. Reconnect reservation
-
-Disconnect olduğunda mevcut davranıştaki peer mapping temizliği korunur fakat player slot hemen başka clienta verilmemeli.
-
-Host bounded grace reservation tutmalı.
-
-Öneri:
-
-`RECONNECT_GRACE_MS = 30000`
-
-Reservation minimum:
-
-- session_id
-- player_id
-- token digest
-- expires_at
-- last accepted client sequence
-- transaction state reference/watermark
-
-Grace süresince reserved player yeni fresh peer'e verilmez.
-
-Expired reservation deterministik temizlenir ve slot tekrar kullanılabilir.
-
----
-
-# 18. Reconnect token kuralları
-
-Reject reasons explicit:
-
-- reconnect session mismatch
-- reconnect token malformed
-- reconnect token unknown
-- reconnect token expired
-- reconnect token already consumed
-
-Başarılı reconnect:
-
-- yeni transport peer ID → aynı player_id
-- last sequence continuity korunur
-- client authoritative entity silinmez
-- fresh baseline gönderilir
-- token rotate edilir
-- eski token geçersizleşir
-
-İki peer aynı tokenla yarışırsa yalnız biri kazanır.
-
----
-
-# 19. Sequence continuity
-
-Reconnect yeni peer ID aldığı için NET-01 replay guard sıfırlanmamalı.
-
-Host reservation son accepted client sequence'i korur.
-
-Handshake/baseline result clienta:
-
-- resume/next sequence
-
-bilgisi verir.
-
-Client reconnect sonrası eski sequence'e dönmez.
-
-Eski/replayed envelope reconnect sonrası da rejected.
-
----
-
-# 20. Client reconnect API
-
-`SessionClient` explicit bounded reconnect API kazansın.
-
-Örnek semantic:
-
-- `can_resume()`
-- `resume(address, port)`
-- `clear_resume_credentials()`
-
-Automatic sonsuz retry loop yapma.
-
-Reconnect credentials yalnız memory/session-scoped tutulur; disk/save içine raw token yazma.
-
-Manual IPv4 address/port clientta korunabilir.
-
----
-
-# 21. Late-join baseline state
-
-Fresh late join client READY olmadan önce current authoritative baseline almalı.
-
-Yeni state önerisi:
-
-- connected
-- handshaking
-- baselining
-- ready
-- rejected
-
-Client gameplay intent yalnız `ready` sonrası gönderir.
-
-Handshake compatibility success tek başına READY değildir.
-
----
-
-# 22. Baseline tek truth
-
-Late-join baseline ikinci replication sistemi olmamalı.
-
-Kaynak:
-
-`NetworkEntityRegistry` + mevcut readonly authoritative snapshot source.
-
-Baseline apply:
-
-aynı client registry/proxy lifecycle kodunu reuse etmeli.
-
-`MultiplayerSpawner` ve baseline aynı entity için iki bağımsız truth üretmemeli.
-
-Gerekirse spawner transport olarak kullan; lifecycle/idempotency yine registry generation üzerinden.
-
----
-
-# 23. Baseline payload
-
-Reliable control channel üzerinde versioned bounded DTO.
-
-Minimum header:
-
-- protocol_version
-- baseline_id
-- session_id
-- player_id
-- server_tick
-- snapshot_sequence
-- event_sequence watermark
-- resume_sequence
-- chunk_index
-- chunk_count
-- entity payload rows/spawns
-
-Baseline packet/chunk:
-
-- primitive-safe
-- exact shape
-- stable IDs
-- bounded entity count
-- bounded byte size
-
-Mevcut 96 replicated entity üst sınırını aşma.
-
-Öneri:
-
-- max 24–32 entities/chunk
-- max 8192 byte/chunk
-
-Kesin değerleri testle.
-
----
-
-# 24. Baseline apply/ack
+host tarafından doğrulanır.
 
 Client:
 
-1. baseline begin
-2. mevcut mirror registry'yi authoritative olarak değil mirror olarak resetler
-3. chunkları exact baseline_id/index ile idempotent uygular
-4. duplicate chunk ignore eder
-5. missing/out-of-order invalid complete oluşturmaz
-6. all chunks tamamlanınca current snapshot/event watermarkı set eder
-7. baseline ack yollar
+- yalnız bounded primitive intent + stable IDs + transaction ID gönderir
+- quantity/slot/item hedefi talep eder ama sonucu seçemez
+- authoritative inventory/equipment/stat yazamaz
+- GLoot/Object/Resource replike etmez
 
-Host:
+NET-04 transaction ledger davranışını yeniden icat etme; mevcut idempotency/lost-ACK sözleşmesini mümkün olduğunca reuse/extend et.
 
-- ack'i gerçek peer'den alır
-- baseline_id eşleşmesini doğrular
-- sonra state READY yapar
+Spoof/replay/malformed/pre-ready yolları mevcut network authority sınırlarını zayıflatmamalı.
 
-Baseline ack control RPC olabilir; gameplay mutation değildir.
+Wire contract değişirse protocol version yalnız gerçekten gerektiğinde bump edilir; eski client sessiz uyumlu sayılmaz.
 
 ---
 
-# 25. Late join semantic davranışı
+# 12. Minimal touch UI
 
-World client join olmadan önce ilerlemiş olabilir.
+PRG-01 kapsamı için production authority değil, kullanılabilir touch presentation oluştur.
 
-Late join baseline şunları current state olarak göstermeli:
+- drag/drop zorunlu olmasın
+- tap/select + açık equip/transfer aksiyonları olsun
+- büyük hit target
+- safe-area uyumu
+- fontScale 1.3 ile okunabilirlik
+- gerçek ikon zorunlu değil; placeholder kabul
+- UI hiçbir authoritative state'i doğrudan yazmaz
+- local presentation cache truth değildir
 
-- mevcut player/NPC/monster/loot entity seti
-- current hull/alive
-- current transform
-- current NPC semantic state
-- mevcut AOI görünürlüğü
-- daha önce claimed/despawn edilmiş loot **yok**
-- geçmiş semantic eventler tekrar oynatılmaz
-
-Event watermark baseline öncesi eventleri ignore ettirir.
-
----
-
-# 26. Reconnect baseline
-
-Reconnect client da fresh baseline almalı.
-
-Amaç:
-
-- disconnect süresinde kaçırdığı snapshot/eventleri current state ile toparlamak
-- stale local proxy bırakmamak
-- geçmiş damage/drop eventlerini yeniden işlememek
-
-Reconnect baseline tamamlanmadan intent gönderilemez.
+Geniş final UI/UX polish sonraki UI wave'lerinin kapsamıdır.
 
 ---
 
-# 27. Transaction ID
+# 13. CI / test matrisi
 
-Host-mutating retryable operationlar stable transaction ID kullanmalı.
+Exact PRG-01 code SHA üzerinde minimum yeni kapılar:
 
-NET-04 production kapsamındaki zorunlu işlem:
+1. item category / slot schema validation
+2. equip compatibility matrisi
+3. stack boundaries: 0, 1, stack_limit, overflow
+4. capacity/weight kullanılıyorsa boundary tests
+5. atomic transfer + rollback
+6. equip/unequip rollback
+7. crew/trainer/pet slot kuralları
+8. ship/pet gem + socket type/level/progression
+9. consume+upgrade atomikliği
+10. modifier pipeline deterministic result ve duplicate source guard
+11. preset apply success
+12. preset combat/safe-state rejection
+13. preset partial-failure full rollback
+14. save/load + migration + invalid DTO
+15. duplicate transaction / same-ID conflict / lost-ACK retry
+16. LAN host authority / spoof outcome rejection
+17. mevcut loot grant/pickup ve NET-04 idempotency regresyonu
 
-`pickup_loot`
+Bütün mevcut ilgili VS/CORE/AI/NET regresyonlarını koru. Testleri azaltarak veya güvenlik kapılarını gevşeterek yeşil sonuç alma.
 
-Payload artık minimum:
-
-- drop_id
-- transaction_id
-
-Actor/player identity yine payload'da yok.
-
-Transaction ID bounded primitive string.
-
-Client pending işlem ack gelmeden transport koparsa aynı transaction ID ile retry eder.
-
----
-
-# 28. Host transaction ledger
-
-Pure/bounded bir host transaction ledger oluştur.
-
-Önerilen konum:
-
-`src/network/host_transaction_ledger.gd`
-
-RPC/Node dependency şart değildir; RefCounted pure-data olması tercih edilir.
-
-Key semantic:
-
-`mapped_player_id + transaction_id`
-
-Ledger entry minimum:
-
-- actor_id
-- transaction_id
-- operation kind
-- request fingerprint
-- committed result summary
-- commit sequence
-
-Max entry açık constant olsun; unbounded dictionary yok.
+Parse/load/orphan failure'ları da başarısızlık sayılır.
 
 ---
 
-# 29. Transaction semantics
+# 14. Export / artifact
 
-Aynı transaction ID + aynı actor + aynı operation/fingerprint:
+Exact green SHA için:
 
-- daha önce committed ise mutation tekrar çalışmaz
-- cached terminal result döner
+Linux:
 
-Aynı transaction ID farklı payload/operation ile tekrar kullanılırsa:
+- debug export
+- executable + PCK doğrulaması
+- export edilmiş executable headless boot
 
-- `transaction conflict`
-- mutation yok
+Android:
 
-Yeni transaction ID aynı claimed drop için:
-
-- normal LootAuthority `already_claimed` guard
-- reward yok
-
-Böylece iki ayrı koruma kanıtlanır:
-
-1. network retry idempotency
-2. gameplay duplicate claim idempotency
-
----
-
-# 30. Lost ACK senaryosu
-
-Gerçek process testinde zorunlu.
-
-Akış:
-
-1. client loot claim transaction T gönderir
-2. host claim'i commit eder ve inventory bir kez artar
-3. client accepted response'u görmeden transport kesilir
-4. host reservation/token state'i korur
-5. client resume eder
-6. client T'yi tekrar yollar
-7. host cached committed result döner
-8. LootAuthority ikinci kez çalışmaz
-9. inventory quantity aynı kalır
-10. ikinci drop/reward yok
-
-Marker:
-
-`NET04_TRANSACTION_IDEMPOTENCY_OK`
-
----
-
-# 31. Transaction persistence
-
-Ledger primitive snapshot/restore API taşısın.
-
-Host save/checkpoint authoritative state içinde ledger state persist edilebilsin.
-
-Mevcut `SaveSnapshot.authoritative_state` primitive-safe alanını reuse et.
-
-Top-level save schema gereksiz yere değiştirme.
-
-Eğer gerçek save contract değişikliği zorunlu olursa:
-
-- `DataContractVersions.SCHEMA_VERSION` bump
-- migration
-- CORE-04 migration/regression
-
-zorunlu.
-
-Ama yalnız optional authoritative substate ile yapılabiliyorsa schema bump yapma.
-
----
-
-# 32. Quest/progression kapsamı
-
-NET-04'te quest sistemi, XP, reward UI veya progression gameplay yazma.
-
-Ama transaction ledger generic olacak şekilde tasarlansın ki WAVE 6 host-mutating:
-
-- quest reward
-- contribution reward
-- contract turn-in
-
-gibi işlemler aynı apply-once sözleşmesini kullanabilsin.
-
-Production allowlistte yalnız gerçekten implement edilen operation kind aktif olsun.
-
-“Quest transaction hazır” diye olmayan sistemi yapılmış gösterme.
-
----
-
-# 33. Late join + transaction ilişki
-
-Late join clienta geçmiş transaction history göndermek zorunlu değil.
-
-Baseline current world truth'u taşır.
-
-Claim edilmiş loot baseline'da yok.
-
-Reconnect eden **aynı session clientı** pending transaction retry için kendi transaction ID'sini memory'de tutar; host ledger authoritative karşılığıdır.
-
-Raw full transaction ledger clienta replike edilmez.
-
----
-
-# 34. Discovery + reconnect ilişki
-
-Discovery session_id reconnect için yalnız session selection bilgisi olabilir.
-
-Resume token discovery packetinde bulunmaz.
-
-Client discovery sonucu aynı session_id'yi bulursa stored resume credential ile explicit resume deneyebilir.
-
-Bulamazsa:
-
-- manual IP ile resume denenebilir
-- veya fresh join
-
-UI/state layer karar verir.
-
----
-
-# 35. Manual IPv4 fallback
-
-NET-01 manual IPv4 yolu korunmalı.
-
-Discovery başarısızsa kullanıcı:
-
-- IP
-- game port
-
-ile bağlanabilmeli.
-
-Discovery timeout hiçbir zaman manual join API'yi disable etmez.
-
-Android 17 permission denied durumunda önemli ayrım:
-
-**Manual IP UI/path erişilebilir kalır ama OS local-network permission olmadan gerçek LAN socket trafiği çalışmaz. Permission denial manual IP ile bypass edilmiş gibi gösterilmez.**
-
-Kullanıcıya:
-
-- permission gerekli
-- tekrar izin iste
-- offline devam et
-
-durumu açık verilir.
-
----
-
-# 36. Android 17 local-network permission
-
-22 Kasım 2026 itibarıyla Android'in resmi davranışı:
-
-- Android 17 = API 37
-- target SDK 37+ uygulamalar için LAN trafiği default blocked
-- runtime permission: `android.permission.ACCESS_LOCAL_NETWORK`
-- UDP unicast/multicast/broadcast ve TCP LAN erişimi permission gerektirir
-- target <=36 için INTERNET üzerinden legacy implicit behavior sürer; bu durumda ACCESS_LOCAL_NETWORK istememek gerekir
-
-SeaCraft NET-04 artifact'i target SDK 37 olacak şekilde hazırlanmalı ve yeni permission path gerçek üretim kodunda bulunmalı.
-
-Resmi Android kaynak:
-
-https://developer.android.com/privacy-and-security/local-network-permission
-
----
-
-# 37. Godot 4.7 Android export
-
-Godot 4.7.2 resmi export API şu seçenekleri destekliyor:
-
-- `gradle_build/use_gradle_build`
-- `gradle_build/target_sdk`
-- `permissions/custom_permissions`
-
-Target SDK 37 gerektiği için Android export'u matching Godot 4.7 Gradle template ile target 37 üretecek şekilde kur.
-
-Godot 4.7 command line:
-
-`--install-android-build-template`
-
-destekler.
-
-CI matching 4.7.2 official `android_source.zip`/template kullanmalı; başka Godot sürümü template'i karıştırma.
-
-Resmi Godot kaynakları:
-
-https://docs.godotengine.org/en/4.7/classes/class_editorexportplatformandroid.html
-
-https://docs.godotengine.org/en/4.7/tutorials/export/android_gradle_build.html
-
----
-
-# 38. Android manifest/export
-
-Mevcut:
-
-`permissions/internet=true`
-
-korunacak.
-
-Target 37 artifactte manifestte minimum:
-
+- arm64-v8a debug APK
+- package mevcut contract'ı korur
+- targetSdk 37
 - `android.permission.INTERNET`
 - `android.permission.ACCESS_LOCAL_NETWORK`
+- APK integrity/readback
 
-olmalı.
+Artifact:
 
-Godot 4.7'de yeni permission built-in toggle olarak yoksa:
+`SeaCraft-PRG01-<exact SHA>`
 
-`permissions/custom_permissions`
+İçerik minimum:
 
-kullan.
-
-UDP broadcast için Godot/cihaz davranışı gerektiriyorsa:
-
-`permissions/change_wifi_multicast_state=true`
-
-ekle ve README'de nedenini yaz.
-
-CI APK/AAB badging/manifest readback ile:
-
-- package
-- arm64-v8a
-- targetSdkVersion 37
-- INTERNET
-- ACCESS_LOCAL_NETWORK
-
-doğrulasın.
-
----
-
-# 39. Android runtime permission gate
-
-LAN socket açmadan önce permission gate çalışmalı.
-
-Godot 4.7'nin gerçek API'sini doğrula:
-
-- `OS.request_permission("android.permission.ACCESS_LOCAL_NETWORK")`
-- `MainLoop.on_request_permissions_result`
-
-veya aynı sürümde doğrulanmış eşdeğer.
-
-Permission yalnız kullanıcı LAN/discovery/host/join işlemi başlattığında istenir.
-
-Offline boot sırasında permission dialog açma.
-
-Desktop/Linux'ta Android permission kodu no-op/allowed semantic verir.
-
----
-
-# 40. Permission denial
-
-Android permission denied/revoked ise:
-
-- discovery socket açma
-- ENet host/join socket açma
-- crash etme
-- busy retry loop yapma
-- offline oyun çalışmaya devam eder
-- kullanıcıya bounded reason döner
-
-Örnek reason:
-
-`local_network_permission_denied`
-
-Permission sonradan granted ise LAN action tekrar denenebilir.
-
----
-
-# 41. Guest Wi-Fi / AP isolation
-
-Permission granted olup:
-
-- discovery host bulamıyor
-- manual IP timeout oluyor
-
-durumunu permission denial ile karıştırma.
-
-Network diagnostics en az ayırt edebilmeli:
-
-- permission denied
-- discovery timeout
-- ENet connection failed/timeout
-- incompatible protocol/content
-
-“Guest Wi-Fi/AP isolation olabilir” yalnız kullanıcı mesajı/README troubleshooting önerisidir; otomatik kesin teşhis yapma.
-
----
-
-# 42. App pause/resume
-
-NET-04 reconnect state machine Android background→foreground için hazır olmalı.
-
-Pause sırasında:
-
-- credential kaybolmaz
-- raw token loglanmaz
-
-Resume sırasında:
-
-- transport disconnected ise explicit bounded reconnect API çağrılabilir
-
-Sonsuz background polling yapma.
-
-CI fiziksel Android lifecycle testi değildir.
-
----
-
-# 43. Discovery real-process integration
-
-CI gerçek UDP socket kullanmalı.
-
-Minimum:
-
-- discovery host process
-- discovery client process
-- production PacketPeerUDP classes
-- test destination `127.0.0.1`
-- ayrı discovery port
-- compatible beacon bulunur
-- exact session/game port görülür
-- host beacon durunca TTL sonrası listeden çıkar
-
-Marker:
-
-`NET04_DISCOVERY_PROCESS_OK`
-
----
-
-# 44. NET-04 ana real-process scenario
-
-Tek verimli harness mümkünse:
-
-- 1 host
-- client A
-- client B late join
-
-Akış:
-
-1. host start → session_id + discovery beacon
-2. A discovery ile hostu bulur
-3. A fresh join / baseline / READY
-4. host world state ilerler
-5. loot transaction T hostta commit olur
-6. A accepted ACK almadan transport kopar
-7. host A/player slotunu grace reservation olarak tutar
-8. B fresh late join olur
-9. B current baseline alır; claimed loot yok, current NPC hull/AI state doğru
-10. A aynı session/token ile yeni peer ID üzerinden resume olur
-11. A aynı player_id'ye map edilir
-12. A baseline ile current state'i alır
-13. A transaction T retry eder
-14. cached committed result döner; inventory ikinci kez artmaz
-15. old token veya malformed token reject edilir
-16. invalid discovery packets UDP listenera gönderilir; ENet oturumu bozulmaz
-17. clean disconnect/host shutdown
-18. beacon TTL ile expire
-
----
-
-# 45. Late join negative gates
-
-Test et:
-
-- baseline chunk wrong baseline_id
-- duplicate chunk
-- chunk_index out of range
-- missing chunk
-- oversized chunk
-- malformed entity row
-- protocol mismatch baseline
-- stale snapshot/event arriving before/after baseline watermark
-
-Hiçbiri READY state'i yanlış açmamalı.
-
----
-
-# 46. Resume negative gates
-
-Test et:
-
-- wrong session ID
-- malformed token
-- unknown token
-- expired token
-- consumed/old rotated token
-- same token race
-- reconnect after player reservation expired
-- sequence rollback attempt
-
-Host player/entity/inventory yanlış kişiye bağlanmamalı.
-
----
-
-# 47. Transaction negative gates
-
-Test et:
-
-- same transaction + same payload → cached, no duplicate
-- same transaction + different drop → conflict
-- different transaction + already claimed drop → already_claimed
-- malformed transaction ID → reject
-- wrong actor identity payload injection → existing spoof guard
-- reconnect retry after lost ACK → once
-- save snapshot/restore ledger → same transaction once
-
----
-
-# 48. Discovery malformed packet during active session
-
-Real process veya güçlü integration test:
-
-- ENet host/client aktif
-- UDP discovery listenera malformed/oversized/wrong-version paket burst gönder
-- parser rejects
-- session READY kalır
-- authoritative world state değişmez
-- process crash olmaz
-
-Discovery hiçbir zaman SessionHost mutation çağırmamalı.
-
----
-
-# 49. Offline behavior
-
-Default game boot:
-
-- discovery açmaz
-- permission istemez
-- PacketPeerUDP bind etmez
-- ENet host/client başlatmaz
-- reconnect timer başlatmaz
-
-Offline VS-04 aynı davranışta kalır.
-
-Marker:
-
-`NET04_OFFLINE_BOOT_OK`
-
----
-
-# 50. Host restart sınırı
-
-NET-04 reconnect **transport/session reconnect**tir.
-
-Host process tamamen kapanıp tekrar açılırsa eski reconnect token geçerli olmak zorunda değil.
-
-Save/transaction ledger duplicate rewardı koruyabilir; fakat host migration veya crash-resume network session bu görevde yok.
-
-Bunu README'de açık yaz.
-
----
-
-# 51. Host migration kapsam dışı
-
-Yapma:
-
-- host migration
-- internet relay
-- NAT punch
-- cloud lobby
-- account auth
-- encryption protocol
-- persistent online identity
-
-SeaCraft LAN/offline-first kalır.
-
----
-
-# 52. Test stratejisi
-
-Mevcut **325 test korunmalı**.
-
-NET-04 için tercihen 11–15 güçlü test.
-
-Minimum:
-
-1. discovery exact protocol encode/decode
-2. discovery malformed/fuzz
-3. discovery TTL/rate/session dedupe
-4. reconnect token/session reservation
-5. reconnect sequence continuity/token rotation
-6. late-join baseline chunk/apply/ack
-7. stale event/snapshot watermark
-8. transaction idempotency/conflict
-9. transaction save/restore
-10. Android permission state contract
-11. offline/manual fallback
-12. real UDP discovery
-13. real reconnect + late join + lost-ACK transaction
-
-Test sayısını mikro assertlerle şişirme.
-
----
-
-# 53. NET-04 markerları
-
-Minimum:
-
-- `NET04_DISCOVERY_PROTOCOL_OK`
-- `NET04_DISCOVERY_FUZZ_OK`
-- `NET04_DISCOVERY_TTL_OK`
-- `NET04_RECONNECT_TOKEN_OK`
-- `NET04_RECONNECT_SEQUENCE_OK`
-- `NET04_LATE_JOIN_BASELINE_OK`
-- `NET04_TRANSACTION_IDEMPOTENCY_OK`
-- `NET04_TRANSACTION_PERSISTENCE_OK`
-- `NET04_PERMISSION_FALLBACK_OK`
-- `NET04_OFFLINE_BOOT_OK`
-- `NET04_DISCOVERY_PROCESS_OK`
-- `NET04_PROCESS_INTEGRATION_OK`
-
-Final verifier:
-
-`NET04_VERIFIER_OK ...`
-
----
-
-# 54. Regression
-
-Exact NET-04 code committe:
-
-- NET-03 9/9 + real vertical slice/disconnect
-- NET-02 11/11 + real 1 host/2 client
-- NET-01 10/10 + real ENet
-- AI-04 10/10
-- AI-03 10/10
-- AI-02 11/11
-- AI-01 10/10
-- CORE-04/03/02/01
-- VS-04 25 test + replay + soak
-
-geçmeli.
-
-Beehave orphan = 0.
-
----
-
-# 55. CI verimliliği
-
-Full GUT yalnız bir kez.
-
-NET-01/02/03/04 verifier aynı GUT logunu kullanabilsin.
-
-NET-04 process scenario mümkün olduğunca tek host lifecycle'ında discovery + late join + reconnect + transaction retry doğrulasın.
-
-Her assertion için ayrı host açma.
-
-Fuzz unit/pure parser üzerinden hızlı çalışsın.
-
----
-
-# 56. CI Android setup
-
-NET-04 için target SDK 37 artifact gerekiyorsa workflow:
-
-- matching Godot 4.7.2 templates
-- Android platform 37
-- Java 17
-- Godot 4.7'nin compatible Gradle template/toolchain'i
-
-kullanmalı.
-
-Godot 4.7 docs Android 35 önerisini kör kopyalama; NET-04 target 37 gereksinimi için gereken platformu kur.
-
-Build-tools/Gradle/AGP sürümünü tahmin etme; actual Godot 4.7 template'in istediği compatible sürümü doğrula.
-
-Başka Godot sürümüne geçme.
-
----
-
-# 57. CI Android checks
-
-Export sonrası:
-
-- APK integrity
-- arm64-v8a
-- targetSdkVersion 37
-- INTERNET permission
-- ACCESS_LOCAL_NETWORK permission
-- package `com.osmanyildirim.seacraft`
-
-doğrula.
-
-Runtime allow/deny gerçek fiziksel Android olmadan “passed” yazılmaz.
-
----
-
-# 58. Static network guard
-
-Mevcut guard korunacak.
-
-Ek guard mümkünse:
-
-- `PacketPeerUDP` yalnız `src/network/**`
-- raw resume token print/log yasak
-- discovery packet reconnect_token içermiyor
-- simulation/data/persistence altında multiplayer/discovery API yok
-- client-authored player identity/outcome mutation yok
-
-False-positive nedeniyle normal Crypto/hash/session kodunu yasaklama.
-
----
-
-# 59. Preflight — ilk committen önce
-
-Tek tek doğrula:
-
-- current HEAD değişmedi
-- NET-03 report korunuyor
-- Godot 4.7.2 PacketPeerUDP gerçek API:
-  - bind
-  - set_broadcast_enabled
-  - set_dest_address
-  - get_available_packet_count
-  - get_packet
-  - get_packet_ip/port
-- discovery packet <=512 byte
-- UDP process test real socket
-- discovery port game porttan ayrı
-- reconnect token >=128 bit entropy
-- raw token hiçbir log/marker içinde yok
-- token rotation çalışıyor
-- old token reject
-- reservation expiry testable
-- peer→player actor host-owned
-- reconnect last sequence korunuyor
-- baseline READY'den önce
-- baseline chunk exact-shape/bounded
-- event watermark eski event replayini engelliyor
-- transaction same-ID replay mutation yapmıyor
-- transaction conflict reject
-- transaction ledger bounded
-- ledger snapshot primitive-safe
-- SaveSnapshot schema gereksiz bump edilmedi
-- schema bump varsa migration mevcut
-- Android target 37 export gerçekten oluşuyor
-- APK ACCESS_LOCAL_NETWORK içeriyor
-- offline boot permission istemiyor
-- permission denied socket açmıyor
-- manual IP API korunuyor
-- process cleanup/trap bütün PID'leri temizliyor
-- marker names verifier ile exact
-- artifact adı NET04
-- README Wave 6'yı yapılmış göstermiyor
-
-Belirsizse commit atma.
-
----
-
-# 60. README
-
-Yalnız gerçekten implement edilen NET-04'ü belge:
-
-- UDP broadcast discovery
-- separate discovery/game ports
-- packet size/rate/TTL
-- compatibility listing
-- manual IPv4 fallback
-- reconnect grace/token
-- token rotation/session scope
-- late join reliable baseline
-- event/snapshot watermark
-- transaction idempotency
-- lost-ACK retry
-- Android 17 local-network permission
-- permission denied/offline behavior
-- guest/AP isolation troubleshooting
-- host restart sınırı
-- no host migration/auth/encryption/relay
-
----
-
-# 61. Artifact
-
-Artifact adı:
-
-`SeaCraft-NET04-<exact SHA>`
-
-İçerik:
-
+- Android APK
+- Linux executable/PCK
 - `COMMIT_SHA.txt`
 - `SHA256SUMS.txt`
-- Android APK
-- Linux executable
-- Linux PCK
 
-Upload sonrası authenticated readback yap.
-
-ZIP/APK/Linux/PCK hashlerini exact code SHA için yeniden doğrula.
+Actions artifact'i authenticated readback ile yeniden doğrula; artifact adı, ID, exact SHA ve hashler `GOREV_RAPORU.md` kapanışına işlenir.
 
 ---
 
-# 62. Gerçek Android cihaz
+# 15. Gerçek Android cihaz kapısı
 
-Bu görevde gerçek cihaz doğrulaması önemli fakat CI fiziksel cihaz değildir.
+CI gerçek cihaz değildir.
 
-Mevcut araçlarla cihaz yoksa açıkça `not_run`:
+Mümkünse:
 
-- Android 17 / target37 permission prompt allow
-- permission deny
-- permission revoke
-- desktop host ↔ Android client
-- Android host ↔ desktop client
-- discovery broadcast aynı Wi-Fi
-- guest/AP isolation mümkünse
-- manual IP
-- background→foreground reconnect
-- 10+ dakika LAN session
+- touch inventory/select/equip/transfer
+- drag/drop olmadan tam temel akış
+- fontScale 1.3
+- safe area
+- küçük ekran hit targets
+- save/reload build
+- LAN host/client equip/transfer retry
 
-Bunları CI success gibi yazma.
+Fiziksel cihaz yoksa bunları açıkça `not_run` bırak. CI/export'u cihaz kanıtı gibi gösterme.
 
 ---
 
-# 63. Beyin kapanışı
+# 16. Çalışma sohbeti / GitHub iletişim protokolü
 
-NET-04 task bir kez açılır.
+SOHBET-32 başlamadan:
 
-Ara fail'ler için Beyin update yapma.
+- güncel `main` HEAD'i ve kanonik briefi yeniden oku
+- sahiplik alanını belirle
+- başka sohbetin commit'ini ezme
 
-Exact successful code SHA + Actions + artifact readback sonrası:
+Çalışırken:
 
-- task revision → done
-- tek receipt
-- geri okuma
+- yalnız PRG-01 kapsamını değiştir
+- başkasının bağımsız değişikliklerini koru
+- HEAD ilerlerse günceli yeniden oku ve sadece çakışmayan alanı yeniden uygula
+- sonuç/test/commit/engel kanıtını GitHub'daki mevcut kanonik kayda işle
+- uzun sonuç raporunu sohbete dökme
 
-Facts minimum:
-
-- exact code SHA
-- implementation/correction commits
-- Actions run counts
-- total tests / NET-04 tests
-- discovery fuzz count
-- real UDP discovery
-- reconnect same player/token rotation
-- late join baseline
-- lost ACK transaction once
-- transaction persistence
-- protocol mismatch
-- offline/manual fallback
-- Android targetSdk/manifest
-- NET-03/02/01 regressions
-- AI/CORE/VS regressions
-- orphan count
-- artifact ID/name/hashes
-- physical Android status
-- WAVE 6 not_started
+Bağımlı PRG-02 ancak PRG-01 exact GitHub kapanışı doğrulandıktan sonra açılır.
 
 ---
 
-# 64. GOREV_RAPORU.md
+# 17. Kapanış
 
-Görev bitince mevcut geçmişi koru.
+Tamamlandı demeden:
 
-Aynı dosyaya:
+1. exact code SHA'yı doğrula
+2. full CI/test ve PRG-01 verifier/marker'larını doğrula
+3. eski regresyonların geçtiğini doğrula
+4. Linux + Android exportu doğrula
+5. artifact upload + authenticated readback + hashleri doğrula
+6. fiziksel cihaz yoksa `not_run` yaz
+7. mevcut Avenox PRG-01 taskını duplicate yaratmadan strict done revision ile kapat
+8. tek kapanış receipt üret ve geri oku
+9. `GOREV_RAPORU.md` içine geçmişi koruyan tek PRG-01 bölümü ekle ve geri oku
+10. `SESSION_HANDOFF.md` güncel kapalı durumu ve sıradaki PRG-02 kapısını yansıtsın
+11. bütün kapılar geçmeden PRG-02'ye başlama
 
-`## SOHBET-31 — SeaCraft NET-04 — Discovery, Reconnect, Late Join ve LAN Transaction Hardening`
-
-bölümü ekle.
-
-Yeni rapor dosyası oluşturma.
-
-Yalnız doğrulanmış kanıtları yaz:
-
-- exact SHA
-- run/commit sayıları
-- tests
-- discovery protocol/fuzz
-- UDP process
-- reconnect
-- token rotation/expiry
-- late join baseline
-- transaction lost-ACK/idempotency
-- persistence
-- permission/export
-- regressions
-- orphan
-- artifact
-- Beyin
-- Android not_run/passed
-
-Sohbete uzun raporu kopyalama.
-
----
-
-# Son kapı
-
-NET-04 ancak aşağıdakiler doğrulanırsa tamamdır:
-
-- production PacketPeerUDP discovery çalışıyor
-- discovery ENet game portundan ayrı
-- beacon <=512 byte ve exact bounded DTO
-- malformed/fuzz paketleri crash/session mutation yapmıyor
-- TTL/rate/cache bounded
-- manual IPv4 yolu korunuyor
-- fresh session host-owned session_id üretiyor
-- resume token unpredictable ve raw loglanmıyor
-- disconnect reservation player slotunu grace süresince koruyor
-- reconnect yeni peer ID ile aynı player'a dönüyor
-- sequence continuity korunuyor
-- token rotate ediliyor; eski token geçersiz
-- late join READY'den önce current reliable baseline alıyor
-- claimed/despawn edilmiş loot late baseline'da geri gelmiyor
-- historical events baseline sonrası replay olmuyor
-- reconnect baseline stale mirrorı temizliyor
-- transaction lost-ACK retry ikinci reward üretmiyor
-- same transaction/different payload conflict reject
-- different transaction/already-claimed drop ikinci reward üretmiyor
-- transaction ledger bounded ve save/restore sonrası idempotent
-- Android targetSdk 37 artifact üretiliyor
-- APK INTERNET + ACCESS_LOCAL_NETWORK içeriyor
-- offline boot permission istemiyor/socket açmıyor
-- permission denial graceful; offline devam ediyor
-- gerçek process discovery + reconnect + late join + transaction scenario geçiyor
-- NET-03/02/01 regressions geçiyor
-- AI/CORE/VS regressions geçiyor
-- orphan=0
-- Linux export/boot geçiyor
-- Android arm64 export geçiyor
-- exact artifact readback geçiyor
-- Beyin strict kapanışı geri okunuyor
-- `GOREV_RAPORU.md` NET-04 kanıtlarıyla güncel
-
-Eksikse düzeltmeye devam et.
-
-**WAVE 6 progression görevlerine başlama.**
-
-## Nihai sohbet cevabı
-
-Yalnız kısa söyle:
-
-- NET-04 tamamlandı / gerçek engel
-- exact SHA
-- successful Actions run
-- test total
-- artifact
-- ayrıntılı raporun `GOREV_RAPORU.md` içinde olduğu
-
-Uzun kapanış raporunu sohbete yazma.
+İlk commit/workflow queue başarı değildir. Hata varsa logu aç, kök nedeni düzelt, aynı exact teslim zincirini yeniden doğrula.
