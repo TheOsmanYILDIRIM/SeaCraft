@@ -4,6 +4,12 @@ extends RefCounted
 const MAX_ENTRIES := 128
 const MAX_TRANSACTION_ID_LENGTH := 96
 const OP_PICKUP_LOOT := "pickup_loot"
+const OP_INVENTORY_TRANSFER := InventoryState.OP_TRANSFER
+const OP_INVENTORY_EQUIP := InventoryState.OP_EQUIP
+const OP_INVENTORY_UNEQUIP := InventoryState.OP_UNEQUIP
+const OP_INVENTORY_SOCKET_INSERT := InventoryState.OP_SOCKET_INSERT
+const OP_INVENTORY_SOCKET_UPGRADE := InventoryState.OP_SOCKET_UPGRADE
+const OP_INVENTORY_PRESET_APPLY := InventoryState.OP_PRESET_APPLY
 const STATUS_NEW := "new"
 const STATUS_CACHED := "cached"
 const STATUS_CONFLICT := "conflict"
