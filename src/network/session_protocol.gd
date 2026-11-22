@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 3
+const PROTOCOL_VERSION: int = 4
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -94,13 +94,26 @@ const BASELINE_KEYS := [
 const SELECT_COMBAT_TARGET := "select_combat_target"
 const FIRE_WEAPON := "fire_weapon"
 const PICKUP_LOOT := "pickup_loot"
-const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT]
+const INVENTORY_TRANSFER := InventoryState.OP_TRANSFER
+const INVENTORY_EQUIP := InventoryState.OP_EQUIP
+const INVENTORY_UNEQUIP := InventoryState.OP_UNEQUIP
+const INVENTORY_SOCKET_INSERT := InventoryState.OP_SOCKET_INSERT
+const INVENTORY_SOCKET_UPGRADE := InventoryState.OP_SOCKET_UPGRADE
+const INVENTORY_PRESET_APPLY := InventoryState.OP_PRESET_APPLY
+const PROGRESSION_INTENTS := [INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY]
+const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT] + PROGRESSION_INTENTS
 const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
 const REJECT_AOI := "outside authority interest"
 const NETWORK_INTENTS := [
 	SELECT_COMBAT_TARGET,
 	FIRE_WEAPON,
 	PICKUP_LOOT,
+	INVENTORY_TRANSFER,
+	INVENTORY_EQUIP,
+	INVENTORY_UNEQUIP,
+	INVENTORY_SOCKET_INSERT,
+	INVENTORY_SOCKET_UPGRADE,
+	INVENTORY_PRESET_APPLY,
 	BASELINE_ACK,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
@@ -559,6 +572,24 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 				return REJECT_MALFORMED_PAYLOAD
 		PICKUP_LOOT:
 			if not _has_exact_keys(payload, ["drop_id", "transaction_id"]) or not valid_stable_id(payload["drop_id"]) or not valid_transaction_id(str(payload["transaction_id"])):
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_TRANSFER:
+			if not _has_exact_keys(payload, ["transaction_id", "source_container", "target_container", "item_id", "quantity"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["source_container"]) or not valid_stable_id(payload["target_container"]) or not valid_stable_id(payload["item_id"]) or not _is_int(payload["quantity"]) or int(payload["quantity"]) <= 0:
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_EQUIP:
+			if not _has_exact_keys(payload, ["transaction_id", "slot", "item_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or str(payload["slot"]) not in InventoryState.SLOT_TYPES or not valid_stable_id(payload["item_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_UNEQUIP:
+			if not _has_exact_keys(payload, ["transaction_id", "slot"]) or not valid_transaction_id(str(payload["transaction_id"])) or str(payload["slot"]) not in InventoryState.SLOT_TYPES:
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_SOCKET_INSERT:
+			if not _has_exact_keys(payload, ["transaction_id", "socket_id", "item_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["socket_id"]) or not valid_stable_id(payload["item_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_SOCKET_UPGRADE:
+			if not _has_exact_keys(payload, ["transaction_id", "socket_id", "cost_item_id", "cost_quantity"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["socket_id"]) or not valid_stable_id(payload["cost_item_id"]) or not _is_int(payload["cost_quantity"]) or int(payload["cost_quantity"]) <= 0:
+				return REJECT_MALFORMED_PAYLOAD
+		INVENTORY_PRESET_APPLY:
+			if not _has_exact_keys(payload, ["transaction_id", "preset_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["preset_id"]):
 				return REJECT_MALFORMED_PAYLOAD
 		BASELINE_ACK:
 			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):
