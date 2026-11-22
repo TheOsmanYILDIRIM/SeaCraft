@@ -171,9 +171,6 @@ func _load_entry(stable_id: String) -> Resource:
 		if definition is NpcRoleProfile and not (definition as NpcRoleProfile).valid():
 			_fail("invalid AI role profile: %s" % stable_id, ERR_INVALID_DATA)
 			return null
-		if definition is ItemDefinition and not (definition as ItemDefinition).valid():
-			_fail("invalid item definition: %s" % stable_id, ERR_INVALID_DATA)
-			return null
 		actual_type = definition.definition_type()
 		actual_refs = definition.referenced_stable_ids()
 		content = definition
