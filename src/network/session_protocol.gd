@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 5
+const PROTOCOL_VERSION: int = 6
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -107,9 +107,14 @@ const PROGRESSION_CORE_INSERT := InventoryState.OP_CORE_INSERT
 const PROGRESSION_CORE_REMOVE := InventoryState.OP_CORE_REMOVE
 const PROGRESSION_CORE_REPLACE := InventoryState.OP_CORE_REPLACE
 const PROGRESSION_TROPHY_UNLOCK := InventoryState.OP_TROPHY_UNLOCK
+const PROGRESSION_SKILL_SPEND := InventoryState.OP_SKILL_SPEND
+const PROGRESSION_RESPEC := InventoryState.OP_RESPEC
+const PROGRESSION_GATE_COMPLETE := InventoryState.OP_GATE_COMPLETE
+const PROGRESSION_CHALLENGE_EVENT := InventoryState.OP_CHALLENGE_EVENT
 const PROGRESSION_INTENTS := [
 	INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY,
 	PROGRESSION_CRAFT, PROGRESSION_SALVAGE, PROGRESSION_SHIP_UPGRADE, PROGRESSION_CORE_INSERT, PROGRESSION_CORE_REMOVE, PROGRESSION_CORE_REPLACE, PROGRESSION_TROPHY_UNLOCK,
+	PROGRESSION_SKILL_SPEND, PROGRESSION_RESPEC, PROGRESSION_GATE_COMPLETE, PROGRESSION_CHALLENGE_EVENT,
 ]
 const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT] + PROGRESSION_INTENTS
 const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
@@ -131,6 +136,10 @@ const NETWORK_INTENTS := [
 	PROGRESSION_CORE_REMOVE,
 	PROGRESSION_CORE_REPLACE,
 	PROGRESSION_TROPHY_UNLOCK,
+	PROGRESSION_SKILL_SPEND,
+	PROGRESSION_RESPEC,
+	PROGRESSION_GATE_COMPLETE,
+	PROGRESSION_CHALLENGE_EVENT,
 	BASELINE_ACK,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
@@ -625,6 +634,18 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 				return REJECT_MALFORMED_PAYLOAD
 		PROGRESSION_TROPHY_UNLOCK:
 			if not _has_exact_keys(payload, ["transaction_id", "trophy_id", "event_key"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["trophy_id"]) or not valid_stable_id(payload["event_key"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_SKILL_SPEND:
+			if not _has_exact_keys(payload, ["transaction_id", "skill_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["skill_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_RESPEC:
+			if not _has_exact_keys(payload, ["transaction_id"]) or not valid_transaction_id(str(payload["transaction_id"])):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_GATE_COMPLETE:
+			if not _has_exact_keys(payload, ["transaction_id", "gate_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["gate_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PROGRESSION_CHALLENGE_EVENT:
+			if not _has_exact_keys(payload, ["transaction_id", "challenge_id", "event_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["challenge_id"]) or not valid_stable_id(payload["event_id"]):
 				return REJECT_MALFORMED_PAYLOAD
 		BASELINE_ACK:
 			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):
