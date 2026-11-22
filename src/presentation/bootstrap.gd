@@ -242,6 +242,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
+	if _pending_combat.has("progression") and not _loot.inventory_state().restore_progression(_pending_combat["progression"]):
+		push_error("PRG-01 progression restore failed")
+		return
 	_loot.initialize_missing_stock(CORE_STOCK)
 	_loot.initialize_missing_stock(NPC_STOCK)
 	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(ROUND_AMMO_PROFILE as AmmoProfile) or not _combat.register_ammo(EMBER_AMMO_PROFILE as AmmoProfile):
@@ -504,6 +507,8 @@ func _flush_checkpoint() -> void:
 	_last_attempt_ms = Time.get_ticks_msec()
 	var loot_state := _loot.snapshot_state() if _loot != null else SaveSnapshot.empty_loot_state()
 	var authority_state: Dictionary = {"sector_world": _world.snapshot_state(FoundationSector.PLAYER)}
+	if _loot != null:
+		authority_state["progression"] = _loot.inventory_state().progression_snapshot()
 	if _combat != null and _npc_brain != null:
 		var combat_state := _combat.snapshot_state()
 		var npc_state := _npc_brain.persistence_state()
