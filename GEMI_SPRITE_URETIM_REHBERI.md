@@ -624,8 +624,9 @@ Kullanıcıya verilen final gemi ZIP'i yalnız şu teslim dosyalarını içerir:
 - 1 final 4×2 atlas PNG
 - 1 final rotation GIF
 - 1 `manifest.json`
+- 1 **orijinal üretim kaynağı** (radial pano / tekil ana kaynak PNG; kayıpsız, yeniden işlenmemiş)
 
-Toplam standart içerik: **11 dosya**.
+Toplam standart içerik: **12 dosya**.
 
 `manifest.json` en az şunları kaydeder:
 
@@ -647,7 +648,6 @@ Final ZIP'e **girmez**:
 - LUT/`.cube` dosyaları
 - profile/validation ara JSON'ları
 - çalışma klasörleri
-- kaynak üretim PNG'si
 - debug veya manuel hizalama dosyaları
 
 Bu ara çıktılar QA sırasında tutulabilir ancak kullanıcıya teslim edilen final ZIP'in parçası değildir.
@@ -658,3 +658,20 @@ Bu ara çıktılar QA sırasında tutulabilir ancak kullanıcıya teslim edilen 
 
 **Kural:** final paket üretimi de kanonik hattın parçasıdır. Her gemide farklı ZIP yapısı veya fazladan debug dosyaları üretme.
 
+
+
+## 19. Kaynak çözünürlük kapısı ve AI upscale bildirimi
+
+8 yönün tek bir radial üretim görselinden çıkarıldığı gemilerde, final hücre boyutu uygun olsa bile her tekil gemiye düşen **gerçek kaynak piksel yoğunluğu** yetersiz kalabilir. Normalizasyon sırasında büyütmek yalnız mevcut pikselleri yeniden örnekler; kaybolmuş ince detay üretmez.
+
+Bu nedenle ekstraksiyon sonrasında, normalizasyon/ShowLook/final küçültmeden **önce** kaynak çözünürlük görsel QA kapısı vardır:
+
+- gövde kaplama çizgileri, arma, yelken kenarları ve küçük donanım yeterince netse pipeline normal devam eder;
+- tekil yönler belirgin biçimde yumuşak, pikselli veya ayrıntı fakiri ise süreç durdurulmaz ancak kullanıcıya açıkça **“AI upscale gerekli”** denir;
+- ChatGPT/kanonik pipeline kendi başına AI upscale uygulamaz;
+- kullanıcı kaliteli haricî AI upscaler ile 8 ayrılmış yönü yükseltir ve yükseltilmiş yönleri geri verir;
+- upscale, mümkünse **8 yön ayrıldıktan sonra; pivot/ölçek normalizasyonu, ShowLook ve final atlas üretiminden önce** yapılır;
+- final 4×2 atlası veya zaten küçültülmüş oyun hücrelerini sonradan upscale etmek üretim yöntemi değildir;
+- upscale gerekmiyorsa gereksiz yere önerilmez.
+
+**Kural:** Kaynak çözünürlüğü yetersiz görüldüğünde kalite kaybını sessizce resize ile gizleme. Kullanıcıya açıkça `AI upscale gerekli` uyarısı ver ve upscale edilmiş kaynak gelene kadar özgün ayrıntı kazanılmış gibi davranma.
