@@ -531,4 +531,4 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "${api}" \
-            -d "{\"state\":\"${state}\",\"context\":\"seacraft-prg03-evidence\",\"description\":\"PRG-03 CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"
+            -d "{\"state\":\"${state}\",\"context\":\"seacraft-prg03-evidence\",\"description\":\"PRG-03 verified CI run ${GITHUB_RUN_ID}: ${JOB_STATUS}\",\"target_url\":\"${target}\"}"
