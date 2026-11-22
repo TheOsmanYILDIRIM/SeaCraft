@@ -12,7 +12,7 @@ const UPGRADE_ROOT := "upgrade.rigging_slot"
 const UPGRADE_CHILD := "upgrade.rigging_tier2"
 const TROPHY := "trophy.first_reclamation"
 const EVENT := "event.prg02.first_reclamation"
-const SLOT := "core_slot.rigging.1"
+const SLOT := "core_slot.rigging.s1"
 
 func _item(id: String, category: String, limit: int, core_type: String = "", core_unique: bool = false, modifiers: Array[Dictionary] = []) -> ItemDefinition:
 	var definition := ItemDefinition.new()
@@ -51,19 +51,26 @@ func _upgrade(id: String, tier: int, prerequisites: PackedStringArray, with_slot
 	definition.stable_id = id
 	definition.tier = tier
 	definition.prerequisite_ids = prerequisites
-	definition.costs = [] if cost == 0 else [{"item_id": SCRAP, "quantity": cost}]
-	definition.modifiers = [{
+	var cost_rows: Array[Dictionary] = []
+	if cost > 0:
+		cost_rows.append({"item_id": SCRAP, "quantity": cost})
+	definition.costs = cost_rows
+	var modifier_rows: Array[Dictionary] = [{
 		"source_id": "modifier." + id,
 		"stat": "speed",
 		"operation": "percent_add",
 		"value": 0.02,
 		"priority": tier,
 	}]
-	definition.core_slots = [] if not with_slot else [{
-		"slot_id": SLOT,
-		"slot_type": "rigging",
-		"allowed_core_type": "rigging",
-	}]
+	definition.modifiers = modifier_rows
+	var slot_rows: Array[Dictionary] = []
+	if with_slot:
+		slot_rows.append({
+			"slot_id": SLOT,
+			"slot_type": "rigging",
+			"allowed_core_type": "rigging",
+		})
+	definition.core_slots = slot_rows
 	return definition
 
 func _trophy() -> TrophyDefinition:
@@ -265,9 +272,9 @@ func test_prg02_core_compatibility_replace_modifier_guard_and_remove_rollback() 
 	var value := inventory.stat_value(PLAYER, "speed", 100.0)
 	assert_almost_eq(value, 107.1, 0.001)
 	assert_almost_eq(inventory.stat_value(PLAYER, "speed", 100.0), value, 0.001)
-	assert_true(inventory.configure_prg02_core_slot(PLAYER, "core_slot.rigging.2", "rigging", "rigging"))
+	assert_true(inventory.configure_prg02_core_slot(PLAYER, "core_slot.rigging.s2", "rigging", "rigging"))
 	assert_true(inventory.grant_authoritative(PLAYER, CORE, 1))
-	assert_false(inventory.execute_transaction(PLAYER, "txn.prg02.core.unique", InventoryState.OP_CORE_INSERT, {"slot_id": "core_slot.rigging.2", "item_id": CORE})["accepted"])
+	assert_false(inventory.execute_transaction(PLAYER, "txn.prg02.core.unique", InventoryState.OP_CORE_INSERT, {"slot_id": "core_slot.rigging.s2", "item_id": CORE})["accepted"])
 	assert_true(inventory.execute_transaction(PLAYER, "txn.prg02.core.replace", InventoryState.OP_CORE_REPLACE, {"slot_id": SLOT, "item_id": CORE_ALT})["accepted"])
 	assert_eq(inventory.quantity(PLAYER, CORE), 2)
 
