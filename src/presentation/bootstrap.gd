@@ -242,6 +242,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _loot.inventory_state().configure_prg02(_streams):
 		push_error("PRG-02 progression authority setup failed")
 		return
+	if not _loot.inventory_state().configure_prg03():
+		push_error("PRG-03 progression authority setup failed")
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
