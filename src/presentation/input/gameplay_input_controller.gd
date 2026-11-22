@@ -18,6 +18,9 @@ var _touch = TOUCH.new()
 var _mouse_pan_active := false
 var _world_input_blocked := false
 var _world_touch_indices: Dictionary = {}
+var _last_native_touch_ms := -100000
+var _android_mouse_touch_active := false
+const SYNTHETIC_MOUSE_SUPPRESS_MS := 300
 
 
 func _ready() -> void:
@@ -39,8 +42,20 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMagnifyGesture:
+		if not _world_input_blocked and _camera != null:
+			_dispatch(MAPPER.map_camera_zoom(float(event.factor)))
+			get_viewport().set_input_as_handled()
+		return
+	if event is InputEventPanGesture:
+		if not _world_input_blocked and _camera != null:
+			var world_delta: Vector2 = _camera.call("screen_delta_to_world_delta", -event.delta)
+			_dispatch(MAPPER.map_camera_pan(world_delta))
+			get_viewport().set_input_as_handled()
+		return
 	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		return
+	_last_native_touch_ms = Time.get_ticks_msec()
 	if _world_input_blocked or _camera == null:
 		return
 
@@ -69,7 +84,41 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Touch is handled in _input so Android GUI dispatch cannot swallow world taps.
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		return
+	# Android also emulates mouse from touch so ordinary Control/Button nodes work.
+	# Suppress that synthetic mouse stream when the native touch stream was seen;
+	# otherwise use it as a complete one-finger fallback for devices/ROMs where
+	# native ScreenTouch/ScreenDrag does not reach the gameplay node.
+	if OS.has_feature("android") and (event is InputEventMouseButton or event is InputEventMouseMotion):
+		if Time.get_ticks_msec() - _last_native_touch_ms <= SYNTHETIC_MOUSE_SUPPRESS_MS:
+			return
+		_process_android_mouse_fallback(event)
+		return
 	process_device_event(event, false)
+
+
+
+func _process_android_mouse_fallback(event: InputEvent) -> void:
+	if _world_input_blocked or _camera == null:
+		return
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				if ui_hit_test.is_valid() and bool(ui_hit_test.call(event.position)):
+					_android_mouse_touch_active = false
+					return
+				_android_mouse_touch_active = true
+				_handle_touch_gestures(_touch.press(0, event.position))
+			elif _android_mouse_touch_active:
+				_handle_touch_gestures(_touch.release(0, event.position))
+				_android_mouse_touch_active = false
+			return
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			_dispatch(MAPPER.map_camera_zoom(1.1))
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			_dispatch(MAPPER.map_camera_zoom(1.0 / 1.1))
+		return
+	if event is InputEventMouseMotion and _android_mouse_touch_active:
+		_handle_touch_gestures(_touch.drag(0, event.position))
 
 
 func process_device_event(event: InputEvent, ui_consumed: bool = false) -> void:
@@ -121,6 +170,7 @@ func world_input_blocked() -> bool:
 func reset_touch() -> void:
 	_touch.reset()
 	_world_touch_indices.clear()
+	_android_mouse_touch_active = false
 
 
 func emit_fire_intent(target_id: String) -> void:
