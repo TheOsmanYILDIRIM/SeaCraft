@@ -9,6 +9,7 @@ const STATE_DISCONNECTED := "disconnected"
 const STATE_CONNECTING := "connecting"
 const STATE_CONNECTED := "connected"
 const STATE_HANDSHAKING := "handshaking"
+const STATE_BASELINING := "baselining"
 const STATE_READY := "ready"
 const STATE_REJECTED := "rejected"
 
@@ -29,6 +30,10 @@ var _hello_overrides: Dictionary = {}
 var _auto_handshake: bool = true
 var _accepted_sequences: Array[int] = []
 var _command_rejections: Array[Dictionary] = []
+var _resume_session_id := ""
+var _resume_token := ""
+var _pending_baseline_id := ""
+var _transaction_results: Dictionary = {}
 
 
 func _ready() -> void:
@@ -39,10 +44,14 @@ func _ready() -> void:
 	_bridge.handshake_rejected.connect(_on_handshake_rejected)
 	_bridge.command_accepted.connect(_on_command_accepted)
 	_bridge.command_rejected.connect(_on_command_rejected)
+	_bridge.baseline_chunk_received.connect(_on_baseline_chunk)
+	_bridge.baseline_ready_received.connect(_on_baseline_ready)
+	_bridge.transaction_result_received.connect(_on_transaction_result)
 	_replication = REPLICATION.new()
 	_replication.name = "Replication"
 	add_child(_replication, true)
 	_replication.configure_bridge(_bridge)
+	_replication.baseline_complete.connect(_on_replication_baseline_complete)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
@@ -53,6 +62,39 @@ func set_auto_handshake(enabled: bool) -> void:
 
 
 func join(address: String, port: int, hello_overrides: Dictionary = {}) -> Error:
+	clear_resume_credentials()
+	_hello_overrides = hello_overrides.duplicate(true)
+	_hello_overrides["session_id"] = ""
+	_hello_overrides["resume_token"] = ""
+	return _connect(address, port)
+
+
+func can_resume() -> bool:
+	return _state == STATE_DISCONNECTED and not _resume_session_id.is_empty() and PROTOCOL.valid_resume_token(_resume_token)
+
+
+func resume(address: String, port: int) -> Error:
+	if not can_resume():
+		return ERR_UNCONFIGURED
+	_hello_overrides = {"session_id": _resume_session_id, "resume_token": _resume_token}
+	return _connect(address, port)
+
+
+func clear_resume_credentials() -> void:
+	_resume_session_id = ""
+	_resume_token = ""
+	_pending_baseline_id = ""
+
+
+func resume_session_id() -> String:
+	return _resume_session_id
+
+
+func transaction_result(transaction_id: String) -> Dictionary:
+	return (_transaction_results.get(transaction_id, {}) as Dictionary).duplicate(true)
+
+
+func _connect(address: String, port: int) -> Error:
 	if _state != STATE_DISCONNECTED or not PROTOCOL.valid_ipv4(address) or not PROTOCOL.valid_port(port):
 		return ERR_INVALID_PARAMETER
 	_peer = ENetMultiplayerPeer.new()
@@ -60,12 +102,11 @@ func join(address: String, port: int, hello_overrides: Dictionary = {}) -> Error
 	if error != OK:
 		_peer = null
 		return error
-	_hello_overrides = hello_overrides.duplicate(true)
 	_rejection_reason = ""
-	_assigned_player_id = ""
 	_next_sequence = 0
 	_accepted_sequences.clear()
 	_command_rejections.clear()
+	_transaction_results.clear()
 	multiplayer.multiplayer_peer = _peer
 	_set_state(STATE_CONNECTING)
 	return OK
@@ -187,19 +228,77 @@ func _on_server_disconnected() -> void:
 
 
 func _on_handshake_accepted(payload: Dictionary) -> void:
-	if _state != STATE_HANDSHAKING or payload.size() != 2 or not payload.has("protocol_version") or not payload.has("player_id"):
-		_rejection_reason = PROTOCOL.REJECT_MALFORMED_HANDSHAKE
-		_set_state(STATE_REJECTED)
-		session_rejected.emit(_rejection_reason)
+	if _state != STATE_HANDSHAKING or payload.size() != 5:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
-	if typeof(payload["protocol_version"]) != TYPE_INT or int(payload["protocol_version"]) != PROTOCOL.PROTOCOL_VERSION or not payload["player_id"] is String or str(payload["player_id"]).is_empty():
-		_rejection_reason = PROTOCOL.REJECT_MALFORMED_HANDSHAKE
-		_set_state(STATE_REJECTED)
-		session_rejected.emit(_rejection_reason)
+	for key in ["protocol_version", "player_id", "session_id", "resume_token", "resume_sequence"]:
+		if not payload.has(key):
+			_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
+			return
+	if typeof(payload["protocol_version"]) != TYPE_INT or int(payload["protocol_version"]) != PROTOCOL.PROTOCOL_VERSION:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
 		return
-	_assigned_player_id = str(payload["player_id"])
+	if not payload["player_id"] is String or not payload["session_id"] is String or not payload["resume_token"] is String or typeof(payload["resume_sequence"]) != TYPE_INT:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
+		return
+	var player_id := str(payload["player_id"])
+	var session_id := str(payload["session_id"])
+	var token := str(payload["resume_token"])
+	var resume_sequence := int(payload["resume_sequence"])
+	if player_id.is_empty() or not SectorIds.valid(player_id) or not session_id.begins_with("session.") or not SectorIds.valid(session_id) or not PROTOCOL.valid_resume_token(token) or resume_sequence < 0:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_HANDSHAKE)
+		return
+	_assigned_player_id = player_id
+	_resume_session_id = session_id
+	_resume_token = token
+	_next_sequence = resume_sequence
+	_set_state(STATE_BASELINING)
+
+
+func _on_baseline_chunk(chunk: Dictionary) -> void:
+	if _state != STATE_BASELINING:
+		return
+	if str(chunk.get("session_id", "")) != _resume_session_id or str(chunk.get("player_id", "")) != _assigned_player_id:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
+		return
+	if not _replication.consume_baseline_chunk(chunk):
+		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
+
+
+func _on_replication_baseline_complete(baseline_id: String, resume_sequence: int) -> void:
+	if _state != STATE_BASELINING or resume_sequence != _next_sequence:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
+		return
+	_pending_baseline_id = baseline_id
+	var envelope := PROTOCOL.make_envelope(_next_sequence, PROTOCOL.BASELINE_ACK, {"baseline_id": baseline_id})
+	if PROTOCOL.validate_envelope(envelope) != "":
+		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
+		return
+	_bridge.send_client_intent(envelope)
+	_next_sequence += 1
+
+
+func _on_baseline_ready(payload: Dictionary) -> void:
+	if _state != STATE_BASELINING or payload.size() != 2 or str(payload.get("baseline_id", "")) != _pending_baseline_id:
+		_reject_local(PROTOCOL.REJECT_MALFORMED_BASELINE)
+		return
+	if typeof(payload.get("next_sequence")) != TYPE_INT or int(payload["next_sequence"]) != _next_sequence:
+		_reject_local(PROTOCOL.REJECT_SEQUENCE)
+		return
+	_pending_baseline_id = ""
 	_set_state(STATE_READY)
 	session_ready.emit(_assigned_player_id)
+
+
+func _on_transaction_result(transaction_id: String, result: Dictionary) -> void:
+	if PROTOCOL.valid_transaction_id(transaction_id) and PROTOCOL.primitive_safe(result):
+		_transaction_results[transaction_id] = result.duplicate(true)
+
+
+func _reject_local(reason: String) -> void:
+	_rejection_reason = reason
+	_set_state(STATE_REJECTED)
+	session_rejected.emit(reason)
 
 
 func _on_handshake_rejected(reason: String) -> void:
