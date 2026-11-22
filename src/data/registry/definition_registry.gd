@@ -5,6 +5,7 @@ const VALID_DEFINITION_TYPES := [
 	"ship", "weapon", "item", "faction", "sector",
 	"ammo", "monster", "harpoon", "safe_zone", "loot_table", "ai_role",
 	"recipe", "salvage_table", "ship_upgrade", "trophy",
+	"progression_rank", "progression_skill", "progression_gate", "local_challenge",
 ]
 
 var last_error: String = ""
@@ -172,7 +173,7 @@ func _load_entry(stable_id: String) -> Resource:
 		if definition is NpcRoleProfile and not (definition as NpcRoleProfile).valid():
 			_fail("invalid AI role profile: %s" % stable_id, ERR_INVALID_DATA)
 			return null
-		if entry.definition_type in ["recipe", "salvage_table", "ship_upgrade", "trophy"]:
+		if entry.definition_type in ["recipe", "salvage_table", "ship_upgrade", "trophy", "progression_rank", "progression_skill", "progression_gate", "local_challenge"]:
 			if not definition.has_method("valid") or not bool(definition.call("valid")):
 				_fail("invalid progression definition: %s" % stable_id, ERR_INVALID_DATA)
 				return null
