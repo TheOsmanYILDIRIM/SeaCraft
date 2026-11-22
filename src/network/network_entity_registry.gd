@@ -104,7 +104,7 @@ func update_authority_state(entity_id: String, changes: Dictionary) -> bool:
 	if not bool(entry["authority"]) or not PROTOCOL.primitive_safe(changes):
 		return false
 	for key in changes.keys():
-		if str(key) not in ["sector_id", "x", "y", "heading", "hull_ratio", "alive"]:
+		if str(key) not in ["sector_id", "x", "y", "heading", "hull_ratio", "alive", "ai_state_id", "ai_intent_id"]:
 			return false
 	var previous: Dictionary = entry["row"]
 	var row := previous.duplicate(true)

@@ -329,6 +329,18 @@ func _physics_process(_delta: float) -> void:
 		_telemetry["max_payload_bytes"] = maxi(int(_telemetry["max_payload_bytes"]), payload_bytes)
 
 
+func is_visible_to_peer(peer_id: int, entity_id: String, required_kind: String = "") -> bool:
+	if not _host_enabled or not _registry.authority_owned(entity_id):
+		return false
+	_refresh_all_sources()
+	var snapshot := _build_snapshot(peer_id, _snapshot_sequence)
+	for raw in snapshot.get("entity_rows", []):
+		var row: Dictionary = raw
+		if row["entity_id"] == entity_id:
+			return required_kind.is_empty() or row["entity_kind"] == required_kind
+	return false
+
+
 func _build_snapshot(peer_id: int, sequence: int) -> Dictionary:
 	var own_id := str(_peer_to_player.get(peer_id, ""))
 	if own_id.is_empty() or not _registry.has_entity(own_id):
@@ -378,7 +390,7 @@ func _refresh_all_sources() -> void:
 
 
 func _merge_source_state(changes: Dictionary, source_state: Dictionary) -> void:
-	for key in ["sector_id", "x", "y", "heading", "hull_ratio", "alive"]:
+	for key in ["sector_id", "x", "y", "heading", "hull_ratio", "alive", "ai_state_id", "ai_intent_id"]:
 		if source_state.has(key):
 			changes[key] = source_state[key]
 	if source_state.has("hull") and source_state.has("max_hull"):

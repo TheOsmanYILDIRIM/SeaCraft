@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 1
+const PROTOCOL_VERSION: int = 2
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -72,7 +72,16 @@ const HANDSHAKE_KEYS := [
 	"manifest_entry_count",
 ]
 const ENVELOPE_KEYS := ["protocol_version", "client_sequence", "intent_type", "payload"]
+const SELECT_COMBAT_TARGET := "select_combat_target"
+const FIRE_WEAPON := "fire_weapon"
+const PICKUP_LOOT := "pickup_loot"
+const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT]
+const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
+const REJECT_AOI := "outside authority interest"
 const NETWORK_INTENTS := [
+	SELECT_COMBAT_TARGET,
+	FIRE_WEAPON,
+	PICKUP_LOOT,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
 	COMMANDS.CANCEL,
@@ -316,7 +325,16 @@ static func validate_snapshot_row(value: Variant) -> String:
 	if not value is Dictionary:
 		return REJECT_MALFORMED_SNAPSHOT
 	var row: Dictionary = value
-	if not _has_exact_keys(row, SNAPSHOT_ROW_KEYS) or not _primitive_safe(row, 0, {"containers": 0}):
+	var keys := SNAPSHOT_ROW_KEYS
+	if row.has("ai_state_id") or row.has("ai_intent_id"):
+		if row.get("entity_kind") != "npc":
+			return REJECT_MALFORMED_SNAPSHOT
+		keys = SNAPSHOT_ROW_KEYS + NPC_SEMANTIC_KEYS
+		for key in NPC_SEMANTIC_KEYS:
+			var value_id: Variant = row.get(key)
+			if not _is_int(value_id) or int(value_id) < 0 or int(value_id) > 31:
+				return REJECT_MALFORMED_SNAPSHOT
+	if not _has_exact_keys(row, keys) or not _primitive_safe(row, 0, {"containers": 0}):
 		return REJECT_MALFORMED_SNAPSHOT
 	if not valid_stable_id(row["entity_id"]) or not valid_stable_id(row["sector_id"]):
 		return REJECT_MALFORMED_SNAPSHOT
@@ -442,6 +460,12 @@ static func _valid_state_numbers(state: Dictionary) -> bool:
 
 static func _validate_intent_payload(intent_type: String, payload: Dictionary) -> String:
 	match intent_type:
+		SELECT_COMBAT_TARGET, FIRE_WEAPON:
+			if not _has_exact_keys(payload, ["target_id"]) or not valid_stable_id(payload["target_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		PICKUP_LOOT:
+			if not _has_exact_keys(payload, ["drop_id"]) or not valid_stable_id(payload["drop_id"]):
+				return REJECT_MALFORMED_PAYLOAD
 		COMMANDS.MOVE_TO_WORLD_POSITION, COMMANDS.SELECT_WORLD_POSITION:
 			if not _has_exact_keys(payload, ["world_x", "world_y"]):
 				return REJECT_MALFORMED_PAYLOAD

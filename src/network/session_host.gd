@@ -19,6 +19,8 @@ signal intent_rejected(peer_id: int, sequence: int, reason: String)
 var _peer: ENetMultiplayerPeer
 var _bridge: SessionRpcBridge
 var _replication: NetworkReplicationPeer
+var _combat_authority: CombatAuthority
+var _loot_authority: LootAuthority
 var _player_motors: Dictionary = {}
 var _player_ids: Array[String] = []
 var _peer_states: Dictionary = {}
@@ -85,6 +87,11 @@ func start(port: int) -> Error:
 
 
 func stop() -> void:
+	if _loot_authority != null:
+		_loot_authority.drop_created.disconnect(_on_gameplay_drop_created)
+		_loot_authority.drop_claimed.disconnect(_on_gameplay_drop_claimed)
+	_combat_authority = null
+	_loot_authority = null
 	if _peer != null:
 		_peer.close()
 	if multiplayer.multiplayer_peer != null:
@@ -234,17 +241,31 @@ func _on_client_intent(peer_id: int, envelope: Dictionary) -> void:
 	if player_id.is_empty() or not _player_motors.has(player_id):
 		_reject_intent(peer_id, sequence, PROTOCOL.REJECT_AUTHORITY_COMMAND)
 		return
+	var intent_type := str(envelope["intent_type"])
+	if intent_type in PROTOCOL.AUTHORITY_INTENTS:
+		# Consume validated envelopes before executing, even when authority rejects them.
+		_last_sequence[peer_id] = sequence
+		var payload: Dictionary = envelope["payload"]
+		reason = _execute_gameplay_intent(peer_id, player_id, intent_type, payload)
+		if reason.is_empty():
+			_accept_intent(peer_id, player_id, intent_type, sequence)
+		else:
+			_reject_intent(peer_id, sequence, reason)
+		return
 	var command := PROTOCOL.to_gameplay_command(envelope)
 	if command.is_empty():
 		_reject_intent(peer_id, sequence, PROTOCOL.REJECT_MALFORMED_PAYLOAD)
 		return
-	var intent_type := str(envelope["intent_type"])
 	if intent_type == COMMANDS.MOVE_TO_WORLD_POSITION or intent_type == COMMANDS.CANCEL:
 		var motor := _player_motors[player_id] as ShipMotor
 		if motor == null or not motor.apply_authoritative_command(command):
 			_reject_intent(peer_id, sequence, PROTOCOL.REJECT_AUTHORITY_COMMAND)
 			return
 	_last_sequence[peer_id] = sequence
+	_accept_intent(peer_id, player_id, intent_type, sequence)
+
+
+func _accept_intent(peer_id: int, player_id: String, intent_type: String, sequence: int) -> void:
 	_telemetry["accepted_intents"] = int(_telemetry["accepted_intents"]) + 1
 	_bridge.send_command_accept(peer_id, sequence)
 	intent_applied.emit(peer_id, player_id, intent_type, sequence)
@@ -254,3 +275,52 @@ func _reject_intent(peer_id: int, sequence: int, reason: String) -> void:
 	_telemetry["rejected_intents"] = int(_telemetry["rejected_intents"]) + 1
 	_bridge.send_command_reject(peer_id, sequence, reason)
 	intent_rejected.emit(peer_id, sequence, reason)
+
+
+# The host supplies the same authority instances used by its simulation. A
+# session with movement only remains valid and cannot run these intents.
+func bind_gameplay_authority(combat: CombatAuthority, loot: LootAuthority) -> bool:
+	if not _running or _combat_authority != null or combat == null or loot == null:
+		return false
+	if not bind_combat_replication(combat) or not bind_loot_replication(loot):
+		return false
+	_combat_authority = combat
+	_loot_authority = loot
+	loot.drop_created.connect(_on_gameplay_drop_created)
+	loot.drop_claimed.connect(_on_gameplay_drop_claimed)
+	return true
+
+
+func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: String, payload: Dictionary) -> String:
+	if _combat_authority == null or _loot_authority == null:
+		return PROTOCOL.REJECT_AUTHORITY_COMMAND
+	if intent_type == PROTOCOL.PICKUP_LOOT:
+		var drop_id := str(payload["drop_id"])
+		var visible := _replication.is_visible_to_peer(peer_id, drop_id, "loot")
+		# Despawned claims may only reach the real idempotence guard for their
+		# original inventory owner. Unknown and hidden drops remain opaque.
+		if not visible and not _loot_authority.claimed_by_inventory_owner(player_id, drop_id):
+			return PROTOCOL.REJECT_AOI
+		var pickup := _loot_authority.pickup(player_id, LootAuthority.pickup_intent(drop_id))
+		return "" if pickup["accepted"] else str(pickup["reason"])
+	var target_id := str(payload["target_id"])
+	if not _replication.is_visible_to_peer(peer_id, target_id):
+		return PROTOCOL.REJECT_AOI
+	if intent_type == PROTOCOL.SELECT_COMBAT_TARGET:
+		return "" if _combat_authority.select(player_id, target_id) else PROTOCOL.REJECT_AUTHORITY_COMMAND
+	if intent_type == PROTOCOL.FIRE_WEAPON:
+		var motor := _player_motors.get(player_id) as ShipMotor
+		if motor == null or not is_instance_valid(motor):
+			return PROTOCOL.REJECT_AUTHORITY_COMMAND
+		var shot := _combat_authority.fire(player_id, motor.current_heading(), CombatAuthority.fire_intent(target_id))
+		return "" if shot["accepted"] else str(shot["reason"])
+	return PROTOCOL.REJECT_UNSUPPORTED_INTENT
+
+
+func _on_gameplay_drop_created(drop: Dictionary) -> void:
+	spawn_network_entity(str(drop["drop_id"]), "loot", str(drop["sector_id"]),
+		{"x": drop["x"], "y": drop["y"]}, str(drop["item_id"]))
+
+
+func _on_gameplay_drop_claimed(drop_id: String, _item_id: String, _quantity: int) -> void:
+	despawn_network_entity(drop_id)

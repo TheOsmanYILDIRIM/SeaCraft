@@ -12,6 +12,8 @@ var lifecycle_sequence: int = 0
 var last_state_sequence: int = -1
 var hull_ratio: float = 1.0
 var alive: bool = true
+var ai_state_id: int = -1
+var ai_intent_id: int = -1
 var aoi_visible: bool = false
 
 var _samples: Array[Dictionary] = []
@@ -58,6 +60,8 @@ func apply_snapshot(row: Dictionary, snapshot_sequence: int, server_tick: int) -
 	last_state_sequence = snapshot_sequence
 	hull_ratio = float(row["hull_ratio"])
 	alive = bool(row["alive"])
+	ai_state_id = int(row.get("ai_state_id", -1))
+	ai_intent_id = int(row.get("ai_intent_id", -1))
 	_target_position = Vector2(float(row["x"]), float(row["y"]))
 	_target_heading = float(row["heading"])
 	_samples.append({

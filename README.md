@@ -305,3 +305,26 @@ Snapshot cadence is every 3 authority physics ticks. The contract caps the activ
 Clients still send only the NET-01 intent allowlist. There are no client→host spawn, despawn, HP, position, NPC-state, loot-create or claim-result RPCs. CI includes a malicious separate-process client that sends forged outcome intent types and verifies the host registry/state remains unchanged.
 
 Default boot remains offline and opens no socket or spawner session. CI runs the original NET-01 process regression plus a real separate-process NET-02 scenario with one host and two simultaneous clients, stable baseline/late spawn IDs, newer snapshots, different host-authored AOI views, semantic events, despawn cleanup and mutation rejection. Prediction/reconciliation, reconnect, late-join baseline, discovery, transaction replay recovery and full remote combat/loot input parity remain NET-03/NET-04 scope.
+
+## NET-03: Host-authoritative vertical-slice LAN
+
+A live ENet client sends movement, target selection (`select_combat_target`),
+weapon fire (`fire_weapon`) and loot pickup (`pickup_loot`) intents. The last
+three have exact ID-only payloads. The host uses its peer-to-player mapping,
+current ShipMotor heading, and current sector/AOI snapshot rules. It delegates
+target/range/arc/reload/fire and inventory/claim decisions to CombatAuthority
+and LootAuthority. The existing sequence guard consumes valid gameplay intents
+even when authority rejects the outcome. Dropped rewards replicate via the
+normal loot lifecycle and a duplicate claim cannot award again.
+
+The NET-03 harness reuses the offline VS-04 runtime on the host, advances its
+real AI at fixed steps and verifies presentation-only NPC state/intent
+mirrors, authoritative hull/alive snapshots, reliable combat/loot events and
+loot despawn. A separate one-host/one-client case verifies that a live combat
+disconnect removes peer mappings without removing the player entity or
+stopping host AI. CI compares host/client semantic outcomes to the unchanged
+offline fixture and retains NET-01/02 process coverage. Default game boot
+remains offline; there is no client prediction or physics lockstep.
+
+Protocol v2 requires matching builds. NET-04 discovery, late-join recovery,
+reconnect and session resume are not implemented.

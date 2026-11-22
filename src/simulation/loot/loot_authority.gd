@@ -328,6 +328,10 @@ func consume(actor: String, item: String, amount: int) -> bool:
 	return true
 
 
+func claimed_by_inventory_owner(player_id: String, drop_id: String) -> bool:
+	return _authority_enabled and not _inventory_owner.is_empty() and player_id == _inventory_owner and _claimed.has(drop_id)
+
+
 func has_drop(drop_id: String) -> bool:
 	return _drops.has(drop_id)
 
