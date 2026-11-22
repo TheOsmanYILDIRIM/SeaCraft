@@ -12,6 +12,7 @@ const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 @export var keyboard_pan_speed := 600.0
 
 var combat_target_at: Callable
+var ui_hit_test: Callable
 var _camera: Node
 var _touch = TOUCH.new()
 var _mouse_pan_active := false
@@ -36,7 +37,22 @@ func _process(delta: float) -> void:
 		_dispatch(MAPPER.map_camera_pan(axis * keyboard_pan_speed * delta))
 
 
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		return
+	if _world_input_blocked or _camera == null:
+		return
+	var screen_position := event.position
+	if ui_hit_test.is_valid() and bool(ui_hit_test.call(screen_position)):
+		return
+	process_device_event(event, false)
+	get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	# Touch is handled in _input so Android GUI dispatch cannot swallow world taps.
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		return
 	process_device_event(event, false)
 
 
