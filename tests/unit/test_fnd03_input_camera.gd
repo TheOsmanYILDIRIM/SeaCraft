@@ -166,3 +166,63 @@ func test_touch_mouse_emulation_is_disabled_to_prevent_duplicate_commands() -> v
 		ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse"),
 		false
 	)
+
+
+func test_touch_input_stage_emits_world_move_before_gui_can_swallow_it() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var camera := GameplayCamera.new()
+	camera.name = "Camera"
+	root.add_child(camera)
+	var controller := GameplayInputController.new()
+	controller.name = "Controller"
+	controller.camera_path = NodePath("../Camera")
+	root.add_child(controller)
+	await get_tree().process_frame
+	var commands: Array[Dictionary] = []
+	controller.command_emitted.connect(func(command: Dictionary) -> void: commands.append(command))
+	controller.ui_hit_test = func(_position: Vector2) -> bool: return false
+
+	var press := InputEventScreenTouch.new()
+	press.index = 0
+	press.position = Vector2(900.0, 420.0)
+	press.pressed = true
+	controller._input(press)
+	var release := InputEventScreenTouch.new()
+	release.index = 0
+	release.position = Vector2(900.0, 420.0)
+	release.pressed = false
+	controller._input(release)
+
+	assert_eq(commands.size(), 1)
+	assert_eq(commands[0]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
+	assert_eq(commands[0]["domain"], COMMANDS.DOMAIN_GAMEPLAY)
+
+
+func test_touch_input_stage_respects_ui_hit_test() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var camera := GameplayCamera.new()
+	camera.name = "Camera"
+	root.add_child(camera)
+	var controller := GameplayInputController.new()
+	controller.name = "Controller"
+	controller.camera_path = NodePath("../Camera")
+	root.add_child(controller)
+	await get_tree().process_frame
+	var commands: Array[Dictionary] = []
+	controller.command_emitted.connect(func(command: Dictionary) -> void: commands.append(command))
+	controller.ui_hit_test = func(_position: Vector2) -> bool: return true
+
+	var press := InputEventScreenTouch.new()
+	press.index = 0
+	press.position = Vector2(40.0, 40.0)
+	press.pressed = true
+	controller._input(press)
+	var release := InputEventScreenTouch.new()
+	release.index = 0
+	release.position = Vector2(40.0, 40.0)
+	release.pressed = false
+	controller._input(release)
+
+	assert_true(commands.is_empty())
