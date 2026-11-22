@@ -215,11 +215,11 @@ func test_prg03_gate_prerequisite_rank_and_completion_idempotency() -> void:
 func test_prg03_local_challenge_progress_reward_idempotency_and_version_reset() -> void:
 	var inventory := _state()
 	_register_standard(inventory, VERSION_1)
-	var first := inventory.execute_transaction(PLAYER, "txn.prg03.challenge.1", InventoryState.OP_CHALLENGE_EVENT, {"challenge_id": CHALLENGE, "event_id": "event.challenge.one"})
+	var first := inventory.execute_transaction(PLAYER, "txn.prg03.challenge.one", InventoryState.OP_CHALLENGE_EVENT, {"challenge_id": CHALLENGE, "event_id": "event.challenge.one"})
 	assert_true(first["accepted"])
 	assert_false(first["completed"])
 	assert_eq(inventory.quantity(PLAYER, SCRAP), 0)
-	var second := inventory.execute_transaction(PLAYER, "txn.prg03.challenge.2", InventoryState.OP_CHALLENGE_EVENT, {"challenge_id": CHALLENGE, "event_id": "event.challenge.two"})
+	var second := inventory.execute_transaction(PLAYER, "txn.prg03.challenge.two", InventoryState.OP_CHALLENGE_EVENT, {"challenge_id": CHALLENGE, "event_id": "event.challenge.two"})
 	print("PRG03_CHALLENGE_SECOND_RESULT=", second)
 	assert_true(second["accepted"], str(second))
 	assert_true(second["completed"])
