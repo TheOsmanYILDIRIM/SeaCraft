@@ -2,6 +2,7 @@
 """Stage only approved 4×2 runtime atlases, never the source boards."""
 import argparse
 import math
+import json
 import re
 import struct
 import zipfile
@@ -15,6 +16,7 @@ EXPECTED = {
     "SC-02": "SC02_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip",
     "SC-03": "SC03_Tuz_Ambari_AUTO_FINAL_GITHUB_UPLOAD.zip",
 }
+ORDER = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 PNG = b"\x89PNG\r\n\x1a\n"
 
 
@@ -32,32 +34,45 @@ def stage(ship, archive):
                 continue
             width, height = struct.unpack(">II", header[16:24])
             print(f"VISUAL_PILOT_PNG ship={ship} file={name} size={width}x{height} color_type={header[25]}")
-            if width == height * 2 and height % 2 == 0 and 0 < width <= 4096:
+            if ("atlas" in name and width == height * 2
+                    and height % 2 == 0 and 0 < width <= 4096):
                 matches.append((entry, height // 2))
-        labeled = [match for match in matches if "atlas" in Path(match[0].filename).name.lower()]
-        if labeled:
-            matches = labeled
         if len(matches) > 1 and ship == "SC-02":
             runtime = [match for match in matches if match[1] == 160]
             if runtime:
                 matches = runtime
-        if not matches:
+        if len(matches) > 1:
+            raise ValueError(f"{archive.name}: ambiguous atlas")
+        if matches:
+            entry, cell = matches[0]
+            atlas_source = entry.filename
+            with Image.open(BytesIO(z.read(entry))) as source:
+                if "A" not in source.getbands() and "transparency" not in source.info:
+                    raise ValueError(f"{ship}: approved atlas has no alpha")
+                atlas = source.convert("RGBA")
+        elif ship == "SC-03":
+            # This approved AUTO FINAL package contains eight aligned master
+            # frames, not an atlas. Its opaque contact sheet is QA only.
+            cell = 1024
+            atlas_source = "approved_8_master_frames"
+            atlas = Image.new("RGBA", (4 * cell, 2 * cell))
+            for index, direction in enumerate(ORDER):
+                source_name = f"SC03_Tuz_Ambari/{direction}.png"
+                with Image.open(BytesIO(z.read(source_name))) as source:
+                    if source.mode != "RGBA" or source.size != (cell, cell):
+                        raise ValueError(f"{ship} {direction}: expected approved RGBA master")
+                    atlas.paste(source, ((index % 4) * cell, (index // 4) * cell))
+            report = json.loads(z.read("SC03_Tuz_Ambari/normalization_report.json"))
+            for direction in ORDER:
+                print(f"VISUAL_PILOT_NORMALIZATION ship={ship} direction={direction} original_measure={report.get(direction, {})}")
+        else:
             print(f"VISUAL_PILOT_MISSING ship={ship}")
             return
-        if len(matches) != 1:
-            raise ValueError(f"{archive.name}: expected one approved RGBA 4x2 atlas, found {len(matches)}")
-        entry, cell = matches[0]
-        if ship == "SC-07" and cell != 224:
-            raise ValueError("SC-07 atlas must have approved 224 px cells")
-        with Image.open(BytesIO(z.read(entry))) as source:
-            if "A" not in source.getbands() and "transparency" not in source.info:
-                raise ValueError(f"{ship}: approved atlas has no alpha")
-            atlas = source.convert("RGBA")
-        runtime_cell = 160 if ship == "SC-02" else cell
+        runtime_cell = {"SC-02": 160, "SC-03": 224, "SC-07": 224}[ship]
         if runtime_cell > cell:
             raise ValueError(f"{ship}: refusing to upscale atlas from {cell} to {runtime_cell}")
         runtime = Image.new("RGBA", (4 * runtime_cell, 2 * runtime_cell))
-        for index, direction in enumerate(("N", "NE", "E", "SE", "S", "SW", "W", "NW")):
+        for index, direction in enumerate(ORDER):
             x, y = (index % 4) * cell, (index // 4) * cell
             frame = atlas.crop((x, y, x + cell, y + cell))
             box = frame.getchannel("A").getbbox()
@@ -70,7 +85,7 @@ def stage(ship, archive):
                 frame = frame.resize((runtime_cell, runtime_cell), Image.Resampling.LANCZOS)
             runtime.paste(frame, ((index % 4) * runtime_cell, (index // 4) * runtime_cell))
         runtime.save(OUT / f"{ship}.png")
-        print(f"VISUAL_PILOT_ATLAS ship={ship} archive={archive.name} atlas={entry.filename} source_cell={cell} cell={runtime_cell} pivot={runtime_cell/2:g},{runtime_cell/2:g}")
+        print(f"VISUAL_PILOT_ATLAS ship={ship} archive={archive.name} atlas={atlas_source} source_cell={cell} cell={runtime_cell} pivot={runtime_cell/2:g},{runtime_cell/2:g}")
 
 
 def main():
