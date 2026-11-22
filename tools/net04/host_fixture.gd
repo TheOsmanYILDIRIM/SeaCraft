@@ -58,8 +58,10 @@ func start_case(game_port: int, discovery_port: int, work: String) -> void:
 		_abort("loot fixture")
 		return
 	_drop_id = str(drop["drop_id"])
-	if not _session.spawn_network_entity(_drop_id, "loot", FoundationSector.ID, {"x": drop["x"], "y": drop["y"]}, str(drop["item_id"])):
-		_abort("drop spawn")
+	# bind_gameplay_authority() synchronously mirrors drop_created into replication.
+	# Do not register the same authoritative drop a second time.
+	if not _session.network_entity_registry().has_entity(_drop_id):
+		_abort("drop replication spawn")
 		return
 	_discovery = LanDiscoveryHost.new()
 	if _discovery.start(game_port, discovery_port, _session.session_id(), "NET04 CI Host", 0, 2, "127.0.0.1") != OK:
