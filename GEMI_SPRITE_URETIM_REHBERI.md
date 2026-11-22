@@ -491,3 +491,54 @@ Tüm GPT Image üretim isteklerinde **ABSOLUTE OUTPUT REQUIREMENT = STRICT 1:1 S
 8-yön radial referans aşamasında iki referans kullanılır: gemi kimliği için onaylı tekli master ve yalnız yerleşim/kamera düzeni için kodla hazırlanmış radial pano örneği. Radial pano da **strict 1:1 square** üretilir. Örnek panodaki gemi tasarımı kopyalanmaz.
 
 **Kural:** GPT Image üretim promptlarında 1:1 kare şartı hiçbir aşamada varsayılmaz; prompt içinde açıkça iki kez yazılır.
+
+
+## 16. Ortak SeaCraft renk / LUT hattı
+
+Yeni kanonik araç:
+
+\`tools/seacraft_showlook.py\`
+
+Bu araç geminin geometrisini, alfa kanalını, canvas boyutunu veya yerleşimini değiştirmez. Yalnız normalize edilmiş 8 yönün ortak renk/ton görünümünü üretir. Girdi klasörü \`N.png, NE.png, E.png, SE.png, S.png, SW.png, W.png, NW.png\` dosyalarını aynı canvas boyutunda içermelidir.
+
+Kanonik sıra:
+
+\`\`\`text
+gövde/pivot ve yön normalizasyonu
+→ gemi içi yön renk eşitlemesi (sprite_normalize.py içindeki canonical N Lab/LUT)
+→ tools/seacraft_showlook.py --stage v3
+→ final PNG / atlas
+\`\`\`
+
+Manuel hizalama kullanılmışsa X/Y/scale düzeltmesi bu sıranın geometrik kısmında kalır; ortak show-look geometrik hizalamayı tekrar değiştirmez.
+
+Araçta SC-01 look-development sırasında kullanılan üç aşama korunur:
+
+- **v1 · Global Theme LUT:** bütün gemi setinden tek Lab luminance quantile + a/b covariance profili çıkarıp stil referansındaki gemi foreground'una eşler. Tarihsel ilk ortak görünüm denemesidir.
+- **v2 · Material-aware:** yelken, ahşap, metal/koyu donanım ve diğer bölgeleri ayrı Lab profilleriyle eşler. Tek global transferin malzeme renklerini birbirine sürüklemesini azaltır.
+- **v3 · ShowLook — varsayılan:** v2 mantığını daha kontrollü katsayılarla uygular; ardından filmic ton eğrisi, hafif soğuk gölge, kontrollü sıcak ahşap orta ton ve kirli-krem yelken sınırı ekler. Son olarak yalnız global finishing katmanını taşıyan hafif bir 33³ \`.cube\` üretir.
+
+**Önemli:** v3'te üretilen \`.cube\` dosyası tek başına tam v3 değildir. Asıl ortak görünüm material-aware Python aşamasıdır; cube yalnız taşınabilir son show-look katmanıdır.
+
+Örnekler:
+
+\`\`\`bash
+python tools/seacraft_showlook.py normalized/ style_reference.png out_v1/ --stage v1
+python tools/seacraft_showlook.py normalized/ style_reference.png out_v2/ --stage v2
+python tools/seacraft_showlook.py normalized/ style_reference.png out_v3/ --stage v3 --cube-size 33
+\`\`\`
+
+Her çalıştırma yön PNG'lerine ek olarak \`contactsheet_<stage>.png\`, seçili yönde before/after \`comparison_<direction>_<stage>.png\`, \`profile_<stage>.json\` ve \`validation.json\` üretir. v3 ayrıca \`SeaCraft_ShowLook_v3_33.cube\` üretir.
+
+Bağımlılıklar mevcut sprite normalizer ile aynıdır:
+
+\`\`\`text
+pillow
+numpy
+opencv-python
+scikit-image
+\`\`\`
+
+Doğrulama kuralı: bütün final yönler aynı canvas boyutunda RGBA kalmalı ve alfa içeriği dört kenara taşmamalıdır. SC-01 doğrulama setinde v1, v2 ve v3'ün üçünde de 8/8 kare aynı canvas, RGBA ve edge-alpha=0 olarak geçti; v3 33³ cube çıktısı da üretildi.
+
+**Üretim kararı:** yeni gemilerde ortak tema için varsayılan \`v3\`; v1/v2 yalnız geriye dönük karşılaştırma ve look-development teşhisi için korunur. Stil referansı ayrı girdidir; araç referans görselini repoya gömmek zorunda değildir.
