@@ -91,7 +91,14 @@ jobs:
           set -euo pipefail
           python3 -m venv "$RUNNER_TEMP/visual-pilot-env"
           "$RUNNER_TEMP/visual-pilot-env/bin/pip" install --disable-pip-version-check Pillow==11.3.0
-          "$RUNNER_TEMP/visual-pilot-env/bin/python" tools/ci/stage_ship_visual_pilot.py
+          "$RUNNER_TEMP/visual-pilot-env/bin/python" tools/ci/stage_ship_visual_pilot.py --qa-dir "$RUNNER_TEMP/visual-pilot-qa"
+
+      - name: Upload visual pilot review images
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaCraft-Visual-Pilot-${{ github.sha }}
+          if-no-files-found: error
+          path: ${{ runner.temp }}/visual-pilot-qa/*.png
 
       - name: Import and parse project resources
         shell: bash

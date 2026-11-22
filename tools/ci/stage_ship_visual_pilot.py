@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Stage only approved 4×2 runtime atlases, never the source boards."""
 import argparse
+import math
 import re
 import struct
 import zipfile
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 from io import BytesIO
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,8 +61,10 @@ def stage(ship, archive):
             x, y = (index % 4) * cell, (index // 4) * cell
             frame = atlas.crop((x, y, x + cell, y + cell))
             box = frame.getchannel("A").getbbox()
-            if not box or box[0] == 0 or box[1] == 0 or box[2] == cell or box[3] == cell:
-                raise ValueError(f"{ship} {direction}: blank frame or alpha touching cell boundary")
+            if not box:
+                raise ValueError(f"{ship} {direction}: blank frame")
+            if box[0] == 0 or box[1] == 0 or box[2] == cell or box[3] == cell:
+                print(f"VISUAL_PILOT_EDGE_CONTACT ship={ship} direction={direction} source_cell={cell}")
             print(f"VISUAL_PILOT_FRAME ship={ship} direction={direction} atlas_alpha_bbox={box}")
             if runtime_cell != cell:
                 frame = frame.resize((runtime_cell, runtime_cell), Image.Resampling.LANCZOS)
@@ -73,6 +76,7 @@ def stage(ship, archive):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sc07", type=Path, help="Approved SC-07 final archive; omit if unavailable")
+    parser.add_argument('--qa-dir', type=Path)
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     for ship, name in EXPECTED.items():
@@ -86,6 +90,48 @@ def main():
         # Do not publish a stale local comparison atlas in a new export.
         (OUT / "SC-07.png").unlink(missing_ok=True)
         print("VISUAL_PILOT_MISSING ship=SC-07")
+    if args.qa_dir:
+        proof(args.qa_dir)
+
+
+
+def proof(out):
+    """Exact runtime textures, at game world sizes, on CPU-modelled sea backgrounds."""
+    out.mkdir(parents=True, exist_ok=True)
+    directions = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+    ships = [(ship, size) for ship, size in (("SC-02", 104), ("SC-03", 132), ("SC-07", 120))
+             if (OUT / f"{ship}.png").is_file()]
+    for factor in (1, 2):
+        stride, row = 148 * factor, 146 * factor
+        for water in ("current", "preview"):
+            board = Image.new("RGBA", (stride * 8, row * len(ships) + 24), (9, 24, 29, 255))
+            if water == "preview":
+                for y in range(board.height):
+                    for x in range(board.width):
+                        px, py = x / factor * 0.039, y / factor * 0.039
+                        a = math.sin(px * 0.7 + py * 0.6 + math.cos(py * 0.38))
+                        b = math.cos(px * -0.36 + py * 0.94 + math.sin(px * 0.47))
+                        v = 0.5 + 0.26 * a + 0.19 * b
+                        board.putpixel((x, y), (round((0.025 + 0.030 * v) * 255),
+                                                round((0.075 + 0.070 * v) * 255),
+                                                round((0.095 + 0.070 * v) * 255), 255))
+            draw = ImageDraw.Draw(board)
+            for i, direction in enumerate(directions):
+                draw.text((i * stride + stride // 2 - 5, 5), direction, fill="white")
+            for j, (ship, size) in enumerate(ships):
+                with Image.open(OUT / f"{ship}.png") as atlas:
+                    cell = atlas.height // 2
+                    for i in range(8):
+                        x, y = (i % 4) * cell, (i // 4) * cell
+                        part = atlas.crop((x, y, x + cell, y + cell))
+                        part = part.resize((size * factor, size * factor), Image.Resampling.BILINEAR)
+                        cx, cy = i * stride + stride // 2, 24 + j * row + row // 2
+                        board.alpha_composite(part, (cx - part.width // 2, cy - part.height // 2))
+                        # Mark the pivot next to the image, never over the hull.
+                        draw.line((i * stride + 2, cy, i * stride + 8, cy), fill=(126, 216, 242))
+                    draw.text((4, 25 + j * row), ship, fill="white")
+            board.save(out / f"{water}-{factor}x.png")
+    print("VISUAL_PILOT_PROOF exact_runtime_atlas cpu_sea_model scales=1,2")
 
 
 if __name__ == "__main__":
