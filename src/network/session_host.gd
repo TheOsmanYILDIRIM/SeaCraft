@@ -470,7 +470,7 @@ func _new_token() -> String:
 
 func _new_stable_random(prefix: String) -> String:
 	var token := _new_token()
-	return ("%s.%s" % [prefix, token]) if not token.is_empty() else ""
+	return ("%s.r%s" % [prefix, token]) if not token.is_empty() else ""
 
 
 func _cleanup_reservations() -> void:
