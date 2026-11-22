@@ -45,10 +45,19 @@ def main() -> None:
     if "[autoload]" in project or "BeehaveGlobalMetrics" in project or "BeehaveGlobalDebugger" in project:
         fail("Beehave must stay detached/manual; project autoloads are not allowed")
     presets = Path("export_presets.cfg").read_text(encoding="utf-8")
-    if 'exclude_filter="tests/**,tools/**,addons/**"' in presets:
-        fail("export still strips all addons")
-    if presets.count('exclude_filter="tests/**,tools/**,addons/gut/**"') != 2:
-        fail("exports must keep Beehave while excluding GUT")
+    exclude_lines = [
+        line.strip() for line in presets.splitlines() if line.strip().startswith("exclude_filter=")
+    ]
+    if len(exclude_lines) != 2:
+        fail(f"expected exactly two export exclude filters, got {len(exclude_lines)}")
+    for line in exclude_lines:
+        if "addons/**" in line:
+            fail("export still strips all addons")
+        for required in ["tests/**", "tools/**", "addons/gut/**"]:
+            if required not in line:
+                fail(f"export exclude filter must contain {required}")
+        if "addons/beehave/**" in line:
+            fail("export must keep pinned Beehave runtime")
     runner = Path("src/simulation/ai/ai_bt_runner.gd").read_text(encoding="utf-8")
     if "BeehaveTree.ProcessThread.MANUAL" not in runner or "_tree.tick()" not in runner:
         fail("SeaCraft runner is not manual Beehave execution")
