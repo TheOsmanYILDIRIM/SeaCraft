@@ -225,6 +225,8 @@ static func _validate_loot(value: Variant, registry: DefinitionRegistry) -> Stri
 
 
 static func _validate_authoritative_content(authoritative: Dictionary, registry: DefinitionRegistry) -> String:
+	if authoritative.has("progression") and not InventoryState.validate_progression_state(authoritative["progression"]):
+		return "invalid_progression_state"
 	if authoritative.has("entity_index"):
 		var index_error := PersistentEntityIndex.validate(authoritative["entity_index"], registry)
 		if not index_error.is_empty():
