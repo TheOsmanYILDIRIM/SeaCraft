@@ -225,8 +225,8 @@ func test_net04_static_security_and_network_boundary() -> void:
 
 
 func test_net04_protocol_mismatch_stays_deterministic_after_version_bump() -> void:
-	assert_eq(P.PROTOCOL_VERSION, 5)
+	assert_eq(P.PROTOCOL_VERSION, 6)
 	assert_eq(P.validate_handshake(P.client_hello({"protocol_version": P.PROTOCOL_VERSION - 1})), P.REJECT_PROTOCOL_MISMATCH)
 	var pickup := P.make_envelope(8, P.PICKUP_LOOT, {"drop_id": "drop.entity_net04.seq_8", "transaction_id": "txn.net04.t8"})
 	assert_eq(P.validate_envelope(pickup), "")
-	print("NET04_PROTOCOL_MISMATCH_OK version=5")
+	print("NET04_PROTOCOL_MISMATCH_OK version=6")
