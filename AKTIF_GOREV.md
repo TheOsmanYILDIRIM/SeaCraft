@@ -4,6 +4,10 @@
 >
 > Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir NET-04 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
+## Durum — KAPALI
+
+NET-04 tamamlandı. Exact kod SHA `ba5fd180b9e359b0dcc146b58c52254fe537f317`; Actions #196 / run `45007820093` sonucu `success`; GUT `339/339`; real-process, Linux/Android export ve artifact readback doğrulandı. Avenox Beyin taskı `done` revision 2 olarak kapatıldı. Ayrıntılı kapanış `GOREV_RAPORU.md` içindedir. Bu brief artık tarihsel kapanmış görev sözleşmesidir. Fiziksel Android cihaz matrisi `not_run`; **WAVE 6 başlatılmadı.**
+
 ## Kimlik
 
 - Sohbet etiketi: `[SOHBET-31 | SeaCraft NET-04 — Discovery, Reconnect, Late Join ve LAN Transaction Hardening]`

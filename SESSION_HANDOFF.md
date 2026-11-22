@@ -4,6 +4,10 @@
 > Yeni sohbet bu dosyayı **başlangıç bağlamı** olarak kullanmalı; fakat her zaman uzak `main` HEAD'i yeniden doğrulamalı.
 > Ayrıntılı NET-04 uygulama sözleşmesinin kanonik kaynağı `AKTIF_GOREV.md` dosyasıdır. Bu devir kaydı o briefin yerine geçmez; mevcut gerçek durumu, kanıt zincirini ve devam noktasını sabitler.
 
+## Kapanış durumu — 2026-11-22
+
+Bu handoff içindeki “NET-04 henüz tamamlanmadı” ve açık-failure bölümleri tarihsel ara durumu kaydeder ve artık superseded'dır. SOHBET-31 / NET-04 exact kod SHA `ba5fd180b9e359b0dcc146b58c52254fe537f317` üzerinde Actions #196 / run `45007820093` ile başarıyla tamamlandı. GUT `339/339`; real-process, Linux/Android export ve artifact readback geçti. Avenox Beyin taskı `done` revision 2 ve tek receipt ile commit `2bcb04c6d67b01f633537d67a6b78b7b14f14bab` üzerinde geri okundu. Fiziksel Android cihaz matrisi `not_run`. Ayrıntılı kanonik kapanış `GOREV_RAPORU.md` içindedir. **WAVE 6 başlatılmadı.**
+
 ## 1. Kullanıcı çalışma biçimi
 
 - Türkçe ve kısa sonuç ver.

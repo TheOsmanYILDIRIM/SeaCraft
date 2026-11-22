@@ -469,3 +469,94 @@ NET-02 için host-only stable-ID spawn/despawn, primitive bounded DTO, custom or
 | Linux PCK | `f47d44ca43cd4649415520c188f7df70c4baa3e7dca8f135e45fa9d19043c97f` |
 
 **Beyin.** [Tek kanonik task](https://github.com/TheOsmanYILDIRIM/agy-vault/blob/9454df4cba6eacd02e824ca62e39b4d5e2f0b00c/tasks/seacraft-net03-vertical-slice-lan-parity-20261122.md) `done` revizyon 2; [tek receipt](https://github.com/TheOsmanYILDIRIM/agy-vault/blob/9454df4cba6eacd02e824ca62e39b4d5e2f0b00c/receipts/17cca67ee6a7f677f93d10f87d190fb5424d6208d89e65a5e8d439e01680ae25.md) exact kod SHA, Actions ve artifact kanıtıyla aynı Beyin commit'inden geri okundu. DirectSync strict doctor sorun sayısı 0. **NET-04: not_started.**
+
+## SOHBET-31 — SeaCraft NET-04 — Discovery, Reconnect, Late Join ve LAN Transaction Hardening
+
+**Sonuç (2026-11-22): tamamlandı.** Exact kod SHA: `ba5fd180b9e359b0dcc146b58c52254fe537f317`. Godot 4.7.2-stable CI: [#196, run 45007820093, success](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45007820093). SOHBET-31 handoff sonrasındaki kapanış düzeltme zinciri 6 code/CI commit'inden oluştu: `8b491dc3908cafdf8393d0b3b7c7f5221e7f9ff1`, `6f008f0e2398da3500ba552639d409dfb131fa4c`, `ed7318314eb9f5339bf557a4874b60ed5f446130`, `93c24ff73686fd60db6fc39652f8a682f1cd6195`, `3a4cac13ffbc7c6be1fe042fcd5f68746c768fda`, `ba5fd180b9e359b0dcc146b58c52254fe537f317`. Handoff kapanış koşuları #190–#196 içinde final #196 exact SHA üzerinde geçti; daha eski NET-04 geliştirmesi file-by-file incremental commitlerle hazırlanmıştı.
+
+### Test ve regresyon kanıtı
+
+Exact SHA üzerinde GUT sonucu **339/339**, **28018 assert**. Parse/load/script failure yok; failing test yok; nonzero orphan guard geçti. NET-04 verifier: `NET04_VERIFIER_OK unit=13 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1`.
+
+Eski ağ/regresyon kapıları da aynı run üzerinde geçti:
+
+- NET-01: `NET01_PROCESS_INTEGRATION_OK`; verifier `tests=10 real_process_rpc=1 host_authority=1`.
+- NET-02: `NET02_PROCESS_INTEGRATION_OK host=1 clients=2`; verifier `tests=11 real_process_rpc=1 host=1 clients=2 spawned=8 snapshots_sent=64 max_snapshot_bytes=1360`.
+- NET-03: `NET03_PROCESS_INTEGRATION_OK host=1 clients=1 cases=2`; verifier `tests=9 host=1 clients=1 cases=2`; semantic SHA-256 `2c9cea2fb6cad5e2ca5226d7a1f6e30fb944f594413c2572943ca04a31d22693`.
+- VS-04 scenario/checkpoint/soak kapıları; CORE-01..04; AI-01..04 doğrulama marker ve verifier kapıları geçti.
+
+### NET-04 discovery, reconnect, late join ve transaction
+
+Gerçek ayrı Godot process senaryosu 1 host + client A + client B ile tamamlandı:
+
+- UDP discovery gerçek `PacketPeerUDP` üzerinden, game ENet portundan ayrı discovery portunda çalıştı.
+- Client A discovery ile hostu buldu, baseline aldı, lost-ACK simülasyonunda koptu ve yeni peer üzerinden aynı `entity.player` kimliğine resume oldu; `next_sequence=2`.
+- Reconnect rezervasyonu ve token sözleşmesi korundu; unit kontratı 128-bit entropy ve 30000 ms grace doğruladı. Token rotation / eski-token rejection ve protocol mismatch v3 deterministic kaldı.
+- Client B late join sırasında current authoritative baseline aldı; `current_x=321.0` ve daha önce claim edilmiş loot baseline'da geri gelmedi.
+- Lost-ACK transaction retry ikinci ödül üretmedi: `NET04_TRANSACTION_IDEMPOTENCY_OK transaction=txn.net04.lost_ack quantity=2`.
+- Host transaction ledger `entries=1 commit_sequence=1 reservations=1` ile temiz kapandı; transaction persistence round-trip, same-ID conflict ve duplicate claim korumaları unit testlerinde geçti.
+- Discovery fuzz sabit seed ile 2000 paket; TTL `2500 ms`, visible cache üst sınırı `16`; malformed/bounded parser, permission fallback, offline boot ve manual IPv4 sözleşmeleri geçti.
+
+Reconnect failureının kök nedeni iki parçalıydı: transport kopuşunda eski mirror handle'ları serbest bırakıldığı halde registry stale handle tutabiliyordu; full session reset sonrasında generation geçmişi de korununca authoritative baseline'daki geçerli aynı generation stale sayılıp spawn reddediliyordu. Registry artık freed proxy'yi cast etmeden doğruluyor; disconnect full replication reset yapıyor; full session clear generation geçmişini de sıfırlıyor. Normal despawn generation koruması değişmedi. NET-03 gerçek-process önkoşulunda loot transiti de production pickup-radius sözleşmesiyle hizalandı.
+
+### Android / Linux export
+
+Linux debug export üretildi:
+
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+- export edilen Linux binary headless açılışı `SeaCraft bootstrap ready` ile geçti.
+
+Android debug export üretildi:
+
+- `android/SeaCraft-debug.apk`
+- package: `com.osmanyildirim.seacraft`
+- `targetSdkVersion: 37`
+- native ABI: yalnız `arm64-v8a`
+- `android.permission.INTERNET`
+- `android.permission.ACCESS_LOCAL_NETWORK`
+
+Godot resmi 4.7.2 export template'i pinned SHA ile indirildi; headless build-template installer hang'i yerine aynı resmi `android_source.zip` deterministik olarak kuruldu. Android 17 platformu SDK manager'da yayınlanan `platforms;android-37.0` preview paketi üzerinden kuruldu ve integer compileSdk tüketicileri için `android-37` aliası doğrulandı.
+
+Fiziksel Android 17 permission allow/deny/revoke, desktop↔Android aynı Wi-Fi, Android host, guest/AP isolation, background→foreground reconnect ve 10+ dakika cihaz LAN oturumu bu CI ortamında çalıştırılmadı: **not_run**.
+
+### Artifact provenance ve readback
+
+Artifact:
+
+- Ad: `SeaCraft-NET04-ba5fd180b9e359b0dcc146b58c52254fe537f317`
+- ID: `14748254309`
+- Boyut: `58669047` byte
+- ZIP SHA-256: `a47363f1c63d9024ce69a7f53710278acf6a1d0d94d7bf2bf0e6b6f56835968e`
+- URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45007820093/artifacts/14748254309
+
+CI authenticated REST readback:
+
+`NET04_ARTIFACT_READBACK_OK artifact_id=14748254309 rest_zip_sha256=a47363f1c63d9024ce69a7f53710278acf6a1d0d94d7bf2bf0e6b6f56835968e upload_digest=a47363f1c63d9024ce69a7f53710278acf6a1d0d94d7bf2bf0e6b6f56835968e sha=ba5fd180b9e359b0dcc146b58c52254fe537f317`
+
+Artifact ayrıca GitHub connector ile yeniden indirildi; ZIP digest, `COMMIT_SHA.txt` ve `SHA256SUMS.txt` bağımsız geri okumada doğrulandı. Üç payload da `OK`:
+
+| İçerik | SHA-256 |
+| --- | --- |
+| Android APK | `876382eed8ee1854c1ac630fb48980112bccfca2bb4d6273e7f59700d6e34f29` |
+| Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
+| Linux PCK | `80c9ec9860fb6294283240c5fbfbf847f8854854e5f5788084322b3d9962b9f1` |
+
+### Avenox Beyin strict kapanışı
+
+Kanonik task:
+
+`tasks/seacraft-net04-lan-hardening-20261122.md`
+
+Beyin `agy-vault/main` readback:
+
+- status: `done`
+- revision: `2`
+- evidence: `notes/seacraft-net04-verification-20261122.md`
+- receipt: `receipts/d6891c3597216f06884b1a2d5dddf454b20d7e8faa24fd54fdd409d49012ddf7.md`
+- receipt event ID: `seacraft-net04-close-ba5fd180b9e359b0dcc146b58c52254fe537f317`
+- Beyin kapanış commit'i: `2bcb04c6d67b01f633537d67a6b78b7b14f14bab`
+
+Task, evidence ve tek receipt aynı kapanış commit'i sonrasında uzak `agy-vault/main` üzerinden geri okundu. Yeni NET-04 task/receipt kopyası oluşturulmadı.
+
+NET-04 ile doğrulanmış plan ilerlemesi **22/35** oldu. **NET-04 tamamlandı. WAVE 6 başlatılmadı.**
