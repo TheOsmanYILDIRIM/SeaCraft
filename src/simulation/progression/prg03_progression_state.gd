@@ -374,8 +374,10 @@ func _gate_complete(owner_id: String, payload: Dictionary) -> Dictionary:
 		var required := _ranks[definition.required_rank_id] as ProgressionRankDefinition
 		if total_xp(owner_id) < required.xp_threshold:
 			return _reject(OP_GATE_COMPLETE, "rank_locked")
-	var deltas := _reward_deltas(definition.rewards)
-	if deltas == null or not _inventory.can_apply_item_deltas(owner_id, deltas):
+	var deltas: Dictionary = _reward_deltas(definition.rewards)
+	if not definition.rewards.is_empty() and deltas.is_empty():
+		return _reject(OP_GATE_COMPLETE, "invalid_reward")
+	if not _inventory.can_apply_item_deltas(owner_id, deltas):
 		return _reject(OP_GATE_COMPLETE, "reward_capacity")
 	if definition.xp_reward > 0 and not _can_grant_xp(owner_id, _gate_xp_event(gate_id), definition.xp_reward):
 		return _reject(OP_GATE_COMPLETE, "xp_reward_rejected")
@@ -414,8 +416,8 @@ func _challenge_event(owner_id: String, payload: Dictionary) -> Dictionary:
 	var completes := next_progress >= definition.target_value and not bool(row["rewarded"])
 	var deltas: Dictionary = {}
 	if completes:
-		var candidate = _reward_deltas(definition.rewards)
-		if candidate == null:
+		var candidate: Dictionary = _reward_deltas(definition.rewards)
+		if not definition.rewards.is_empty() and candidate.is_empty():
 			return _reject(OP_CHALLENGE_EVENT, "invalid_reward")
 		deltas = candidate
 		if not _inventory.can_apply_item_deltas(owner_id, deltas):
@@ -446,13 +448,13 @@ func _can_grant_xp(owner_id: String, event_id: String, amount: int) -> bool:
 	var events: Dictionary = owner["xp_events"]
 	return not events.has(event_id) and events.size() < MAX_EVENTS and amount <= MAX_XP - int(owner["total_xp"])
 
-func _reward_deltas(rewards: Array[Dictionary]) -> Variant:
+func _reward_deltas(rewards: Array[Dictionary]) -> Dictionary:
 	var deltas: Dictionary = {}
 	for row in rewards:
 		var item_id := str(row["item_id"])
 		var amount := int(row["quantity"])
 		if not _inventory.has_item_spec(item_id) or amount <= 0:
-			return null
+			return {}
 		deltas[item_id] = int(deltas.get(item_id, 0)) + amount
 	return deltas
 
