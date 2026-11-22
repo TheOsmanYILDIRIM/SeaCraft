@@ -410,6 +410,12 @@ func _show_core_feedback(button: CombatFireButton, label: String, success: bool)
 
 
 func _ui_captures_touch(screen_position: Vector2) -> bool:
+	# Keep the debug copy button reachable without giving its entire layer world-input ownership.
+	if ANDROID_TRACE.enabled():
+		var button: Button = ANDROID_TRACE.copy_button
+		if is_instance_valid(button) and button.is_visible_in_tree() and button.get_global_rect().has_point(screen_position):
+			ANDROID_TRACE.record("ui_hit", "path=%s" % button.get_path())
+			return true
 	return _control_tree_captures_touch($UI, screen_position)
 
 

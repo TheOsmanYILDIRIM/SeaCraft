@@ -23,12 +23,12 @@ simulation_target_path = NodePath("../ShipMotor")
 
 [node name="GameplayCamera" type="Camera2D" parent="."]
 enabled = true
-follow_target_path = NodePath("../BoatMarker")
 script = ExtResource("2_camera")
+follow_target_path = NodePath("../BoatMarker")
 
 [node name="InputController" type="Node" parent="."]
-camera_path = NodePath("../GameplayCamera")
 script = ExtResource("3_input")
+camera_path = NodePath("../GameplayCamera")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
