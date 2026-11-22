@@ -25,6 +25,7 @@ var _bridge: SessionRpcBridge
 var _replication: NetworkReplicationPeer
 var _combat_authority: CombatAuthority
 var _loot_authority: LootAuthority
+var _inventory_state: InventoryState
 var _player_motors: Dictionary = {}
 var _player_ids: Array[String] = []
 var _peer_states: Dictionary = {}
@@ -109,6 +110,7 @@ func stop() -> void:
 		_loot_authority.drop_claimed.disconnect(_on_gameplay_drop_claimed)
 	_combat_authority = null
 	_loot_authority = null
+	_inventory_state = null
 	if _peer != null:
 		_peer.close()
 	if multiplayer.multiplayer_peer != null:
@@ -415,7 +417,35 @@ func bind_gameplay_authority(combat: CombatAuthority, loot: LootAuthority) -> bo
 	return true
 
 
+func bind_progression_authority(inventory: InventoryState) -> bool:
+	if not _running or inventory == null or _inventory_state != null:
+		return false
+	_inventory_state = inventory
+	return true
+
+
 func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: String, payload: Dictionary) -> String:
+	if intent_type in PROTOCOL.PROGRESSION_INTENTS:
+		if _inventory_state == null:
+			return PROTOCOL.REJECT_AUTHORITY_COMMAND
+		var transaction_id := str(payload["transaction_id"])
+		var operation_payload := payload.duplicate(true)
+		operation_payload.erase("transaction_id")
+		var fingerprint := LEDGER.fingerprint(intent_type, operation_payload)
+		var lookup := _ledger.inspect(player_id, transaction_id, intent_type, fingerprint)
+		var status := str(lookup["status"])
+		if status == LEDGER.STATUS_CONFLICT:
+			return PROTOCOL.REJECT_TRANSACTION_CONFLICT
+		if status == LEDGER.STATUS_FULL:
+			return PROTOCOL.REJECT_TRANSACTION_LEDGER_FULL
+		if status == LEDGER.STATUS_CACHED:
+			_bridge.send_transaction_result(peer_id, transaction_id, lookup["result"])
+			return ""
+		var result := _inventory_state.execute_transaction(player_id, transaction_id, intent_type, operation_payload)
+		if not _ledger.commit(player_id, transaction_id, intent_type, fingerprint, result):
+			return PROTOCOL.REJECT_TRANSACTION_CONFLICT
+		_bridge.send_transaction_result(peer_id, transaction_id, result)
+		return ""
 	if _combat_authority == null or _loot_authority == null:
 		return PROTOCOL.REJECT_AUTHORITY_COMMAND
 	if intent_type == PROTOCOL.PICKUP_LOOT:
