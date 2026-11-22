@@ -157,14 +157,18 @@ func test_small_landscape_safe_area_and_expand_math_are_stable() -> void:
 	assert_lt(safe_logical.size.distance_to(Vector2(1546.666667, 720.0)), 0.001)
 
 
-func test_touch_mouse_emulation_is_disabled_to_prevent_duplicate_commands() -> void:
+func test_android_touch_compatibility_settings_are_enabled() -> void:
 	assert_eq(
 		ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch"),
-		false
+		true
 	)
 	assert_eq(
 		ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse"),
 		false
+	)
+	assert_eq(
+		ProjectSettings.get_setting("input_devices/pointing/android/enable_pan_and_scale_gestures"),
+		true
 	)
 
 
@@ -335,3 +339,44 @@ func test_large_single_finger_drag_remains_camera_pan_not_ship_move() -> void:
 	assert_eq(gestures.size(), 1)
 	assert_eq(gestures[0]["kind"], "pan")
 	assert_true(touch.release(2, Vector2(360.0, 300.0)).is_empty())
+
+
+func test_android_mouse_fallback_can_move_and_pan_when_native_touch_is_missing() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var camera := GameplayCamera.new()
+	camera.name = "Camera"
+	root.add_child(camera)
+	var controller := GameplayInputController.new()
+	controller.name = "Controller"
+	controller.camera_path = NodePath("../Camera")
+	root.add_child(controller)
+	await get_tree().process_frame
+	controller.ui_hit_test = func(_position: Vector2) -> bool: return false
+	var commands: Array[Dictionary] = []
+	controller.command_emitted.connect(func(command: Dictionary) -> void: commands.append(command))
+
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.position = Vector2(700.0, 360.0)
+	press.pressed = true
+	controller._process_android_mouse_fallback(press)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.position = Vector2(700.0, 360.0)
+	release.pressed = false
+	controller._process_android_mouse_fallback(release)
+	assert_eq(commands.size(), 1)
+	assert_eq(commands[0]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
+
+	commands.clear()
+	press.position = Vector2(400.0, 300.0)
+	controller._process_android_mouse_fallback(press)
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(470.0, 300.0)
+	motion.relative = Vector2(70.0, 0.0)
+	controller._process_android_mouse_fallback(motion)
+	release.position = Vector2(470.0, 300.0)
+	controller._process_android_mouse_fallback(release)
+	assert_eq(commands.size(), 1)
+	assert_eq(commands[0]["type"], COMMANDS.CAMERA_PAN)
