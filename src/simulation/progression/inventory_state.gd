@@ -2,8 +2,9 @@ class_name InventoryState
 extends RefCounted
 
 const PRG02 := preload("res://src/simulation/progression/prg02_progression_state.gd")
+const PRG03 := preload("res://src/simulation/progression/prg03_progression_state.gd")
 
-const VERSION := 2
+const VERSION := 3
 const MAX_QUANTITY := 2147483647
 const MAX_ITEMS := 128
 const MAX_EQUIPMENT_SLOTS := 16
@@ -25,6 +26,10 @@ const OP_CORE_INSERT := PRG02.OP_CORE_INSERT
 const OP_CORE_REMOVE := PRG02.OP_CORE_REMOVE
 const OP_CORE_REPLACE := PRG02.OP_CORE_REPLACE
 const OP_TROPHY_UNLOCK := PRG02.OP_TROPHY_UNLOCK
+const OP_SKILL_SPEND := PRG03.OP_SKILL_SPEND
+const OP_RESPEC := PRG03.OP_RESPEC
+const OP_GATE_COMPLETE := PRG03.OP_GATE_COMPLETE
+const OP_CHALLENGE_EVENT := PRG03.OP_CHALLENGE_EVENT
 
 var _catalog: Dictionary = {}
 var _containers: Dictionary = {}
@@ -36,6 +41,8 @@ var _combat_locked: Dictionary = {}
 var _safe_state: Dictionary = {}
 var _prg02
 var _pending_prg02_state: Dictionary = {}
+var _prg03
+var _pending_prg03_state: Dictionary = {}
 
 func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 1000000.0) -> bool:
 	if not SectorIds.valid(owner_id) or max_slots <= 0 or max_slots > MAX_ITEMS or not is_finite(max_weight) or max_weight < 0.0 or _containers.has(owner_id):
@@ -45,6 +52,8 @@ func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 10000
 	_sockets[owner_id] = {}
 	_presets[owner_id] = {}
 	if _prg02 != null and not _prg02.bind_owner(owner_id):
+		return false
+	if _prg03 != null and not _prg03.bind_owner(owner_id):
 		return false
 	return true
 
@@ -60,6 +69,8 @@ func reassign_owner(from_id: String, to_id: String) -> bool:
 	_presets[to_id] = _presets.get(from_id, {})
 	_presets.erase(from_id)
 	if _prg02 != null and not _prg02.reassign_owner(from_id, to_id):
+		return false
+	if _prg03 != null and not _prg03.reassign_owner(from_id, to_id):
 		return false
 	return true
 
@@ -149,6 +160,52 @@ func configure_prg02_core_slot(owner_id: String, slot_id: String, slot_type: Str
 
 func prg02_state_snapshot() -> Dictionary:
 	return _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state()
+
+func configure_prg03() -> bool:
+	if _prg03 != null:
+		return false
+	_prg03 = PRG03.new(self)
+	for owner_id in _containers:
+		if not _prg03.bind_owner(str(owner_id)):
+			_prg03 = null
+			return false
+	if not _pending_prg03_state.is_empty():
+		if not _prg03.restore_state(_pending_prg03_state):
+			_prg03 = null
+			return false
+		_pending_prg03_state.clear()
+	return true
+
+func register_rank_definition(definition: ProgressionRankDefinition) -> bool:
+	return _prg03 != null and _prg03.register_rank(definition)
+
+func register_skill_definition(definition: ProgressionSkillDefinition) -> bool:
+	return _prg03 != null and _prg03.register_skill(definition)
+
+func register_gate_definition(definition: ProgressionGateDefinition) -> bool:
+	return _prg03 != null and _prg03.register_gate(definition)
+
+func register_challenge_definition(definition: LocalChallengeDefinition) -> bool:
+	return _prg03 != null and _prg03.register_challenge(definition)
+
+func validate_prg03_catalog() -> String:
+	return _prg03.validate_catalog() if _prg03 != null else "progression_unavailable"
+
+func grant_xp_authoritative(owner_id: String, event_id: String, source: String, amount: int) -> Dictionary:
+	return _prg03.grant_xp_authoritative(owner_id, event_id, source, amount) if _prg03 != null else {"accepted": false, "reason": "progression_unavailable", "duplicate": false, "total_xp": 0}
+
+func prg03_state_snapshot() -> Dictionary:
+	return _prg03.snapshot_state() if _prg03 != null else PRG03.empty_state()
+
+func progression_view(owner_id: String) -> Dictionary:
+	if _prg03 == null:
+		return {}
+	return {
+		"total_xp": _prg03.total_xp(owner_id),
+		"rank_id": _prg03.current_rank_id(owner_id),
+		"available_skill_points": _prg03.available_skill_points(owner_id),
+		"challenges": _prg03.challenge_snapshot(owner_id),
+	}
 
 func quantity(owner_id: String, item_id: String) -> int:
 	var container: Dictionary = _containers.get(owner_id, {})
@@ -266,6 +323,7 @@ func progression_snapshot() -> Dictionary:
 		"presets": _presets.duplicate(true),
 		"transactions": _transactions.duplicate(true),
 		"prg02": _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state(),
+		"prg03": _prg03.snapshot_state() if _prg03 != null else PRG03.empty_state(),
 	}
 
 func restore_progression(value: Variant) -> bool:
@@ -273,15 +331,26 @@ func restore_progression(value: Variant) -> bool:
 		return false
 	var source: Dictionary = value
 	var state := source.duplicate(true)
-	if int(state.get("version", 0)) == 1:
-		state["version"] = VERSION
+	var source_version := int(state.get("version", 0))
+	if source_version == 1:
 		state["prg02"] = PRG02.empty_state()
+		state["prg03"] = PRG03.empty_state()
+		state["version"] = VERSION
+	elif source_version == 2:
+		state["prg03"] = PRG03.empty_state()
+		state["version"] = VERSION
 	var prg02_state: Dictionary = state["prg02"]
 	if _prg02 != null:
 		if not _prg02.restore_state(prg02_state):
 			return false
 	else:
 		_pending_prg02_state = prg02_state.duplicate(true)
+	var prg03_state: Dictionary = state["prg03"]
+	if _prg03 != null:
+		if not _prg03.restore_state(prg03_state):
+			return false
+	else:
+		_pending_prg03_state = prg03_state.duplicate(true)
 	for owner_id in state["equipment"]:
 		if not _containers.has(owner_id):
 			return false
@@ -299,8 +368,11 @@ static func validate_progression_state(value: Variant, catalog: Dictionary = {})
 	if version == 1:
 		if state.size() != 5:
 			return false
-	elif version == VERSION:
+	elif version == 2:
 		if state.size() != 6 or not PRG02.validate_state(state.get("prg02")):
+			return false
+	elif version == VERSION:
+		if state.size() != 7 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")):
 			return false
 	else:
 		return false
@@ -339,10 +411,17 @@ func stat_value(owner_id: String, stat_id: String, base_value: float) -> float:
 			_append_modifiers(by_id, gem_id, stat_id, "socket." + str(socket_id))
 	if _prg02 != null:
 		_prg02.append_stat_modifiers(owner_id, stat_id, by_id)
+	if _prg03 != null:
+		_prg03.append_stat_modifiers(owner_id, stat_id, by_id)
 	return StatModifierPipeline.apply_from_dictionary(base_value, by_id)
 
 func _execute_uncached(actor_id: String, operation: String, payload: Dictionary) -> Dictionary:
 	var result := {"accepted": false, "reason": "", "operation": operation}
+	if PRG03.supports_operation(operation):
+		if _prg03 == null:
+			result["reason"] = "progression_unavailable"
+			return result
+		return _prg03.execute(actor_id, operation, payload)
 	if PRG02.supports_operation(operation):
 		if _prg02 == null:
 			result["reason"] = "progression_unavailable"
