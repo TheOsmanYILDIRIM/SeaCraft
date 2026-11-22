@@ -518,7 +518,7 @@ func _apply_rewards(owner_id: String, definition: QuestDefinition, cycle: int) -
 	if not deltas.is_empty() and not _inventory.apply_item_deltas_atomic(owner_id, deltas):
 		return {"accepted": false, "reason": "reward_item_commit_failed", "reward": {}}
 	if definition.xp_reward > 0:
-		var xp_event := "event.xp.quest.%s.%d" % [definition.stable_id, cycle]
+		var xp_event := "event.xp.quest.%s.cycle%d" % [definition.stable_id, cycle]
 		var xp_result: Dictionary = _inventory.grant_xp_authoritative(owner_id, xp_event, "quest", definition.xp_reward)
 		if not bool(xp_result.get("accepted", false)):
 			return {"accepted": false, "reason": "reward_xp_failed", "reward": {}}
