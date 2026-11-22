@@ -349,11 +349,10 @@ func _on_client_intent(peer_id: int, envelope: Dictionary) -> void:
 		if baseline_id != str(_pending_baselines.get(peer_id, "")):
 			_reject_intent(peer_id, sequence, PROTOCOL.REJECT_MALFORMED_BASELINE)
 			return
-		_last_sequence[peer_id] = sequence
 		_pending_baselines.erase(peer_id)
 		_peer_states[peer_id] = STATE_READY
 		_telemetry["ready"] = int(_telemetry["ready"]) + 1
-		_bridge.send_baseline_ready(peer_id, {"baseline_id": baseline_id, "next_sequence": sequence + 1})
+		_bridge.send_baseline_ready(peer_id, {"baseline_id": baseline_id, "next_sequence": sequence})
 		peer_state_changed.emit(peer_id, STATE_READY)
 		peer_ready.emit(peer_id, str(_peer_to_player[peer_id]))
 		return
