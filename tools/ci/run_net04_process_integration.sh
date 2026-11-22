@@ -12,12 +12,23 @@ HOST_PID=""
 A_PID=""
 
 cleanup() {
+  local rc=$?
+  trap - EXIT
   for pid in "$A_PID" "$HOST_PID"; do
     if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
       kill "$pid" 2>/dev/null || true
       wait "$pid" 2>/dev/null || true
     fi
   done
+  if (( rc != 0 )); then
+    for log in "$B_LOG" "$A_LOG" "$HOST_LOG"; do
+      if [[ -f "$log" ]]; then
+        echo "--- $log" >&2
+        cat "$log" >&2
+      fi
+    done
+  fi
+  exit "$rc"
 }
 trap cleanup EXIT
 
