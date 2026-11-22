@@ -226,3 +226,45 @@ func test_touch_input_stage_respects_ui_hit_test() -> void:
 	controller._input(release)
 
 	assert_true(commands.is_empty())
+
+
+func test_world_touch_release_over_ui_finishes_gesture_without_sticking() -> void:
+	var root := Node2D.new()
+	add_child_autofree(root)
+	var camera := GameplayCamera.new()
+	camera.name = "Camera"
+	root.add_child(camera)
+	var controller := GameplayInputController.new()
+	controller.name = "Controller"
+	controller.camera_path = NodePath("../Camera")
+	root.add_child(controller)
+	await get_tree().process_frame
+	var commands: Array[Dictionary] = []
+	controller.command_emitted.connect(func(command: Dictionary) -> void: commands.append(command))
+	controller.ui_hit_test = func(position: Vector2) -> bool: return position.x < 100.0
+
+	var press := InputEventScreenTouch.new()
+	press.index = 7
+	press.position = Vector2(900.0, 420.0)
+	press.pressed = true
+	controller._input(press)
+	var release := InputEventScreenTouch.new()
+	release.index = 7
+	release.position = Vector2(40.0, 40.0)
+	release.pressed = false
+	controller._input(release)
+
+	assert_eq(commands.size(), 1)
+	assert_eq(commands[0]["type"], COMMANDS.MOVE_TO_WORLD_POSITION)
+
+	var ui_press := InputEventScreenTouch.new()
+	ui_press.index = 7
+	ui_press.position = Vector2(40.0, 40.0)
+	ui_press.pressed = true
+	controller._input(ui_press)
+	var ui_release := InputEventScreenTouch.new()
+	ui_release.index = 7
+	ui_release.position = Vector2(40.0, 40.0)
+	ui_release.pressed = false
+	controller._input(ui_release)
+	assert_eq(commands.size(), 1)
