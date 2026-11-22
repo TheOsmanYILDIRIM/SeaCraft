@@ -560,3 +560,68 @@ Beyin `agy-vault/main` readback:
 Task, evidence ve tek receipt aynı kapanış commit'i sonrasında uzak `agy-vault/main` üzerinden geri okundu. Yeni NET-04 task/receipt kopyası oluşturulmadı.
 
 NET-04 ile doğrulanmış plan ilerlemesi **22/35** oldu. **NET-04 tamamlandı. WAVE 6 başlatılmadı.**
+
+
+## SOHBET-32 — SeaCraft PRG-01 — Inventory, Equipment, Crew, Pet/Companion ve Preset
+
+**Sonuç (2026-11-22): uygulama ve teslim kapıları doğrulandı; Beyin strict kapanışı bu oturumun son kanonik adımıdır.** Exact kod SHA: `a3344909e489adc93800f6591238eb7102561542`. Godot `4.7.2-stable` CI: run `45015026436` — **success**; status context `seacraft-prg01-evidence=success`.
+
+### PRG-01 uygulama sınırı
+
+- Loot item miktarı ikinci authoritative sözlük olmaktan çıkarıldı; `LootAuthority` item miktarı için tek `InventoryState` gerçeğini kullanıyor.
+- Bounded stack/slot/weight/container kuralları, atomik transfer, equip/unequip, crew/trainer/pet slotları, ship/pet gem socket progression ve preset apply tek progression state içinde kuruldu.
+- Equipment/gem stat etkileri mevcut tek `StatModifierPipeline` üzerinden uygulanıyor; ikinci modifier engine eklenmedi.
+- Duplicate transaction ID aynı actor/payload için cached terminal result; farklı payload conflict. Progression ledger snapshot/restore sonrası idempotency korunuyor.
+- LAN wire contract progression intentleri için protocol v4'e yükseltildi; transfer/equip/unequip/socket/preset mutasyonları host tarafından doğrulanıyor. NET-04 transaction ledger reuse edildi.
+- Minimal touch presentation authority yazmıyor; tap/select intent üretimi, 48 px minimum target ve fontScale 1.3 sözleşmesi eklendi.
+- GLoot eklenmedi; custom pure-data model yeterli olduğu için addon authoritative/network truth yapılmadı.
+- Checkpoint akışında progression snapshot/restore canlı save state'e bağlandı.
+
+### Test / regresyon / CI
+
+Final run `45015026436` exact SHA `a3344909e489adc93800f6591238eb7102561542` üzerinde GUT ve bütün mevcut VS/CORE/AI/NET regresyonları geçti. PRG-01 verifier; stack/schema, transfer rollback, equipment slotları, socket progression, modifier pipeline, preset atomicity, transaction persistence/idempotency, LAN authority, tek inventory truth ve touch UI marker'larını doğruladı.
+
+İlk iki düzeltme koşusundaki hatalar kapatıldı: legacy content registry uyumluluğu korundu; NET-04 protocol expectation v4 ile hizalandı; socket stable ID formatı düzeltildi. Final exact run'da parse/load/test/orphan failure yoktur.
+
+### Linux / Android export
+
+Linux debug export:
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+
+Android debug export:
+- `android/SeaCraft-debug.apk`
+- arm64-v8a / targetSdk 37 sözleşmesi ve LAN izin kapıları mevcut CI/export zincirinde korundu.
+
+Fiziksel Android cihazda touch/save/LAN retry matrisi: **not_run**. CI gerçek cihaz kanıtı olarak gösterilmedi.
+
+### Artifact provenance ve authenticated readback
+
+Artifact:
+- Ad: `SeaCraft-PRG01-a3344909e489adc93800f6591238eb7102561542`
+- ID: `14750439866`
+- Boyut: `58711191` byte
+- Workflow run: `45015026436`
+- Artifact head SHA: `a3344909e489adc93800f6591238eb7102561542`
+- ZIP SHA-256 / upload digest: `7ca5d49332f13afacb73b15952968171b993cf9b024a30a7f51fa91e9228f304`
+- URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45015026436/artifacts/14750439866
+
+CI authenticated REST readback marker:
+
+`PRG01_ARTIFACT_READBACK_OK artifact_id=14750439866 rest_zip_sha256=7ca5d49332f13afacb73b15952968171b993cf9b024a30a7f51fa91e9228f304 upload_digest=7ca5d49332f13afacb73b15952968171b993cf9b024a30a7f51fa91e9228f304 sha=a3344909e489adc93800f6591238eb7102561542`
+
+Artifact GitHub connector üzerinden ayrıca indirildi. ZIP SHA-256 aynı digest ile eşleşti; `COMMIT_SHA.txt` exact kod SHA'yı taşıyor ve `SHA256SUMS.txt` üç payload için doğrulandı:
+
+| İçerik | SHA-256 |
+| --- | --- |
+| Android APK | `08092b9fd9e7359a016135ccdd842afb1c8dc8da64bba564b740c77383529971` |
+| Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
+| Linux PCK | `ad6b5f70d2b6cecfbf2103f229186e0446eb79a2f1ba657ba3e4107d10072882` |
+
+### Beyin strict kapanışı
+
+Kanonik görev: `tasks/seacraft-prg01-inventory-equipment-crew-pet-preset-20261122.md`.
+
+Bu bölüm exact code/CI/export/artifact kanıtını kanonik rapora sabitler. Beyin task revision + tek kapanış receipt aynı oturumda DirectSync ile kapatılıp uzak `agy-vault/main` üzerinden geri okunacak; ardından bu bölümde yalnız kapanış referansları eklenecektir.
+
+**PRG-02 başlatılmadı.**
