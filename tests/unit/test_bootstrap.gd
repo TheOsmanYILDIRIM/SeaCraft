@@ -85,3 +85,5 @@ func test_visible_control_still_captures_world_touch() -> void:
 	assert_true(panel.is_visible_in_tree())
 	assert_true(scene._ui_captures_touch(Vector2(350.0, 250.0)))
 	assert_false(scene._ui_captures_touch(Vector2(800.0, 500.0)))
+
+# Android world-input regression sentinel: hidden UI descendants must never capture world touch.
