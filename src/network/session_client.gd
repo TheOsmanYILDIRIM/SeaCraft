@@ -127,6 +127,7 @@ func send_intent(intent_type: String, payload: Dictionary) -> bool:
 	if PROTOCOL.validate_envelope(envelope) != "":
 		return false
 	_bridge.send_client_intent(envelope)
+	_next_sequence += 1
 	return true
 
 
