@@ -42,6 +42,7 @@ func _register(payload: Dictionary, authority_owned: bool, proxy: NetworkEntityP
 		"authority": authority_owned,
 		"generation": generation,
 		"lifecycle_sequence": int(payload["lifecycle_sequence"]),
+		"definition_id": str(payload["definition_id"]),
 		"row": row,
 		"proxy": proxy,
 	}
@@ -95,6 +96,23 @@ func state_row(entity_id: String) -> Dictionary:
 	if not _entries.has(entity_id):
 		return {}
 	return ((_entries[entity_id] as Dictionary)["row"] as Dictionary).duplicate(true)
+
+
+func spawn_payload_for(entity_id: String, state_sequence: int) -> Dictionary:
+	if not _entries.has(entity_id):
+		return {}
+	var entry: Dictionary = _entries[entity_id]
+	var row: Dictionary = entry["row"]
+	return PROTOCOL.spawn_payload(
+		entity_id,
+		str(row["entity_kind"]),
+		str(row["sector_id"]),
+		str(entry.get("definition_id", "")),
+		int(entry["generation"]),
+		int(entry["lifecycle_sequence"]),
+		state_sequence,
+		row
+	)
 
 
 func update_authority_state(entity_id: String, changes: Dictionary) -> bool:
