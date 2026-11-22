@@ -76,7 +76,7 @@ static func parse_packet(packet: PackedByteArray) -> Dictionary:
 	if not _has_exact_keys(beacon):
 		return {}
 	for key in ["discovery_version", "protocol_version", "schema_version", "rng_stream_version", "manifest_entry_count", "game_port", "player_count", "max_players"]:
-		var normalized := _normalized_int(beacon[key])
+		var normalized: Variant = _normalized_int(beacon[key])
 		if normalized == null:
 			return {}
 		beacon[key] = int(normalized)
