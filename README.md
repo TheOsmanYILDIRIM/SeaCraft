@@ -328,3 +328,14 @@ remains offline; there is no client prediction or physics lockstep.
 
 Protocol v2 requires matching builds. NET-04 discovery, late-join recovery,
 reconnect and session resume are not implemented.
+
+
+## NET-04 LAN hardening
+
+LAN discovery uses a dedicated UDP discovery socket, separate from the ENet gameplay port. Production discovery is bounded to 512-byte UTF-8 JSON beacons, a 500 ms beacon cadence, a 2500 ms client TTL, 16 visible sessions and per-frame/source/global packet budgets. Discovery is only a listing hint: compatibility is rechecked by the ENet handshake, reconnect credentials are never placed in beacons, and manual IPv4 join remains available when broadcast is blocked by guest Wi-Fi or AP isolation.
+
+Each host start creates a new `session.*` identity. Short disconnects reserve the mapped player for 30 seconds and can be resumed only with the session-scoped 128-bit capability token returned by the host. Successful resume keeps client sequence continuity, sends a fresh authoritative baseline with snapshot/event watermarks, rotates the token and invalidates the old capability. Host restart intentionally invalidates old resume credentials. NET-04 does not add host migration, relay/NAT punch-through, account authentication or transport encryption.
+
+Late join and reconnect both complete a bounded reliable baseline before gameplay intents are accepted. Baselines carry the current authoritative entity set only; claimed loot is absent and historical semantic events at or below the baseline watermark are not replayed. Host-mutating loot pickup now requires a stable `transaction_id`; the host transaction ledger returns the cached terminal result for a retry with the same actor/transaction/payload, rejects transaction conflicts, and can snapshot/restore its primitive-safe ledger state for checkpoint integration without a save-schema bump.
+
+Android export uses the Godot Gradle build template with target SDK 37. The manifest retains `android.permission.INTERNET` and adds `android.permission.ACCESS_LOCAL_NETWORK`. LAN sockets are gated by `LanPermissionGate`: Android permission is requested only from an explicit LAN user action, denial returns `local_network_permission_denied`, and offline boot does not request permission, open UDP/ENet sockets or schedule reconnect attempts. Desktop/Linux treats the local-network permission gate as allowed. Physical Android allow/deny/revoke, same-Wi-Fi discovery, desktop↔Android interoperability, background/foreground reconnect and long-duration LAN soak remain device-only verification items when no API-37 device is attached.
