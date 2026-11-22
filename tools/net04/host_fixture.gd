@@ -1,6 +1,6 @@
 extends "res://tests/fixtures/vertical_slice/vertical_slice_scenario.gd"
 
-const NPC := "entity.net04_current"
+const CURRENT_NPC := "entity.net04_current"
 const BETA := "player.beta"
 
 var _session: SessionHost
@@ -45,7 +45,7 @@ func start_case(game_port: int, discovery_port: int, work: String) -> void:
 	if not _session.spawn_network_entity(BETA, "player", FoundationSector.ID, beta_state):
 		_abort("beta spawn")
 		return
-	if not _session.spawn_network_entity(NPC, "npc", FoundationSector.ID, {"x": 140.0, "y": 0.0, "heading": 0.0, "hull_ratio": 1.0, "alive": true}):
+	if not _session.spawn_network_entity(CURRENT_NPC, "npc", FoundationSector.ID, {"x": 140.0, "y": 0.0, "heading": 0.0, "hull_ratio": 1.0, "alive": true}):
 		_abort("npc spawn")
 		return
 	var player_position := _world.active().entity_position(PLAYER)
@@ -107,7 +107,7 @@ func _on_intent_applied(_peer_id: int, player_id: String, kind: String, _sequenc
 		return
 	if FileAccess.file_exists(_work + "/commit"):
 		return
-	if not _session.update_network_entity_state(NPC, {"x": 321.0, "hull_ratio": 0.5}):
+	if not _session.update_network_entity_state(CURRENT_NPC, {"x": 321.0, "hull_ratio": 0.5}):
 		_abort("current world update")
 		return
 	_touch(_work + "/commit")
