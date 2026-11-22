@@ -644,7 +644,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 # WAVE 6 — PROGRESSION / CONTENT
 
-## PRG-01 — Inventory, equipment, crew, pet/companion ve preset
+## PRG-01 — Inventory, equipment, crew, pet/companion ve preset\n\n**Durum: TAMAMLANDI — exact kod SHA `a3344909e489adc93800f6591238eb7102561542`, CI run `45015026436`, artifact ID `14750439866`; fiziksel Android cihaz `not_run`.**
 
 **Amaç:** Loot’u gerçek build sistemine dönüştürmek.
 

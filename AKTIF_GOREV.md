@@ -4,9 +4,9 @@
 >
 > Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-01 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — AKTİF
+## Durum — KAPALI
 
-NET-04 doğrulanmış biçimde kapalıdır. WAVE 6'nın ilk görevi PRG-01 başlatılmıştır. PRG-02, PRG-01 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
+PRG-01 exact kod SHA `a3344909e489adc93800f6591238eb7102561542`, Actions run `45015026436`, artifact ID `14750439866` ve Avenox Beyin strict kapanış commit'i `8c811e1afe2000424a9bf15940db75f54d579be3` ile doğrulanmış biçimde kapalıdır. PRG-02 bu görev kapsamında başlatılmadı.
 
 ## Kimlik
 
@@ -18,7 +18,7 @@ NET-04 doğrulanmış biçimde kapalıdır. WAVE 6'nın ilk görevi PRG-01 başl
 - Godot: `4.7.2-stable`
 - Bağımlılık: NET-04 tamamlandı
 - Avenox Beyin görevi: `tasks/seacraft-prg01-inventory-equipment-crew-pet-preset-20261122.md`
-- Sonraki görev: PRG-02 — PRG-01 kapanmadan başlama
+- Sonraki görev: PRG-02 — ayrı görev/brief ile başlatılabilir; bu kapanış PRG-02'yi başlatmaz
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 

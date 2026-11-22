@@ -618,10 +618,18 @@ Artifact GitHub connector üzerinden ayrıca indirildi. ZIP SHA-256 aynı digest
 | Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
 | Linux PCK | `ad6b5f70d2b6cecfbf2103f229186e0446eb79a2f1ba657ba3e4107d10072882` |
 
-### Beyin strict kapanışı
+### Avenox Beyin strict kapanışı
 
 Kanonik görev: `tasks/seacraft-prg01-inventory-equipment-crew-pet-preset-20261122.md`.
 
-Bu bölüm exact code/CI/export/artifact kanıtını kanonik rapora sabitler. Beyin task revision + tek kapanış receipt aynı oturumda DirectSync ile kapatılıp uzak `agy-vault/main` üzerinden geri okunacak; ardından bu bölümde yalnız kapanış referansları eklenecektir.
+Uzak `TheOsmanYILDIRIM/agy-vault/main` readback:
+- status: `done`
+- revision: `2`
+- completion_contract: `strict`
+- evidence_refs: `receipts/1db2c7592ce3f81f80a91e751c06857d9162724fae4bff8d3ca7e865dc5efddc.md`
+- receipt event ID: `seacraft-prg01-close-a3344909e489adc93800f6591238eb7102561542`
+- Beyin kapanış commit: `8c811e1afe2000424a9bf15940db75f54d579be3`
 
-**PRG-02 başlatılmadı.**
+Resmî Avenox Beyin v3.12.0 motoru ile üretilen task-update ve tek receipt GitHub'a tek kapanış commit'iyle yazıldı; task ve receipt uzak `agy-vault/main` üzerinden geri okundu. Local DirectSync doctor: `task_completion.strict_issue_count=0`, potential missing receipt `0`, dead instruction ref `0`. Geçici DirectSync vault'undaki `.obsidian` boundary uyarısı cihaz/Obsidian UI durumudur; source/task kapanışını geçersiz kılmaz.
+
+**PRG-01 tamamlandı. PRG-02 başlatılmadı.**
