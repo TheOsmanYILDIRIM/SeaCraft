@@ -115,6 +115,39 @@ func spawn_payload_for(entity_id: String, state_sequence: int) -> Dictionary:
 	)
 
 
+func reconcile_mirror_baseline(payload: Dictionary) -> bool:
+	if PROTOCOL.validate_spawn_payload(payload) != "":
+		return false
+	var entity_id := str(payload["entity_id"])
+	if not _entries.has(entity_id):
+		return false
+	var entry: Dictionary = _entries[entity_id]
+	if bool(entry["authority"]) or int(entry["generation"]) != int(payload["generation"]):
+		return false
+	var proxy := entry.get("proxy") as NetworkEntityProxy
+	if proxy == null or not is_instance_valid(proxy):
+		return false
+	var previous: Dictionary = entry["row"]
+	var row := _row_from_spawn(payload)
+	if not proxy.configure_spawn(payload):
+		return false
+	var old_sector := str(previous["sector_id"])
+	var new_sector := str(row["sector_id"])
+	var old_position := Vector2(float(previous["x"]), float(previous["y"]))
+	var new_position := Vector2(float(row["x"]), float(row["y"]))
+	if old_sector != new_sector:
+		_index_remove(entity_id, old_sector)
+		_index_insert(entity_id, new_sector, new_position)
+	elif old_position != new_position:
+		var spatial := _spatial(new_sector)
+		if spatial != null:
+			spatial.move(entity_id, new_position)
+	entry["lifecycle_sequence"] = int(payload["lifecycle_sequence"])
+	entry["definition_id"] = str(payload["definition_id"])
+	entry["row"] = row
+	return true
+
+
 func update_authority_state(entity_id: String, changes: Dictionary) -> bool:
 	if not _entries.has(entity_id):
 		return false
