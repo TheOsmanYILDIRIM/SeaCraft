@@ -17,6 +17,7 @@ var _camera: Node
 var _touch = TOUCH.new()
 var _mouse_pan_active := false
 var _world_input_blocked := false
+var _world_touch_indices: Dictionary = {}
 
 
 func _ready() -> void:
@@ -42,11 +43,26 @@ func _input(event: InputEvent) -> void:
 		return
 	if _world_input_blocked or _camera == null:
 		return
-	var screen_position := event.position
-	if ui_hit_test.is_valid() and bool(ui_hit_test.call(screen_position)):
+
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			if ui_hit_test.is_valid() and bool(ui_hit_test.call(event.position)):
+				_world_touch_indices.erase(event.index)
+				return
+			_world_touch_indices[event.index] = true
+			process_device_event(event, false)
+			get_viewport().set_input_as_handled()
+			return
+		if not _world_touch_indices.has(event.index):
+			return
+		process_device_event(event, false)
+		_world_touch_indices.erase(event.index)
+		get_viewport().set_input_as_handled()
 		return
-	process_device_event(event, false)
-	get_viewport().set_input_as_handled()
+
+	if event is InputEventScreenDrag and _world_touch_indices.has(event.index):
+		process_device_event(event, false)
+		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -104,6 +120,7 @@ func world_input_blocked() -> bool:
 
 func reset_touch() -> void:
 	_touch.reset()
+	_world_touch_indices.clear()
 
 
 func emit_fire_intent(target_id: String) -> void:
