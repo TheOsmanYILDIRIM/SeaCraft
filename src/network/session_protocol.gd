@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 2
+const PROTOCOL_VERSION: int = 3
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2
@@ -26,6 +26,10 @@ const MAX_SNAPSHOT_BYTES: int = 8192
 const MAX_INTERPOLATION_SAMPLES: int = 4
 const SNAPSHOT_INTERVAL_TICKS: int = 3
 const AOI_RADIUS: float = 600.0
+const BASELINE_CHUNK_ENTITIES: int = 24
+const MAX_BASELINE_CHUNKS: int = 4
+const RESUME_TOKEN_HEX_LENGTH: int = 32
+const BASELINE_ACK := "baseline_ack"
 const SPAWN_KEYS := [
 	"protocol_version", "entity_id", "entity_kind", "sector_id", "definition_id",
 	"generation", "lifecycle_sequence", "state_sequence", "x", "y", "heading",
@@ -43,6 +47,15 @@ const REJECT_UNKNOWN_ENTITY_KIND := "unknown entity kind"
 const REJECT_MALFORMED_SNAPSHOT := "malformed snapshot"
 const REJECT_SNAPSHOT_BUDGET := "snapshot budget exceeded"
 const REJECT_MALFORMED_EVENT := "malformed replication event"
+const REJECT_MALFORMED_BASELINE := "malformed baseline"
+const REJECT_BASELINE_BUDGET := "baseline budget exceeded"
+const REJECT_SESSION_MISMATCH := "reconnect session mismatch"
+const REJECT_TOKEN_MALFORMED := "reconnect token malformed"
+const REJECT_TOKEN_UNKNOWN := "reconnect token unknown"
+const REJECT_TOKEN_EXPIRED := "reconnect token expired"
+const REJECT_TOKEN_CONSUMED := "reconnect token already consumed"
+const REJECT_TRANSACTION_CONFLICT := "transaction conflict"
+const REJECT_TRANSACTION_LEDGER_FULL := "transaction ledger full"
 
 const REJECT_PROTOCOL_MISMATCH := "protocol mismatch"
 const REJECT_SCHEMA_MISMATCH := "schema/version mismatch"
@@ -70,8 +83,14 @@ const HANDSHAKE_KEYS := [
 	"content_manifest_algorithm",
 	"content_hash",
 	"manifest_entry_count",
+	"session_id",
+	"resume_token",
 ]
 const ENVELOPE_KEYS := ["protocol_version", "client_sequence", "intent_type", "payload"]
+const BASELINE_KEYS := [
+	"protocol_version", "baseline_id", "session_id", "player_id", "server_tick",
+	"snapshot_sequence", "event_sequence", "resume_sequence", "chunk_index", "chunk_count", "entity_payloads",
+]
 const SELECT_COMBAT_TARGET := "select_combat_target"
 const FIRE_WEAPON := "fire_weapon"
 const PICKUP_LOOT := "pickup_loot"
@@ -82,6 +101,7 @@ const NETWORK_INTENTS := [
 	SELECT_COMBAT_TARGET,
 	FIRE_WEAPON,
 	PICKUP_LOOT,
+	BASELINE_ACK,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
 	COMMANDS.CANCEL,
@@ -113,6 +133,8 @@ static func channel_policy() -> Dictionary:
 
 static func client_hello(overrides: Dictionary = {}) -> Dictionary:
 	var hello := compatibility_stamp().duplicate(true)
+	hello["session_id"] = ""
+	hello["resume_token"] = ""
 	for key in overrides:
 		if hello.has(key):
 			hello[key] = overrides[key]
@@ -127,7 +149,13 @@ static func validate_handshake(value: Variant) -> String:
 		return REJECT_MALFORMED_HANDSHAKE
 	if not _is_int(hello["protocol_version"]) or not _is_int(hello["schema_version"]) or not _is_int(hello["rng_stream_version"]) or not _is_int(hello["manifest_entry_count"]):
 		return REJECT_MALFORMED_HANDSHAKE
-	if not hello["content_version"] is String or not hello["content_manifest_algorithm"] is String or not hello["content_hash"] is String:
+	if not hello["content_version"] is String or not hello["content_manifest_algorithm"] is String or not hello["content_hash"] is String or not hello["session_id"] is String or not hello["resume_token"] is String:
+		return REJECT_MALFORMED_HANDSHAKE
+	var resume_session := str(hello["session_id"])
+	var resume_token := str(hello["resume_token"])
+	if resume_session.is_empty() != resume_token.is_empty():
+		return REJECT_MALFORMED_HANDSHAKE
+	if not resume_session.is_empty() and (not resume_session.begins_with("session.") or not valid_stable_id(resume_session) or not valid_resume_token(resume_token)):
 		return REJECT_MALFORMED_HANDSHAKE
 	if str(hello["content_hash"]).length() != 64 or str(hello["content_manifest_algorithm"]).is_empty() or str(hello["content_version"]).is_empty():
 		return REJECT_MALFORMED_HANDSHAKE
@@ -142,6 +170,72 @@ static func validate_handshake(value: Variant) -> String:
 		return REJECT_CONTENT_VERSION_MISMATCH
 	if str(hello["content_manifest_algorithm"]) != str(expected["content_manifest_algorithm"]) or str(hello["content_hash"]) != str(expected["content_hash"]) or int(hello["manifest_entry_count"]) != int(expected["manifest_entry_count"]):
 		return REJECT_CONTENT_HASH_MISMATCH
+	return ""
+
+
+static func valid_resume_token(value: String) -> bool:
+	if value.length() != RESUME_TOKEN_HEX_LENGTH:
+		return false
+	for index in value.length():
+		var code := value.unicode_at(index)
+		if not ((code >= 48 and code <= 57) or (code >= 97 and code <= 102)):
+			return false
+	return true
+
+
+static func valid_transaction_id(value: String) -> bool:
+	return HostTransactionLedger.valid_transaction_id(value)
+
+
+static func make_baseline_chunk(baseline_id: String, session_id: String, player_id: String,
+		server_tick: int, snapshot_sequence: int, event_sequence: int, resume_sequence: int,
+		chunk_index: int, chunk_count: int, entity_payloads: Array) -> Dictionary:
+	return {
+		"protocol_version": PROTOCOL_VERSION,
+		"baseline_id": baseline_id,
+		"session_id": session_id,
+		"player_id": player_id,
+		"server_tick": server_tick,
+		"snapshot_sequence": snapshot_sequence,
+		"event_sequence": event_sequence,
+		"resume_sequence": resume_sequence,
+		"chunk_index": chunk_index,
+		"chunk_count": chunk_count,
+		"entity_payloads": entity_payloads.duplicate(true),
+	}
+
+
+static func validate_baseline_chunk(value: Variant) -> String:
+	if not value is Dictionary:
+		return REJECT_MALFORMED_BASELINE
+	var chunk: Dictionary = value
+	if not _has_exact_keys(chunk, BASELINE_KEYS):
+		return REJECT_MALFORMED_BASELINE
+	for key in ["protocol_version", "server_tick", "snapshot_sequence", "event_sequence", "resume_sequence", "chunk_index", "chunk_count"]:
+		if not _is_int(chunk[key]):
+			return REJECT_MALFORMED_BASELINE
+	if int(chunk["protocol_version"]) != PROTOCOL_VERSION:
+		return REJECT_PROTOCOL_MISMATCH
+	if not chunk["baseline_id"] is String or not chunk["session_id"] is String or not chunk["player_id"] is String or not chunk["entity_payloads"] is Array:
+		return REJECT_MALFORMED_BASELINE
+	if not str(chunk["baseline_id"]).begins_with("baseline.") or not valid_stable_id(str(chunk["baseline_id"])):
+		return REJECT_MALFORMED_BASELINE
+	if not str(chunk["session_id"]).begins_with("session.") or not valid_stable_id(str(chunk["session_id"])) or not valid_stable_id(str(chunk["player_id"])):
+		return REJECT_MALFORMED_BASELINE
+	var chunk_index := int(chunk["chunk_index"])
+	var chunk_count := int(chunk["chunk_count"])
+	if chunk_count <= 0 or chunk_count > MAX_BASELINE_CHUNKS or chunk_index < 0 or chunk_index >= chunk_count:
+		return REJECT_MALFORMED_BASELINE
+	if int(chunk["server_tick"]) < 0 or int(chunk["snapshot_sequence"]) < 0 or int(chunk["event_sequence"]) < 0 or int(chunk["resume_sequence"]) < 0:
+		return REJECT_MALFORMED_BASELINE
+	var payloads: Array = chunk["entity_payloads"]
+	if payloads.size() > BASELINE_CHUNK_ENTITIES:
+		return REJECT_BASELINE_BUDGET
+	for payload in payloads:
+		if validate_spawn_payload(payload) != "":
+			return REJECT_MALFORMED_BASELINE
+	if var_to_bytes(chunk).size() > MAX_SNAPSHOT_BYTES:
+		return REJECT_BASELINE_BUDGET
 	return ""
 
 
@@ -464,7 +558,10 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 			if not _has_exact_keys(payload, ["target_id"]) or not valid_stable_id(payload["target_id"]):
 				return REJECT_MALFORMED_PAYLOAD
 		PICKUP_LOOT:
-			if not _has_exact_keys(payload, ["drop_id"]) or not valid_stable_id(payload["drop_id"]):
+			if not _has_exact_keys(payload, ["drop_id", "transaction_id"]) or not valid_stable_id(payload["drop_id"]) or not valid_transaction_id(str(payload["transaction_id"])):
+				return REJECT_MALFORMED_PAYLOAD
+		BASELINE_ACK:
+			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):
 				return REJECT_MALFORMED_PAYLOAD
 		COMMANDS.MOVE_TO_WORLD_POSITION, COMMANDS.SELECT_WORLD_POSITION:
 			if not _has_exact_keys(payload, ["world_x", "world_y"]):
