@@ -68,16 +68,16 @@ func test_prg01_equipment_crew_trainer_pet_and_rollback() -> void:
 
 func test_prg01_gem_socket_progression_and_atomic_cost() -> void:
 	var s := _state()
-	assert_true(s.configure_socket(PLAYER, "socket.ship.1", "ship_gem", 3))
+	assert_true(s.configure_socket(PLAYER, "socket.ship.s1", "ship_gem", 3))
 	assert_true(s.grant_authoritative(PLAYER, "item.ship_gem", 1))
 	assert_true(s.grant_authoritative(PLAYER, "item.scrap", 4))
-	assert_true(s.execute_transaction(PLAYER, "txn.gem.insert", InventoryState.OP_SOCKET_INSERT, {"socket_id":"socket.ship.1","item_id":"item.ship_gem"})["accepted"])
-	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.1"]["level"], 1)
-	assert_false(s.execute_transaction(PLAYER, "txn.gem.costfail", InventoryState.OP_SOCKET_UPGRADE, {"socket_id":"socket.ship.1","cost_item_id":"item.scrap","cost_quantity":5})["accepted"])
-	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.1"]["level"], 1)
+	assert_true(s.execute_transaction(PLAYER, "txn.gem.insert", InventoryState.OP_SOCKET_INSERT, {"socket_id":"socket.ship.s1","item_id":"item.ship_gem"})["accepted"])
+	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.s1"]["level"], 1)
+	assert_false(s.execute_transaction(PLAYER, "txn.gem.costfail", InventoryState.OP_SOCKET_UPGRADE, {"socket_id":"socket.ship.s1","cost_item_id":"item.scrap","cost_quantity":5})["accepted"])
+	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.s1"]["level"], 1)
 	assert_eq(s.quantity(PLAYER, "item.scrap"), 4)
-	assert_true(s.execute_transaction(PLAYER, "txn.gem.up", InventoryState.OP_SOCKET_UPGRADE, {"socket_id":"socket.ship.1","cost_item_id":"item.scrap","cost_quantity":2})["accepted"])
-	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.1"]["level"], 2)
+	assert_true(s.execute_transaction(PLAYER, "txn.gem.up", InventoryState.OP_SOCKET_UPGRADE, {"socket_id":"socket.ship.s1","cost_item_id":"item.scrap","cost_quantity":2})["accepted"])
+	assert_eq(s.socket_snapshot(PLAYER)["socket.ship.s1"]["level"], 2)
 	print("PRG01_SOCKET_PROGRESSION_OK")
 
 func test_prg01_modifier_pipeline_deterministic_and_duplicate_guard() -> void:
