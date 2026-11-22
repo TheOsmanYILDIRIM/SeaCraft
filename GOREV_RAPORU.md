@@ -732,3 +732,84 @@ PRG-02 craft/reclamation, deterministic salvage RNG, ship upgrade DAG, core/trop
 
 **PRG-02 tamamlandı. PRG-03 başlatılmadı ve `not_started` olarak kalır.**
 
+## SOHBET-34 — SeaCraft PRG-03 — XP, Skill Tree, Rank ve Local Challenge Meta
+
+**Sonuç (2026-11-22): tamamlandı ve doğrulandı.** Exact kod SHA: [`2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`](https://github.com/TheOsmanYILDIRIM/SeaCraft/commit/2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584). Godot `4.7.2-stable` final CI: [run 45034255905 — success](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45034255905), job `137244362873`; commit status context `seacraft-prg03-evidence=success`.
+
+### Uygulanan PRG-03 sınırı
+
+- XP tek authoritative progression ledger içinde event-ID idempotency, conflict ve overflow guard ile uygulanır; client XP miktarı/outcome seçemez.
+- Rank/level görünümü XP thresholdlarından deterministic türetilir; redundant authoritative rank truth eklenmez. Skill point grantleri thresholdlardan türetilir ve spend state ile hesaplanır.
+- Stable-ID skill DAG; missing prerequisite/cycle/tier validation, atomik spend, lost-ACK idempotency ve full respec/refund ile kuruldu.
+- License/test/milestone/rank progression gate API primitive-safe ve host-authoritative olarak eklendi; PRG-04 quest içeriği başlatılmadı.
+- Local challenge meta version-key reset, deterministic counter progress ve idempotent inventory/XP reward ile offline çalışır.
+- Rank/skill stat etkileri yalnız mevcut `StatModifierPipeline` üzerinden akar; ikinci modifier engine kurulmadı.
+- Progression persistence `InventoryState` v3'e yükseltildi; v1/v2 migration ve canonical JSON integer readback uyumu eklendi.
+- LAN wire contract protocol v6'ya yükseltildi. Skill spend/respec/gate/challenge bounded intentleri host transaction ledger üzerinden authoritative kalır; doğrudan XP-grant network intenti yoktur.
+- Touch progression panel node seçimi, spend/respec/gate/challenge intentleri ve bounded zoom/pan sözleşmesiyle genişletildi; mevcut 48 px minimum touch target ve fontScale 1.3 korunur.
+
+### Test / regresyon / CI
+
+Final exact run `45034255905` üzerinde GUT sonucu **369/369 passing**, **28,758 assert** ve unexpected failing/ignored parse koşulu olmadan tamamlandı.
+
+PRG-03 execution verifier:
+
+`PRG03_VERIFIER_OK tests=10 xp=1 rank=1 skill_dag=1 spend_respec=1 gates=1 challenges=1 persistence=1 lan=1 touch=1 offline=1`
+
+Aynı run'da PRG-01/02 verifier'ları ile mevcut VS/CORE/AI/NET regresyon ve offline/network separation kapıları da geçti. Ara doğrulamalarda görülen typed reward delta, JSON integer migration ve stable event/transaction ID hataları düzeltilip exact final commit üzerinde yeniden doğrulandı.
+
+### Linux / Android export
+
+Linux debug export başarıyla üretildi:
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+
+Android debug export başarıyla üretildi:
+- `android/SeaCraft-debug.apk`
+- package/ABI/target ve LAN permission sözleşmeleri mevcut CI zincirinde korundu.
+
+Fiziksel Android cihazda skill-tree touch/save/LAN matrisi bu ortamda çalıştırılmadı ve başarı gibi gösterilmedi: **not_run**.
+
+### Artifact provenance ve authenticated readback
+
+Artifact:
+- Ad: `SeaCraft-PRG03-2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`
+- ID: `14759425694`
+- Boyut: `58835440` byte
+- URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45034255905/artifacts/14759425694
+- ZIP / upload digest SHA-256: `6da0d0a5dfa3b53b14399b130562c30ce834e86b6f4ff2f604c9dad139bddf5d`
+
+CI authenticated REST readback marker:
+
+`PRG03_ARTIFACT_READBACK_OK artifact_id=14759425694 rest_zip_sha256=6da0d0a5dfa3b53b14399b130562c30ce834e86b6f4ff2f604c9dad139bddf5d upload_digest=6da0d0a5dfa3b53b14399b130562c30ce834e86b6f4ff2f604c9dad139bddf5d sha=2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`
+
+Artifact ayrıca authenticated GitHub connector üzerinden indirildi; ZIP digest GitHub digest ile birebir eşleşti. `COMMIT_SHA.txt` exact kod SHA'yı taşıdı ve `sha256sum -c SHA256SUMS.txt` üç payload için `OK` verdi.
+
+| İçerik | SHA-256 |
+| --- | --- |
+| Android APK | `a4453663b909da9b2fec416d76278affe04bc9d198eff41fff20530bc9aaa490` |
+| Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
+| Linux PCK | `7c5ba76e5633845c720cd358f8f217b7229fa46a602d66fd2a3f5cb3a90278ed` |
+
+### Avenox Beyin strict kapanışı
+
+Resmî Avenox Beyin v3.12.0 Project ZIP'i kullanıldı; ZIP SHA-256: `d8dbf97a38a50046d3f48205ae08ff65364b92292999fef611f882839d6e9696`.
+
+Kanonik task:
+`tasks/seacraft-prg03-xp-skill-tree-rank-local-challenge-meta-20261122.md`
+
+Uzak `TheOsmanYILDIRIM/agy-vault/main` readback:
+- status: `done`
+- revision: `2`
+- completion_contract: `strict`
+- evidence_refs: `receipts/7bd576a04c1148524ad9275be0183c6bd6455b69e0540ad44194fd9a27c17b85.md`
+- receipt event ID: `seacraft-prg03-close-2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`
+- Beyin kapanış commit: `3e3ab2f3995ee71e11b0c1488e5474a801112e18`
+
+Resmî motorun DirectSync doctor sonucunda `task_completion.strict_issue_count=0`, potential missing receipt `0` ve dead instruction ref `0` doğrulandı. Motorla üretilen task revision 2 ve tek receipt aynı CAS kapanış commit'i sonrasında uzak `agy-vault/main` üzerinden geri okundu.
+
+### Son kapı
+
+PRG-03 XP/rank, skill DAG/spend/respec, progression gates, local challenge meta, persistence migration, host-authoritative LAN, touch sözleşmesi, Linux/Android export, exact artifact provenance/readback ve Avenox Beyin strict kapanışı doğrulandı.
+
+**PRG-03 tamamlandı. PRG-04 başlatılmadı ve `not_started` olarak kalır.**
