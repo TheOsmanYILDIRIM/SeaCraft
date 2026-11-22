@@ -418,7 +418,7 @@ static func validate_journal(value: Variant) -> bool:
 				return false
 			if not row["status"] is String:
 				return false
-			var expected_status := {"available": "available", "active": STATUS_ACTIVE, "completable": STATUS_COMPLETABLE, "completed": STATUS_COMPLETED, "failed": STATUS_FAILED}[group]
+			var expected_status: String = str({"available": "available", "active": STATUS_ACTIVE, "completable": STATUS_COMPLETABLE, "completed": STATUS_COMPLETED, "failed": STATUS_FAILED}[group])
 			if str(row["status"]) != str(expected_status):
 				return false
 			if not row["objectives"] is Array or not row["reward_preview"] is Dictionary or not row["region_ids"] is Array or not row["sector_ids"] is Array or not _integer(row["remaining_ticks"]):
@@ -482,12 +482,12 @@ func _turn_in(owner_id: String, payload: Dictionary) -> Dictionary:
 	var instance: Dictionary = quests[quest_id]
 	if str(instance["status"]) != STATUS_COMPLETABLE or bool(instance["reward_claimed"]):
 		return _reject(OP_TURN_IN, "quest_not_completable")
-	var before_quantities := _inventory.quantities_snapshot(owner_id)
-	var before_prg03 := _inventory.prg03_state_snapshot()
+	var before_quantities: Dictionary = _inventory.quantities_snapshot(owner_id)
+	var before_prg03: Dictionary = _inventory.prg03_state_snapshot()
 	var reward_result := _apply_rewards(owner_id, definition, int(instance["cycle"]))
 	if not bool(reward_result["accepted"]):
-		var quantities_ok := _inventory.restore_quantities(owner_id, before_quantities)
-		var prg03_ok := _inventory.restore_prg03_state(before_prg03)
+		var quantities_ok: bool = _inventory.restore_quantities(owner_id, before_quantities)
+		var prg03_ok: bool = _inventory.restore_prg03_state(before_prg03)
 		if not quantities_ok or not prg03_ok:
 			return _reject(OP_TURN_IN, "reward_rollback_failed")
 		return _reject(OP_TURN_IN, str(reward_result["reason"]))
@@ -519,13 +519,13 @@ func _apply_rewards(owner_id: String, definition: QuestDefinition, cycle: int) -
 		return {"accepted": false, "reason": "reward_item_commit_failed", "reward": {}}
 	if definition.xp_reward > 0:
 		var xp_event := "event.xp.quest.%s.%d" % [definition.stable_id, cycle]
-		var xp_result := _inventory.grant_xp_authoritative(owner_id, xp_event, "quest", definition.xp_reward)
+		var xp_result: Dictionary = _inventory.grant_xp_authoritative(owner_id, xp_event, "quest", definition.xp_reward)
 		if not bool(xp_result.get("accepted", false)):
 			return {"accepted": false, "reason": "reward_xp_failed", "reward": {}}
 	for gate_id in definition.reward_gate_ids:
 		if _inventory.progression_gate_completed(owner_id, str(gate_id)):
 			continue
-		var gate_result := _inventory.complete_progression_gate_authoritative(owner_id, str(gate_id))
+		var gate_result: Dictionary = _inventory.complete_progression_gate_authoritative(owner_id, str(gate_id))
 		if not bool(gate_result.get("accepted", false)):
 			return {"accepted": false, "reason": "reward_gate_failed", "reward": {}}
 	return {
