@@ -41,7 +41,10 @@ for _ in {1..160}; do
 done
 [[ -f "$WORK/a_disconnected" ]] || { cat "$A_LOG"; cat "$HOST_LOG"; exit 1; }
 
-godot --headless --path . res://tools/net04/process_harness.tscn -- --role=b --game-port="$GAME_PORT" --discovery-port="$DISCOVERY_PORT" --work="$WORK" >"$B_LOG" 2>&1
+if ! godot --headless --path . res://tools/net04/process_harness.tscn -- --role=b --game-port="$GAME_PORT" --discovery-port="$DISCOVERY_PORT" --work="$WORK" >"$B_LOG" 2>&1; then
+  cat "$B_LOG" "$A_LOG" "$HOST_LOG"
+  exit 1
+fi
 grep -Fq "NET04_LATE_JOIN_PROCESS_OK" "$B_LOG" || { cat "$B_LOG"; cat "$A_LOG"; cat "$HOST_LOG"; exit 1; }
 
 wait "$A_PID"
