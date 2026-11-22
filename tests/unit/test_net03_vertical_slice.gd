@@ -22,12 +22,12 @@ func test_net03_fire_contract() -> void:
 
 
 func test_net03_pickup_contract() -> void:
-	assert_eq(_reason(P.PICKUP_LOOT, {"drop_id": DROP}), "")
+	assert_eq(_reason(P.PICKUP_LOOT, {"drop_id": DROP, "transaction_id": "txn.net03.primary"}), "")
 	for key in ["item_id", "quantity", "reward", "inventory_delta", "claimed"]:
-		var payload := {"drop_id": DROP}
+		var payload := {"drop_id": DROP, "transaction_id": "txn.net03.primary"}
 		payload[key] = true
 		assert_eq(_reason(P.PICKUP_LOOT, payload), P.REJECT_MALFORMED_PAYLOAD, key)
-	assert_eq(_reason(P.PICKUP_LOOT, {"drop_id": 5}), P.REJECT_MALFORMED_PAYLOAD)
+	assert_eq(_reason(P.PICKUP_LOOT, {"drop_id": 5, "transaction_id": "txn.net03.primary"}), P.REJECT_MALFORMED_PAYLOAD)
 
 
 func test_net03_outcomes_are_not_intents() -> void:
@@ -36,8 +36,8 @@ func test_net03_outcomes_are_not_intents() -> void:
 
 
 func test_net03_fresh_sequence_is_not_a_fresh_drop() -> void:
-	var original := P.make_envelope(4, P.PICKUP_LOOT, {"drop_id": DROP})
-	var retry := P.make_envelope(5, P.PICKUP_LOOT, {"drop_id": DROP})
+	var original := P.make_envelope(4, P.PICKUP_LOOT, {"drop_id": DROP, "transaction_id": "txn.net03.primary"})
+	var retry := P.make_envelope(5, P.PICKUP_LOOT, {"drop_id": DROP, "transaction_id": "txn.net03.primary"})
 	assert_eq(P.validate_envelope(original), "")
 	assert_eq(P.validate_envelope(retry), "")
 	assert_eq(P.validate_sequence(original["client_sequence"], 4), P.REJECT_REPLAY)
