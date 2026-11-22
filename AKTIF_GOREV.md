@@ -4,9 +4,9 @@
 >
 > Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-02 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — AKTİF
+## Durum — KAPALI / DOĞRULANDI
 
-PRG-01 doğrulanmış biçimde kapalıdır. WAVE 6'nın ikinci görevi PRG-02 başlatılmıştır. PRG-03, PRG-02 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
+PRG-02 exact kod teslimi, final CI/export/artifact readback ve Avenox Beyin strict kapanışı doğrulandı. PRG-03 bu kapanışla birlikte **başlatılmadı** ve `not_started` olarak kalır.
 
 ## Kimlik
 
@@ -20,7 +20,14 @@ PRG-01 doğrulanmış biçimde kapalıdır. WAVE 6'nın ikinci görevi PRG-02 ba
 - Godot: `4.7.2-stable`
 - Bağımlılık: PRG-01 tamamlandı
 - Avenox Beyin görevi: `tasks/seacraft-prg02-crafting-reclamation-ship-upgrade-cores-trophies-20261122.md`
-- Sonraki görev: PRG-03 — PRG-02 kapanmadan başlama
+- PRG-02 exact kod SHA: `d6ddfb014ee83ef9826563441453152d15d7d789`
+- Final Actions: `45019833696` — `success`
+- Final artifact: `SeaCraft-PRG02-d6ddfb014ee83ef9826563441453152d15d7d789`, ID `14753292824`
+- Artifact ZIP SHA-256: `ef205786cd23ee69910235446a63e0a0571ae8c64096a1b23b7e1c2e0015f5a8`
+- Avenox Beyin: `done`, revision `2`, commit `29cebab9b10cd7164d9366c75c647a3d77d71e67`
+- Receipt: `receipts/0f69a7954949a09d7b5131e46b0efbf1f24d389fee5c18b84e9c6b79077adce2.md`
+- Fiziksel Android cihaz testi: `not_run`
+- Sonraki görev: PRG-03 — `not_started`; ayrı kanonik görev olmadan başlama
 
 Her mesajına yukarıdaki sohbet etiketiyle başla.
 

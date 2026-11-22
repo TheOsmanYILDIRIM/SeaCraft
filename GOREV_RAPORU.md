@@ -633,3 +633,102 @@ Uzak `TheOsmanYILDIRIM/agy-vault/main` readback:
 Resmî Avenox Beyin v3.12.0 motoru ile üretilen task-update ve tek receipt GitHub'a tek kapanış commit'iyle yazıldı; task ve receipt uzak `agy-vault/main` üzerinden geri okundu. Local DirectSync doctor: `task_completion.strict_issue_count=0`, potential missing receipt `0`, dead instruction ref `0`. Geçici DirectSync vault'undaki `.obsidian` boundary uyarısı cihaz/Obsidian UI durumudur; source/task kapanışını geçersiz kılmaz.
 
 **PRG-01 tamamlandı. PRG-02 başlatılmadı.**
+
+## SOHBET-33 — SeaCraft PRG-02 — Crafting, Reclamation, Ship Upgrade ve Cores/Trophies
+
+**Sonuç (2026-11-22): tamamlandı ve doğrulandı.** Exact kod SHA: [`d6ddfb014ee83ef9826563441453152d15d7d789`](https://github.com/TheOsmanYILDIRIM/SeaCraft/commit/d6ddfb014ee83ef9826563441453152d15d7d789). Godot `4.7.2-stable` final CI: [run 45019833696 — success](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45019833696), job `137200052654`; commit status context `seacraft-prg02-evidence=success`.
+
+Final exact kod SHA'dan sonra kullanıcı tarafından `8e185686cbaa6a297976b544122b799ae03e977c` commit'iyle yalnız `SC06_PERCIN_HATTI_ALIGNED_FINAL.zip` eklendi. Bu görev dışı upload korunmuş, PRG-02 exact CI/artifact kanıtının SHA'sı değiştirilmemiştir.
+
+### Uygulanan PRG-02 sınırı
+
+- `RecipeDefinition`, `SalvageTable`, `ShipUpgradeDefinition` ve `TrophyDefinition` stable-ID, bounded ve deterministic validation sözleşmeleriyle eklendi.
+- Craft consume + output grant tek atomik inventory delta sınırında çalışır; missing input, count bound, output capacity ve overflow reddinde kısmi mutation bırakmaz.
+- PRG-01 transaction cache/ledger modeli reuse edildi; same transaction + same payload cached result verir, conflict reddedilir, lost-ACK retry ikinci consume/grant üretmez.
+- Salvage mevcut `SeedStreams.STREAM_LOOT` üzerinden deterministic yürür; reject/capacity rollback RNG state'ini geri alır, save/load sonrası RNG devamlılığı korunur.
+- Ship upgrade progression cycle/missing prerequisite/tier regression kontrolleri olan veri odaklı DAG'dir; cost consume, unlock ve core slot etkileri atomik uygulanır.
+- Core slot insert/remove/replace type compatibility, unique core policy, capacity rollback ve modifier source guard ile uygulanır; stat etkileri yalnız mevcut `StatModifierPipeline` üzerinden geçer.
+- Trophy/perk unlock event ledger idempotenttir; prerequisite bypass ve ikinci reward engellenir.
+- Progression persistence `InventoryState` v2 alt-sözleşmesine yükseltildi; PRG-01 v1 progression state geriye uyumlu migrate edilir. Runtime Node/Resource save/network sınırına taşınmaz.
+- LAN wire sözleşmesi PRG-02 mutation intentleri için protocol v5'e yükseltildi. Client yalnız primitive stable ID/count/slot intenti yollar; output, RNG veya unlock sonucunu seçemez. `SessionHost` mevcut host transaction ledger üzerinden authoritative kalır.
+- `ProgressionPanel` yalnız intent üretir; mevcut minimum 48 px touch target ve font scale 1.3 korunur. PRG-03 XP/skill/rank sistemi uygulanmadı.
+
+### Test, hata düzeltme ve regresyon
+
+Final run'da GUT sonucu **359/359 passing**. `PRG02_VERIFIER_OK tests=10 craft_atomic=1 salvage_rng=1 upgrade_dag=1 cores=1 trophies=1 persistence=1 lan=1 touch=1`.
+
+İki ara doğrulama hatası finalden önce kapatıldı: run `45019502751` test fixture typed-array ve stable slot ID sorununu; run `45019690044` ise nested terminal craft sonucunun `HostTransactionLedger` primitive/depth persistence sınırını aşmasını görünür kıldı. Fixture/stable ID düzeltildi ve craft/trophy terminal result DTO'ları deterministic primitive-flat hale getirildi. Final run `45019833696` aynı exact kod SHA üzerinde yeşildir.
+
+Aynı final run'da eski ağ/regresyon kapıları da geçti:
+
+- `NET01_VERIFIER_OK tests=10 real_process_rpc=1 host_authority=1`
+- `NET02_VERIFIER_OK tests=11 real_process_rpc=1 host=1 clients=2 spawned=8 snapshots_sent=64 max_snapshot_bytes=1360`
+- `NET03_VERIFIER_OK tests=9 host=1 clients=1 cases=2`
+- `NET04_VERIFIER_OK unit=13 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1`
+- mevcut VS/CORE/AI doğrulama ve offline/network boundary kapıları geçti.
+
+### Linux / Android export
+
+Linux debug export başarıyla üretildi:
+
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+
+Android debug export başarıyla üretildi:
+
+- `android/SeaCraft-debug.apk`
+- package: `com.osmanyildirim.seacraft`
+- targetSdk: `37`
+- native ABI: `arm64-v8a`
+- `android.permission.INTERNET`
+- `android.permission.ACCESS_LOCAL_NETWORK`
+
+Fiziksel Android cihaz / gerçek Wi-Fi touch-save-LAN matrisi bu ortamda çalıştırılmadı ve başarı gibi gösterilmedi: **not_run**.
+
+### Artifact provenance ve bağımsız readback
+
+Artifact:
+
+- Ad: `SeaCraft-PRG02-d6ddfb014ee83ef9826563441453152d15d7d789`
+- ID: `14753292824`
+- Boyut: `58782265` byte
+- URL: https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45019833696/artifacts/14753292824
+- ZIP / upload digest SHA-256: `ef205786cd23ee69910235446a63e0a0571ae8c64096a1b23b7e1c2e0015f5a8`
+
+CI authenticated REST readback marker:
+
+`PRG02_ARTIFACT_READBACK_OK artifact_id=14753292824 rest_zip_sha256=ef205786cd23ee69910235446a63e0a0571ae8c64096a1b23b7e1c2e0015f5a8 upload_digest=ef205786cd23ee69910235446a63e0a0571ae8c64096a1b23b7e1c2e0015f5a8 sha=d6ddfb014ee83ef9826563441453152d15d7d789`
+
+Artifact ayrıca GitHub connector üzerinden authenticated olarak yeniden indirildi. ZIP SHA-256 upload digest ile birebir eşleşti; `COMMIT_SHA.txt` exact kod SHA'yı taşıdı ve `sha256sum -c SHA256SUMS.txt` üç payload için `OK` verdi.
+
+| İçerik | SHA-256 |
+| --- | --- |
+| Android APK | `c1ff24deed7e05ed745c67790759dcf6cdb69249eb965dfb3d747f480b97eb27` |
+| Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
+| Linux PCK | `fd970672770be5aacaa2192ee605308687d474e295794a2d3ae6587b31107209` |
+
+### Avenox Beyin strict kapanışı
+
+Resmî Avenox Beyin v3.12.0 Project ZIP'i kullanıldı; ZIP SHA-256: `d8dbf97a38a50046d3f48205ae08ff65364b92292999fef611f882839d6e9696`.
+
+Kanonik task:
+
+`tasks/seacraft-prg02-crafting-reclamation-ship-upgrade-cores-trophies-20261122.md`
+
+Uzak `TheOsmanYILDIRIM/agy-vault/main` readback:
+
+- status: `done`
+- revision: `2`
+- completion_contract: `strict`
+- evidence_refs: `receipts/0f69a7954949a09d7b5131e46b0efbf1f24d389fee5c18b84e9c6b79077adce2.md`
+- receipt event ID: `seacraft-prg02-close-d6ddfb014ee83ef9826563441453152d15d7d789`
+- Beyin kapanış commit: `29cebab9b10cd7164d9366c75c647a3d77d71e67`
+
+Resmî motorun local DirectSync doctor sonucunda `task_completion.strict_issue_count=0`, potential missing receipt `0`, dead instruction ref `0` doğrulandı. Geçici DirectSync vault'undaki `.obsidian` boundary uyarısı UI/yerel vault sınırı notudur; strict task kapanışına engel değildir. Motorla üretilen task revision 2 ve tek receipt aynı CAS kapanış commit'i sonrasında uzak `agy-vault/main` üzerinden geri okundu.
+
+### Son kapı
+
+PRG-02 craft/reclamation, deterministic salvage RNG, ship upgrade DAG, core/trophy progression, persistence migration, host-authoritative LAN intents, Linux/Android export, exact artifact provenance/readback ve Avenox Beyin strict kapanışı doğrulandı.
+
+**PRG-02 tamamlandı. PRG-03 başlatılmadı ve `not_started` olarak kalır.**
+
