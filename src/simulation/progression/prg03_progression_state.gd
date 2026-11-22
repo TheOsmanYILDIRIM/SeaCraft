@@ -270,7 +270,7 @@ static func validate_state(value: Variant) -> bool:
 		var row: Dictionary = owners[owner_id]
 		if row.size() != 5:
 			return false
-		if not row.get("total_xp") is int or int(row["total_xp"]) < 0 or int(row["total_xp"]) > MAX_XP:
+		if not _integer_number(row.get("total_xp")) or int(row["total_xp"]) < 0 or int(row["total_xp"]) > MAX_XP:
 			return false
 		for key in ["xp_events", "skill_ranks", "completed_gates", "challenges"]:
 			if not row.get(key) is Dictionary:
@@ -281,12 +281,12 @@ static func validate_state(value: Variant) -> bool:
 			if not event_id is String or not SectorIds.valid(event_id) or not row["xp_events"][event_id] is Dictionary:
 				return false
 			var event: Dictionary = row["xp_events"][event_id]
-			if event.size() != 3 or not event.get("source") is String or not event.get("amount") is int or not event.get("fingerprint") is String:
+			if event.size() != 3 or not event.get("source") is String or not _integer_number(event.get("amount")) or not event.get("fingerprint") is String:
 				return false
 			if str(event["source"]).is_empty() or int(event["amount"]) <= 0 or str(event["fingerprint"]).length() != 64:
 				return false
 		for skill_id in row["skill_ranks"]:
-			if not skill_id is String or not SectorIds.valid(skill_id) or not row["skill_ranks"][skill_id] is int or int(row["skill_ranks"][skill_id]) <= 0 or int(row["skill_ranks"][skill_id]) > 8:
+			if not skill_id is String or not SectorIds.valid(skill_id) or not _integer_number(row["skill_ranks"][skill_id]) or int(row["skill_ranks"][skill_id]) <= 0 or int(row["skill_ranks"][skill_id]) > 8:
 				return false
 		for gate_id in row["completed_gates"]:
 			if not gate_id is String or not SectorIds.valid(gate_id) or row["completed_gates"][gate_id] != true:
@@ -295,7 +295,7 @@ static func validate_state(value: Variant) -> bool:
 			if not challenge_id is String or not SectorIds.valid(challenge_id) or not row["challenges"][challenge_id] is Dictionary:
 				return false
 			var challenge: Dictionary = row["challenges"][challenge_id]
-			if challenge.size() != 4 or not challenge.get("version_key") is String or not challenge.get("progress") is int or not challenge.get("rewarded") is bool or not challenge.get("events") is Dictionary:
+			if challenge.size() != 4 or not challenge.get("version_key") is String or not _integer_number(challenge.get("progress")) or not challenge.get("rewarded") is bool or not challenge.get("events") is Dictionary:
 				return false
 			if not SectorIds.valid(str(challenge["version_key"])) or int(challenge["progress"]) < 0 or int(challenge["progress"]) > LocalChallengeDefinition.MAX_TARGET or challenge["events"].size() > MAX_EVENTS:
 				return false
@@ -509,6 +509,14 @@ static func _empty_challenge(version_key: String) -> Dictionary:
 
 static func _reject(operation: String, reason: String) -> Dictionary:
 	return {"accepted": false, "reason": reason, "operation": operation}
+
+static func _integer_number(value: Variant) -> bool:
+	if typeof(value) == TYPE_INT:
+		return true
+	if typeof(value) != TYPE_FLOAT:
+		return false
+	var number := float(value)
+	return is_finite(number) and floor(number) == number
 
 static func _exact(payload: Dictionary, keys: Array) -> bool:
 	if payload.size() != keys.size():
