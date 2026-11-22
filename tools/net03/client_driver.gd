@@ -128,11 +128,11 @@ func _run() -> void:
 	if _position(PLAYER).distance_to(drop_position) > LootAuthority.PICKUP_RADIUS:
 		_abort("authoritative pickup approach is out of range")
 		return
-	if not await _intent(P.PICKUP_LOOT, {"drop_id": drop_id}):
+	if not await _intent(P.PICKUP_LOOT, {"drop_id": drop_id, "transaction_id": "txn.net03.primary"}):
 		return
 	if not await _wait(func() -> bool: return _proxy(drop_id) == null and _count("drop_claimed") == 1, "loot reward event and despawn"):
 		return
-	if not await _intent(P.PICKUP_LOOT, {"drop_id": drop_id}, "already_claimed"):
+	if not await _intent(P.PICKUP_LOOT, {"drop_id": drop_id, "transaction_id": "txn.net03.duplicate"}, "already_claimed"):
 		return
 	var claimed := _event("drop_claimed")
 	var reward: Dictionary = claimed["payload"]
@@ -169,7 +169,7 @@ func _attack_cases() -> bool:
 		return false
 	if not await _intent(P.FIRE_WEAPON, {"target_id": HIDDEN_TARGET}, P.REJECT_AOI):
 		return false
-	return await _intent(P.PICKUP_LOOT, {"drop_id": HIDDEN_DROP}, P.REJECT_AOI)
+	return await _intent(P.PICKUP_LOOT, {"drop_id": HIDDEN_DROP, "transaction_id": "txn.net03.hidden"}, P.REJECT_AOI)
 
 
 func _broadside() -> bool:
