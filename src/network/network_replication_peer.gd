@@ -217,8 +217,6 @@ func consume_baseline_chunk(chunk: Dictionary) -> bool:
 	_last_event_sequence = int(_baseline_header["event_sequence"])
 	_seen_event_ids.clear()
 	_event_history.clear()
-	_baseline_chunks.clear()
-	_baseline_header.clear()
 	var completed_id := str(_baseline_header["baseline_id"])
 	var resume := int(_baseline_header["resume_sequence"])
 	_baseline_chunks.clear()
