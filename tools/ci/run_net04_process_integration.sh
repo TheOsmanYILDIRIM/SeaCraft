@@ -44,20 +44,10 @@ done
 godot --headless --path . res://tools/net04/process_harness.tscn -- --role=b --game-port="$GAME_PORT" --discovery-port="$DISCOVERY_PORT" --work="$WORK" >"$B_LOG" 2>&1
 grep -Fq "NET04_LATE_JOIN_PROCESS_OK" "$B_LOG"
 
-wait "$HOST_PID" &
-WAIT_HOST=$!
-wait "$A_PID" &
-WAIT_A=$!
-for _ in {1..320}; do
-  if ! kill -0 "$WAIT_HOST" 2>/dev/null && ! kill -0 "$WAIT_A" 2>/dev/null; then
-    break
-  fi
-  sleep 0.1
-done
-wait "$WAIT_HOST"
-wait "$WAIT_A"
-HOST_PID=""
+wait "$A_PID"
 A_PID=""
+wait "$HOST_PID"
+HOST_PID=""
 
 cat "$HOST_LOG" "$A_LOG" "$B_LOG" | tee "$OUT"
 if grep -Eq 'SCRIPT ERROR:|Parse Error:|NET04_PROCESS_FAILURE' "$OUT"; then
