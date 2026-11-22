@@ -7,57 +7,25 @@
 - Godot: `4.7.2-stable`
 - PRG-01: **kapalı ve doğrulanmış**
 - PRG-02: **kapalı ve doğrulanmış**
-- PRG-02 exact kod SHA: `d6ddfb014ee83ef9826563441453152d15d7d789`
-- PRG-02 Actions: run `45019833696` — `success`
-- PRG-02 artifact: `SeaCraft-PRG02-d6ddfb014ee83ef9826563441453152d15d7d789`, ID `14753292824`
-- PRG-02 Avenox Beyin: `done`, revision `2`
-- Aktif görev: **PRG-03 — XP, Skill Tree, Rank ve Local Challenge Meta**
-- PRG-03 uygulama başlangıç HEAD'i: `c1dd69644e7dc77ece909eb62c1cfb1691730eb4`
-- PRG-03 Avenox task: `tasks/seacraft-prg03-xp-skill-tree-rank-local-challenge-meta-20261122.md`
+- PRG-03: **kapalı ve doğrulanmış**
+- PRG-03 exact kod SHA: `2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`
+- PRG-03 Actions: run `45034255905` — `success`
+- PRG-03 artifact: `SeaCraft-PRG03-2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`, ID `14759425694`
+- PRG-03 artifact ZIP SHA-256: `6da0d0a5dfa3b53b14399b130562c30ce834e86b6f4ff2f604c9dad139bddf5d`
+- PRG-03 Avenox Beyin: `done`, revision `2`
+- PRG-03 Beyin kapanış commit: `3e3ab2f3995ee71e11b0c1488e5474a801112e18`
+- PRG-03 receipt: `receipts/7bd576a04c1148524ad9275be0183c6bd6455b69e0540ad44194fd9a27c17b85.md`
+- Fiziksel Android doğrulaması: **not_run**
 - PRG-04: **blocked / not_started**
 
-Ayrıntılı geçmiş ve PRG-02 kanıtı `GOREV_RAPORU.md` içindedir.
+Ayrıntılı PRG-03 uygulama, CI, export, hash, artifact readback ve Beyin kanıtı `GOREV_RAPORU.md` içindedir.
 
-## Aktif görev
+## Kapanış
 
-`AKTIF_GOREV.md` PRG-03 kanonik briefidir.
+SOHBET-34 / PRG-03 exact kod SHA üzerinde **369/369** GUT testi ve `PRG03_VERIFIER_OK` ile doğrulandı. Linux ve Android debug exportları üretildi; artifact upload ve authenticated REST readback aynı SHA/digest ile eşleşti. Avenox Beyin strict task revision 2 olarak kapatıldı ve tek receipt uzak `agy-vault/main` üzerinden geri okundu.
 
-Sohbet etiketi:
+## Sonraki kapı
 
-`[SOHBET-34 | SeaCraft PRG-03 — XP, Skill Tree, Rank ve Local Challenge Meta]`
+Bu handoff **PRG-04'ü başlatmaz** ve PRG-04 için yeni brief/task üretmez. PRG-04, kullanıcı yeni çalışma görevi verdiğinde güncel `main` ve kanonik plan yeniden doğrulanarak ayrı kapsam olarak ele alınır.
 
-Ana kapı:
-
-**Progression ledger ve gate API sabitlenmeden PRG-04 başlamaz.**
-
-## Teknik başlangıç
-
-- PRG-01 `InventoryState` ve atomik transaction modeli korunur.
-- PRG-02 upgrade/core/trophy progression altyapısı korunur.
-- XP eventleri idempotent ledger üzerinden authoritative uygulanır.
-- Level/rank deterministic threshold modelidir; drift yaratan ikinci truth kurulmaz.
-- Skill tree cycle-free stable-ID DAG olur; spend/respec atomik ve rollback'li.
-- License/test gate API gelecekte PRG-04 quest sisteminin tüketebileceği primitive-safe contract olarak kurulur.
-- Local challenge/milestone internet gerektirmez; reward idempotent ve save/load uyumlu olur.
-- Stat etkileri yalnız mevcut `StatModifierPipeline`.
-- LAN mutasyonları host-authoritative; client XP/skill/reward outcome seçemez.
-
-## Teslim kapısı
-
-PRG-03 çalışma sohbeti:
-
-- görevi uygular,
-- tüm ilgili test/regresyonları geçirir,
-- failure varsa kök nedeni düzeltip exact commit üzerinde yeniden doğrular,
-- Linux ve Android exportu üretip doğrular,
-- `SeaCraft-PRG03-<exact SHA>` artifact + authenticated hash/readback doğrular,
-- fiziksel Android yapılmadıysa `not_run`,
-- mevcut Beyin PRG-03 taskını strict kapatır,
-- `GOREV_RAPORU.md` içine tek PRG-03 kapanış bölümü yazar,
-- `AKTIF_GOREV.md` ve bu handoff'u kapanışa günceller.
-
-PRG-04 yalnız bu teslim GitHub'dan doğrulandıktan sonra hazırlanır.
-
-## Kısa çalışma sohbeti komutu
-
-`TheOsmanYILDIRIM/SeaCraft/main üzerindeki güncel HEAD, AKTIF_GOREV.md ve SESSION_HANDOFF.md dosyalarını oku. SOHBET-34 / PRG-03 görevini kanonik brief'e göre baştan sona uygula; yalnız PRG-03 kapsamını değiştir, hataları düzeltip exact-commit CI/export/artifact/Beyin/GOREV_RAPORU kapanışına kadar doğrula. PRG-04'e başlama.`
+PRG-03'ün kapanmış kanonik briefi `AKTIF_GOREV.md` içinde tarihsel kayıt olarak korunur.
