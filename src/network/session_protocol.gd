@@ -155,7 +155,7 @@ static func validate_handshake(value: Variant) -> String:
 	var resume_token := str(hello["resume_token"])
 	if resume_session.is_empty() != resume_token.is_empty():
 		return REJECT_MALFORMED_HANDSHAKE
-	if not resume_session.is_empty() and (not resume_session.begins_with("session.") or not valid_stable_id(resume_session) or not valid_resume_token(resume_token)):
+	if not resume_session.is_empty() and (not resume_session.begins_with("session.") or not valid_stable_id(resume_session) or resume_token.length() > MAX_STRING_LENGTH):
 		return REJECT_MALFORMED_HANDSHAKE
 	if str(hello["content_hash"]).length() != 64 or str(hello["content_manifest_algorithm"]).is_empty() or str(hello["content_version"]).is_empty():
 		return REJECT_MALFORMED_HANDSHAKE
