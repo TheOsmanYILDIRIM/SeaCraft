@@ -9,6 +9,7 @@ signal entity_spawned(entity_id: String, entity_kind: String)
 signal entity_despawned(entity_id: String)
 signal snapshot_applied(sequence: int, entity_count: int)
 signal semantic_event_received(event: Dictionary)
+signal baseline_complete(baseline_id: String, resume_sequence: int)
 
 var _registry: NetworkEntityRegistry = REGISTRY_SCRIPT.new()
 var _bridge: SessionRpcBridge
@@ -25,6 +26,8 @@ var _last_snapshot_sequence: int = -1
 var _last_event_sequence: int = -1
 var _seen_event_ids: Dictionary = {}
 var _event_history: Array[Dictionary] = []
+var _baseline_chunks: Dictionary = {}
+var _baseline_header: Dictionary = {}
 var _telemetry := {
 	"spawned": 0,
 	"despawned": 0,
@@ -94,6 +97,148 @@ func event_types() -> Array[String]:
 	for event in _event_history:
 		result.append(str(event["event_type"]))
 	return result
+
+
+func server_tick() -> int:
+	return _server_tick
+
+
+func snapshot_sequence() -> int:
+	return _snapshot_sequence
+
+
+func event_sequence() -> int:
+	return _event_sequence
+
+
+func build_baseline_chunks(peer_id: int, baseline_id: String, session_id: String, player_id: String, resume_sequence: int) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if not _host_enabled or str(_peer_to_player.get(peer_id, "")) != player_id:
+		return result
+	_refresh_all_sources()
+	var own_row := _registry.state_row(player_id)
+	if own_row.is_empty():
+		return result
+	var center := Vector2(float(own_row["x"]), float(own_row["y"]))
+	var visible := _registry.visible_ids(str(own_row["sector_id"]), center, PROTOCOL.AOI_RADIUS, player_id)
+	if visible.size() > PROTOCOL.MAX_REPLICATED_ENTITIES:
+		return result
+	var payloads: Array = []
+	for entity_id in visible:
+		var payload := _registry.spawn_payload_for(entity_id, _snapshot_sequence)
+		if payload.is_empty():
+			return []
+		payloads.append(payload)
+	var chunk_count := maxi(1, int(ceil(float(payloads.size()) / float(PROTOCOL.BASELINE_CHUNK_ENTITIES))))
+	for chunk_index in chunk_count:
+		var begin := chunk_index * PROTOCOL.BASELINE_CHUNK_ENTITIES
+		var end := mini(payloads.size(), begin + PROTOCOL.BASELINE_CHUNK_ENTITIES)
+		var rows: Array = payloads.slice(begin, end)
+		var chunk := PROTOCOL.make_baseline_chunk(
+			baseline_id, session_id, player_id, _server_tick, _snapshot_sequence, _event_sequence,
+			resume_sequence, chunk_index, chunk_count, rows
+		)
+		if PROTOCOL.validate_baseline_chunk(chunk) != "":
+			return []
+		result.append(chunk)
+	return result
+
+
+func consume_baseline_chunk(chunk: Dictionary) -> bool:
+	if _host_enabled or PROTOCOL.validate_baseline_chunk(chunk) != "":
+		return false
+	var baseline_id := str(chunk["baseline_id"])
+	if _baseline_header.is_empty():
+		if int(chunk["chunk_index"]) != 0:
+			return false
+		_baseline_header = {
+			"baseline_id": baseline_id,
+			"session_id": str(chunk["session_id"]),
+			"player_id": str(chunk["player_id"]),
+			"server_tick": int(chunk["server_tick"]),
+			"snapshot_sequence": int(chunk["snapshot_sequence"]),
+			"event_sequence": int(chunk["event_sequence"]),
+			"resume_sequence": int(chunk["resume_sequence"]),
+			"chunk_count": int(chunk["chunk_count"]),
+		}
+	elif (
+		baseline_id != str(_baseline_header["baseline_id"])
+		or str(chunk["session_id"]) != str(_baseline_header["session_id"])
+		or str(chunk["player_id"]) != str(_baseline_header["player_id"])
+		or int(chunk["server_tick"]) != int(_baseline_header["server_tick"])
+		or int(chunk["snapshot_sequence"]) != int(_baseline_header["snapshot_sequence"])
+		or int(chunk["event_sequence"]) != int(_baseline_header["event_sequence"])
+		or int(chunk["resume_sequence"]) != int(_baseline_header["resume_sequence"])
+		or int(chunk["chunk_count"]) != int(_baseline_header["chunk_count"])
+	):
+		return false
+	var index := int(chunk["chunk_index"])
+	if _baseline_chunks.has(index):
+		return true
+	_baseline_chunks[index] = (chunk["entity_payloads"] as Array).duplicate(true)
+	if _baseline_chunks.size() < int(_baseline_header["chunk_count"]):
+		return true
+	for expected in int(_baseline_header["chunk_count"]):
+		if not _baseline_chunks.has(expected):
+			return false
+	var payloads: Array = []
+	for chunk_index in int(_baseline_header["chunk_count"]):
+		payloads.append_array(_baseline_chunks[chunk_index])
+	if payloads.size() > PROTOCOL.MAX_REPLICATED_ENTITIES:
+		return false
+	var desired: Dictionary = {}
+	for raw in payloads:
+		var payload: Dictionary = raw
+		var entity_id := str(payload["entity_id"])
+		desired[entity_id] = true
+		if _registry.has_entity(entity_id):
+			var proxy := _registry.proxy(entity_id)
+			if _registry.generation(entity_id) != int(payload["generation"]) or proxy == null:
+				return false
+			if not _registry.apply_snapshot_row(_row_from_spawn(payload), int(_baseline_header["snapshot_sequence"]), int(_baseline_header["server_tick"])):
+				return false
+		else:
+			var node := _spawn_proxy(payload)
+			if node == null:
+				return false
+			_root.add_child(node, true)
+	for entity_id in _registry.entity_ids():
+		if desired.has(entity_id):
+			continue
+		var proxy := _registry.proxy(entity_id)
+		var generation := _registry.generation(entity_id)
+		if _registry.remove(entity_id, generation) and proxy != null and is_instance_valid(proxy):
+			proxy.queue_free()
+	var visible: Array[String] = []
+	for raw_id in desired.keys():
+		visible.append(str(raw_id))
+	visible.sort()
+	_registry.set_proxy_visibility(visible)
+	_last_snapshot_sequence = int(_baseline_header["snapshot_sequence"])
+	_last_event_sequence = int(_baseline_header["event_sequence"])
+	_seen_event_ids.clear()
+	_event_history.clear()
+	_baseline_chunks.clear()
+	_baseline_header.clear()
+	var completed_id := str(_baseline_header["baseline_id"])
+	var resume := int(_baseline_header["resume_sequence"])
+	_baseline_chunks.clear()
+	_baseline_header.clear()
+	baseline_complete.emit(completed_id, resume)
+	return true
+
+
+func _row_from_spawn(payload: Dictionary) -> Dictionary:
+	return {
+		"entity_id": str(payload["entity_id"]),
+		"entity_kind": str(payload["entity_kind"]),
+		"sector_id": str(payload["sector_id"]),
+		"x": float(payload["x"]),
+		"y": float(payload["y"]),
+		"heading": float(payload["heading"]),
+		"hull_ratio": float(payload["hull_ratio"]),
+		"alive": bool(payload["alive"]),
+	}
 
 
 func set_peer_player(peer_id: int, player_id: String) -> bool:
