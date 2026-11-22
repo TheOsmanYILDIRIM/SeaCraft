@@ -542,3 +542,64 @@ scikit-image
 Doğrulama kuralı: bütün final yönler aynı canvas boyutunda RGBA kalmalı ve alfa içeriği dört kenara taşmamalıdır. SC-01 doğrulama setinde v1, v2 ve v3'ün üçünde de 8/8 kare aynı canvas, RGBA ve edge-alpha=0 olarak geçti; v3 33³ cube çıktısı da üretildi.
 
 **Üretim kararı:** yeni gemilerde ortak tema için varsayılan \`v3\`; v1/v2 yalnız geriye dönük karşılaştırma ve look-development teşhisi için korunur. Stil referansı ayrı girdidir; araç referans görselini repoya gömmek zorunda değildir.
+
+
+## 17. Radial pano ekstraksiyonu ve değişmez üretim hattı
+
+8 yönün tek kare radial panoda üretildiği durumda kesim için artık sohbet içinde gemiye özel kod yazılmaz.
+
+Kanonik ekstraktör:
+
+`tools/sprite_radial_extract.py`
+
+### Radial pano kesim kuralı
+
+Şeffaf radial panoda final yönler **sabit kare, sabit sektör veya komşuluk bbox'ı ile kesilmez**. Bu yöntemler komşu geminin flama, halat, top namlusu veya başka alfa parçalarını yanlış frame'e sızdırabilir.
+
+Varsayılan yöntem:
+
+1. panodaki gerçek alpha üzerinden connected-component analizi yap;
+2. alanı en büyük 8 fiziksel objeyi seç;
+3. her objeyi pano merkezine göre centroid açısıyla N/NE/E/SE/S/SW/W/NW slotuna ata;
+4. yalnız o component'e ait pikselleri koru;
+5. objenin kendi alpha bbox'ını şeffaf padding ile çıkar;
+6. ekstraksiyon contact-sheet'ini gözle doğrula;
+7. bundan sonra kanonik normalizer'a geç.
+
+Pruvalar radial panoda merkezden dışarı bakıyorsa:
+
+```bash
+python tools/sprite_radial_extract.py radial.png raw/ --facing outward
+```
+
+Pruvalar merkeze bakıyorsa yalnız yön isimlemesi terslenir:
+
+```bash
+python tools/sprite_radial_extract.py radial.png raw/ --facing inward
+```
+
+**Yasak:** Aynı işi yapmak için her gemide yeni Python kesim kodu yazmak, 45° wedge'i final maske olarak kullanmak veya sabit dikdörtgen crop'u obje ekstraksiyonu sanmak.
+
+### Bundan sonraki zorunlu sıra
+
+```text
+Onaylı radial pano
+→ tools/sprite_radial_extract.py
+→ extraction_contactsheet görsel QA
+→ tools/sprite_normalize.py
+→ normalize contactsheet + rotation.gif QA
+→ tools/seacraft_showlook.py --stage v3
+→ final PNG / 4×2 atlas / FINAL rotation GIF
+```
+
+`sprite_normalize.py` içindeki support-anchor, dünya ölçeği, pair-lock, no-crop ve N-LUT mantığı yeniden yazılmaz. Bir hata bulunursa geçici gemi scripti yerine kanonik araç düzeltilir ve bu rehber aynı commit'te güncellenir.
+
+### Final GIF kuralı
+
+Normalizer'ın ürettiği `rotation.gif`, **ShowLook öncesi hizalama/ölçek QA** kanıtıdır. Teslim edilen dönüş GIF'i mutlaka ShowLook uygulanmış final 8 PNG'den yeniden üretilir. Böylece kullanıcı GIF'te oyuna girecek gerçek renk/parlaklık sonucunu görür.
+
+### Kir / doku yoğunluğu kuralı
+
+ShowLook katmanı yeni kir, benek, çizik, sharpen, clarity veya local-contrast dokusu üretmez. Kaynak üretim zaten aşırı kirli veya tekrarlı grunge ise bu sorun üretim/material referansında çözülür. Renk düzeltmesi kaynak dokuyu gereğinden sert gösteriyorsa gemiye özel ad-hoc grade yazılmaz; ham → normalize → ShowLook karşılaştırılır ve gerekiyorsa **kanonik `tools/seacraft_showlook.py`** global olarak düzeltilip rehber güncellenir.
+
+Git geçmişi rehberin her revizyonunu saklar; bu dosya kanonik operasyon kitabıdır ve pipeline değiştiği her commit'te güncel tutulur.
