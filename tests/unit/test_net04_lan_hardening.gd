@@ -6,6 +6,7 @@ const DC := preload("res://src/network/lan_discovery_client.gd")
 const PG := preload("res://src/network/lan_permission_gate.gd")
 const LEDGER := preload("res://src/network/host_transaction_ledger.gd")
 const REGISTRY := preload("res://src/network/network_entity_registry.gd")
+const PROXY := preload("res://src/network/network_entity_proxy.gd")
 
 
 func _beacon(session_id: String = "session.r0123456789abcdef0123456789abcdef") -> Dictionary:
@@ -113,6 +114,21 @@ func test_net04_late_join_baseline_exact_current_truth() -> void:
 	missing.erase("event_sequence")
 	assert_eq(P.validate_baseline_chunk(missing), P.REJECT_MALFORMED_BASELINE)
 	print("NET04_LATE_JOIN_BASELINE_OK entities=1 watermarks=1")
+
+
+func test_net04_baseline_reconciles_prehandshake_mirror_same_sequence() -> void:
+	var registry := REGISTRY.new()
+	var initial := _spawn("npc.prehandshake", 1.0)
+	var proxy := PROXY.new() as NetworkEntityProxy
+	assert_true(proxy.configure_spawn(initial))
+	assert_true(registry.register_mirror(initial, proxy))
+	var baseline := _spawn("npc.prehandshake", 77.0)
+	assert_eq(int(initial["state_sequence"]), int(baseline["state_sequence"]))
+	assert_true(registry.reconcile_mirror_baseline(baseline))
+	assert_eq(float(registry.state_row("npc.prehandshake")["x"]), 77.0)
+	assert_eq(float(proxy.authoritative_state()["x"]), 77.0)
+	proxy.free()
+	print("NET04_BASELINE_RECONCILE_OK same_sequence=1")
 
 
 func test_net04_transaction_idempotency_and_conflict() -> void:
