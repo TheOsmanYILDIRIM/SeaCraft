@@ -4,6 +4,9 @@ const P := preload("res://src/network/session_protocol.gd")
 const HIDDEN_TARGET := "entity.net03_hidden"
 const HIDDEN_DROP := "drop.net03_hidden"
 const OBSERVATION_TICKS := 24
+# Real-process combat can sink the NPC anywhere in the sector; keep the exact
+# arrival assertion but give long pickup transits a deterministic simulation budget.
+const PROCESS_MOVE_FRAMES := MAX_MOVE_FRAMES * 3
 
 var _host: SessionHost
 var _peer_id := 0
@@ -90,7 +93,7 @@ func _on_intent_applied(_sender: int, player_id: String, kind: String, _sequence
 				print("NET03_AUTHORITY_REJECTION_OK")
 			# Match VS-04 fixed progression: patrol while making the opening
 			# move; pause AI while lining up each broadside.
-			for _i in MAX_MOVE_FRAMES:
+			for _i in PROCESS_MOVE_FRAMES:
 				_step_frame(_moves == 0, true)
 				if not _player_motor.has_target():
 					break
