@@ -17,6 +17,7 @@ tests = [
     "test_net04_reconnect_token_handshake_contract",
     "test_net04_reconnect_sequence_and_rotation_contract",
     "test_net04_late_join_baseline_exact_current_truth",
+    "test_net04_baseline_reconciles_prehandshake_mirror_same_sequence",
     "test_net04_transaction_idempotency_and_conflict",
     "test_net04_transaction_persistence_round_trip",
     "test_net04_permission_fallback_and_runtime_api",
@@ -31,6 +32,7 @@ markers = [
     "NET04_RECONNECT_TOKEN_OK",
     "NET04_RECONNECT_SEQUENCE_OK",
     "NET04_LATE_JOIN_BASELINE_OK",
+    "NET04_BASELINE_RECONCILE_OK",
     "NET04_TRANSACTION_IDEMPOTENCY_OK",
     "NET04_TRANSACTION_PERSISTENCE_OK",
     "NET04_PERMISSION_FALLBACK_OK",
@@ -61,4 +63,4 @@ for marker in [
         raise SystemExit(f"missing NET04 process marker: {marker}")
 if re.search(r"SCRIPT ERROR:|Parse Error:|NET04_PROCESS_FAILURE", gut + process):
     raise SystemExit("NET04 parse/process failure")
-print("NET04_VERIFIER_OK unit=12 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1")
+print("NET04_VERIFIER_OK unit=13 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1")
