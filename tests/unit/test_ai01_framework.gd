@@ -306,8 +306,11 @@ func test_ai01_content_registry_and_runtime_beehave_export_contract() -> void:
 	assert_true(ResourceLoader.exists("res://addons/beehave/nodes/beehave_tree.gd"))
 	assert_true(ResourceLoader.exists("res://addons/beehave/nodes/leaves/action.gd"))
 	var presets := FileAccess.get_file_as_string("res://export_presets.cfg")
-	assert_false(presets.contains('exclude_filter="tests/**,tools/**,addons/**"'))
-	assert_true(presets.contains('exclude_filter="tests/**,tools/**,addons/gut/**"'))
+	assert_false(presets.contains("addons/**"))
+	assert_true(presets.contains("tests/**"))
+	assert_true(presets.contains("tools/**"))
+	assert_true(presets.contains("addons/gut/**"))
+	assert_false(presets.contains("addons/beehave/**"))
 
 
 func _sector() -> SectorRuntime:
