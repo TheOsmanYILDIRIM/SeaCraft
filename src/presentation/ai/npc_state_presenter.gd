@@ -14,6 +14,11 @@ func _ready() -> void:
 	add_child(_label)
 
 
+func _process(_delta: float) -> void:
+	# Keep debug/name text screen-upright while the owning ship rotates.
+	global_rotation = 0.0
+
+
 func apply_snapshot(snapshot: Dictionary) -> bool:
 	if _label == null or not DtoContract.is_primitive_safe(snapshot):
 		return false
