@@ -4,9 +4,9 @@
 >
 > Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-04 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — AKTİF
+## Durum — KAPALI
 
-PRG-03 doğrulanmış biçimde kapalıdır. WAVE 6'nın dördüncü görevi PRG-04 başlatılmıştır. PRG-05, PRG-04 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
+PRG-04 exact kod teslimi, CI/regresyon matrisi, Linux/Android exportu, authenticated artifact readback ve Avenox Beyin strict kapanışı doğrulanmıştır. PRG-05 bu kapanış kapsamında başlatılmadı; durumu `not_started` olarak kalır.
 
 ## Kimlik
 
@@ -20,9 +20,15 @@ PRG-03 doğrulanmış biçimde kapalıdır. WAVE 6'nın dördüncü görevi PRG-
 - Godot: `4.7.2-stable`
 - Bağımlılık: PRG-03 tamamlandı
 - Avenox Beyin görevi: `tasks/seacraft-prg04-quest-journal-npc-interaction-20261122.md`
-- Sonraki görev: PRG-05 — PRG-04 kapanmadan başlama
+- PRG-04 exact kod SHA: `cb179949f5a8e04c2507c20a51b17c54e034476a`
+- PRG-04 Actions: run `45045317837` — `success`
+- PRG-04 artifact: `SeaCraft-PRG04-cb179949f5a8e04c2507c20a51b17c54e034476a`, ID `14763222807`
+- PRG-04 Avenox Beyin: `done`, revision `2`; commit `e48989da5c444b6342c00f3eb41e30bee8249804`
+- PRG-04 receipt: `receipts/a8f03934d465a9465c4585ca5a5ae646bb62ebf8e2d356b36141084775cb528e.md`
+- Fiziksel Android cihaz: `not_run`
+- Sonraki görev: PRG-05 — `not_started`; bu kapanışta başlatılmadı
 
-Her mesajına yukarıdaki sohbet etiketiyle başla.
+Bu brief kapanmıştır. PRG-05 için ayrı kanonik görev açılmadan yeni geliştirme başlatma.
 
 Başlamadan güncel `main` HEAD'i, bu dosyayı, `GELISTIRME_GOREV_PLANI.md`, `GOREV_RAPORU.md`, `SESSION_HANDOFF.md` ve `README.md` dosyalarını yeniden doğrula. HEAD değişmişse başkasının değişikliğini ezme; güncel diff ve sahipliği inceleyip yalnız PRG-04 kapsamını güvenli biçimde uygula.
 

@@ -813,3 +813,97 @@ Resmî motorun DirectSync doctor sonucunda `task_completion.strict_issue_count=0
 PRG-03 XP/rank, skill DAG/spend/respec, progression gates, local challenge meta, persistence migration, host-authoritative LAN, touch sözleşmesi, Linux/Android export, exact artifact provenance/readback ve Avenox Beyin strict kapanışı doğrulandı.
 
 **PRG-03 tamamlandı. PRG-04 başlatılmadı ve `not_started` olarak kalır.**
+
+## SOHBET-35 — SeaCraft PRG-04 — Quest, Journal ve NPC Interaction
+
+**Sonuç (2026-11-22): tamamlandı ve doğrulandı.** Exact kod SHA: [`cb179949f5a8e04c2507c20a51b17c54e034476a`](https://github.com/TheOsmanYILDIRIM/SeaCraft/commit/cb179949f5a8e04c2507c20a51b17c54e034476a). Godot `4.7.2-stable` final CI: [run 45045317837 — success](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45045317837), job `137278544612`; commit status context `seacraft-prg04-evidence=success`.
+
+### Uygulanan PRG-04 sınırı
+
+- Stable-ID `QuestDefinition` ve runtime quest state; start/turn-in NPC, prerequisite quest/gate/rank, region/sector, repeatability, party-share ve ordered-objective sözleşmeleri eklendi.
+- Objective authority matrisi kill, damage, capture, collect, acquire, timed, escort, salvage ve trade türlerini kapsar. Objective eventleri host/offline authority bağlamı, target/source/region/sector filtresi, duplicate-ID idempotency ve same-ID payload conflict korumasıyla işlenir.
+- Quest-chain missing-reference ve cycle doğrulaması ile region/NPC/rank/gate referans validation'ı data-driven katalog sınırında tutulur.
+- Reward path mevcut `InventoryState` ve PRG-03 XP/gate API'lerini reuse eder; item + XP + gate sonucu atomik rollback sınırındadır. Lost-ACK/same transaction retry ikinci reward üretmez.
+- Persistence `InventoryState` v4'e yükseltildi; v1/v2/v3 migration, quest progress/timer/event ledger/reward state round-trip ve corrupt DTO/referans reddi eklendi.
+- Journal detached primitive-safe snapshot olarak available/active/completable/completed/failed grupları, objective progress, reward preview ve timer bilgisini taşır. UI authoritative state'i doğrudan değiştirmez; accept/turn-in intent ve local tracking üretir.
+- LAN protocol v7'de accept/turn-in bounded intentleri host transaction ledger'a bağlandı. Objective outcome client wire intenti değildir. Handshake quest snapshot'ı reconnect ve late-join client mirror'ına aktarır.
+- Touch sözleşmesinde minimum 48 px hedef ve font scale 1.3 korunur. PRG-05 faction/economy geliştirmesi yapılmadı.
+
+### Hata düzeltme ve exact CI
+
+İlk uygulama run `45044970051` GDScript type-inference parse hatalarını, ikinci run `45045036454` ise eski protocol/migration regresyon beklentileri ile quest reward event-ID/network intent eksiklerini görünür kıldı. Kök nedenler düzeltilip yeni exact commit üzerinde yeniden çalıştırıldı.
+
+Final exact run `45045317837` sonucu:
+
+- GUT: **378/378 passing**
+- `PRG04_VERIFIER_OK tests=9 markers=37 objectives=9 atomic_reward=1 persistence=1 lan=1 journal=1 touch=1`
+- PRG-01/02/03 regression testleri geçti.
+- NET-01/02/03/04 gerçek process/integration kapıları geçti.
+- Mevcut VS/CORE/AI verifier'ları ve offline/network boundary kapıları geçti.
+- Parse/load, export preset ve headless boot kapıları geçti.
+
+### Linux / Android export
+
+Linux debug export başarıyla üretildi:
+
+- `linux/SeaCraft.x86_64`
+- `linux/SeaCraft.pck`
+
+Android debug export başarıyla üretildi:
+
+- `android/SeaCraft-debug.apk`
+- package: `com.osmanyildirim.seacraft`
+- targetSdk: `37`
+- native ABI: `arm64-v8a`
+- `android.permission.INTERNET`
+- `android.permission.ACCESS_LOCAL_NETWORK`
+
+Fiziksel Android cihazda NPC/journal/touch/save/LAN matrisi bu ortamda çalıştırılmadı ve başarı gibi gösterilmedi: **not_run**.
+
+### Artifact provenance ve authenticated readback
+
+Artifact:
+
+- Ad: `SeaCraft-PRG04-cb179949f5a8e04c2507c20a51b17c54e034476a`
+- ID: `14763222807`
+- Boyut: `58905878` byte
+- ZIP / upload digest SHA-256: `ead25a16d2f6ec8a251e09c08863b975736e8bf170c302391424e5da8b6faab4`
+- Expires: `2026-12-06T16:45:40Z`
+
+CI authenticated REST readback marker:
+
+`PRG04_ARTIFACT_READBACK_OK artifact_id=14763222807 rest_zip_sha256=ead25a16d2f6ec8a251e09c08863b975736e8bf170c302391424e5da8b6faab4 upload_digest=ead25a16d2f6ec8a251e09c08863b975736e8bf170c302391424e5da8b6faab4 sha=cb179949f5a8e04c2507c20a51b17c54e034476a`
+
+Artifact ayrıca authenticated GitHub connector üzerinden yeniden indirildi. İndirilen ZIP SHA-256 GitHub artifact digest ile birebir eşleşti; `COMMIT_SHA.txt` exact kod SHA'yı taşıdı ve `sha256sum -c SHA256SUMS.txt` üç payload için `OK` verdi.
+
+| İçerik | SHA-256 |
+| --- | --- |
+| Android APK | `42fc59b141060d2f5ace190a4976f2371f7bd4df0f7b66626cd2b4b40f5ea3e2` |
+| Linux executable | `1a291d3d15e4180b60b0af96cf6458f11fe143636d76575ddf1e23d1a3f24f2e` |
+| Linux PCK | `2f4b7df1f1d5b4e1e4f65c9bc0893891bbfc95bb30606f770a4351ce1d09b76d` |
+
+### Avenox Beyin strict kapanışı
+
+Resmî Avenox Beyin v3.12.0 Project ZIP'i kullanıldı; ZIP SHA-256: `d8dbf97a38a50046d3f48205ae08ff65364b92292999fef611f882839d6e9696`.
+
+Kanonik task:
+
+`tasks/seacraft-prg04-quest-journal-npc-interaction-20261122.md`
+
+Uzak `TheOsmanYILDIRIM/agy-vault/main` readback:
+
+- status: `done`
+- revision: `2`
+- completion_contract: `strict`
+- evidence_refs: `receipts/a8f03934d465a9465c4585ca5a5ae646bb62ebf8e2d356b36141084775cb528e.md`
+- receipt event ID: `seacraft-prg04-close-cb179949-20261122`
+- Beyin kapanış commit: `e48989da5c444b6342c00f3eb41e30bee8249804`
+
+Resmî motorun DirectSync doctor sonucunda `task_completion.strict_issue_count=0` doğrulandı. Motorla üretilen task revision 2 ve tek receipt aynı CAS kapanış commit'i sonrasında uzak `agy-vault/main` üzerinden geri okundu.
+
+### Son kapı
+
+PRG-04 quest/objective authority, atomik reward, persistence/migration, detached journal, NPC interaction, host-authoritative LAN, Linux/Android export, exact artifact provenance/readback ve Avenox Beyin strict kapanışı doğrulandı.
+
+**PRG-04 tamamlandı. PRG-05 başlatılmadı ve `not_started` olarak kalır.**
+
