@@ -117,18 +117,17 @@ func build_baseline_chunks(peer_id: int, baseline_id: String, session_id: String
 		return result
 	_refresh_all_sources()
 	var own_row := _registry.state_row(player_id)
-	if own_row.is_empty():
-		return result
-	var center := Vector2(float(own_row["x"]), float(own_row["y"]))
-	var visible := _registry.visible_ids(str(own_row["sector_id"]), center, PROTOCOL.AOI_RADIUS, player_id)
-	if visible.size() > PROTOCOL.MAX_REPLICATED_ENTITIES:
-		return result
 	var payloads: Array = []
-	for entity_id in visible:
-		var payload := _registry.spawn_payload_for(entity_id, _snapshot_sequence)
-		if payload.is_empty():
-			return []
-		payloads.append(payload)
+	if not own_row.is_empty():
+		var center := Vector2(float(own_row["x"]), float(own_row["y"]))
+		var visible := _registry.visible_ids(str(own_row["sector_id"]), center, PROTOCOL.AOI_RADIUS, player_id)
+		if visible.size() > PROTOCOL.MAX_REPLICATED_ENTITIES:
+			return result
+		for entity_id in visible:
+			var payload := _registry.spawn_payload_for(entity_id, _snapshot_sequence)
+			if payload.is_empty():
+				return []
+			payloads.append(payload)
 	var chunk_count := maxi(1, int(ceil(float(payloads.size()) / float(PROTOCOL.BASELINE_CHUNK_ENTITIES))))
 	for chunk_index in chunk_count:
 		var begin := chunk_index * PROTOCOL.BASELINE_CHUNK_ENTITIES
