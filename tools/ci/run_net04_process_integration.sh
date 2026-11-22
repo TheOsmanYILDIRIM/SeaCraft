@@ -29,7 +29,7 @@ for _ in {1..120}; do
   kill -0 "$HOST_PID" 2>/dev/null || { cat "$HOST_LOG"; exit 1; }
   sleep 0.1
 done
-grep -Fq "NET04_HOST_READY" "$HOST_LOG"
+grep -Fq "NET04_HOST_READY" "$HOST_LOG" || { cat "$HOST_LOG"; exit 1; }
 
 godot --headless --path . res://tools/net04/process_harness.tscn -- --role=a --game-port="$GAME_PORT" --discovery-port="$DISCOVERY_PORT" --work="$WORK" >"$A_LOG" 2>&1 &
 A_PID=$!
@@ -39,10 +39,10 @@ for _ in {1..160}; do
   kill -0 "$A_PID" 2>/dev/null || { cat "$A_LOG"; cat "$HOST_LOG"; exit 1; }
   sleep 0.1
 done
-[[ -f "$WORK/a_disconnected" ]]
+[[ -f "$WORK/a_disconnected" ]] || { cat "$A_LOG"; cat "$HOST_LOG"; exit 1; }
 
 godot --headless --path . res://tools/net04/process_harness.tscn -- --role=b --game-port="$GAME_PORT" --discovery-port="$DISCOVERY_PORT" --work="$WORK" >"$B_LOG" 2>&1
-grep -Fq "NET04_LATE_JOIN_PROCESS_OK" "$B_LOG"
+grep -Fq "NET04_LATE_JOIN_PROCESS_OK" "$B_LOG" || { cat "$B_LOG"; cat "$A_LOG"; cat "$HOST_LOG"; exit 1; }
 
 wait "$A_PID"
 A_PID=""
