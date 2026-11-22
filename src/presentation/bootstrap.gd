@@ -396,7 +396,12 @@ func _control_tree_captures_touch(node: Node, screen_position: Vector2) -> bool:
 	for child in node.get_children():
 		if child is Control:
 			var control := child as Control
-			if control.visible and control.mouse_filter != Control.MOUSE_FILTER_IGNORE and control.get_global_rect().has_point(screen_position):
+			# Local `visible` is not enough: a visible child under a hidden
+			# panel still reports visible=true. Hidden UI subtrees must not block
+			# gameplay touch, pan or zoom.
+			if not control.is_visible_in_tree():
+				continue
+			if control.mouse_filter != Control.MOUSE_FILTER_IGNORE and control.get_global_rect().has_point(screen_position):
 				return true
 		if _control_tree_captures_touch(child, screen_position):
 			return true
