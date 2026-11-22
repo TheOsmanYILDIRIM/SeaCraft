@@ -4,9 +4,11 @@
 >
 > Görev tamamlandığında ayrıntılı doğrulama sonucu yalnız `GOREV_RAPORU.md` dosyasına, mevcut geçmiş korunarak yeni bir PRG-03 bölümü halinde yazılır. Sohbet cevabı kısa tutulur.
 
-## Durum — AKTİF
+## Durum — KAPALI
 
-PRG-02 doğrulanmış biçimde kapalıdır. WAVE 6'nın üçüncü görevi PRG-03 başlatılmıştır. PRG-04, PRG-03 exact teslimi GitHub'dan doğrulanıp kanonik kayıtlar kapatılmadan başlatılmaz.
+PRG-03 doğrulanmış biçimde kapalıdır. Exact kod SHA `2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584`, Actions run `45034255905` — `success`, artifact `SeaCraft-PRG03-2d8e32e6ff84ca3a8e4b23aa0e52073dc333b584` / ID `14759425694`, Avenox Beyin task `done` revision `2` ve receipt `receipts/7bd576a04c1148524ad9275be0183c6bd6455b69e0540ad44194fd9a27c17b85.md` geri okunmuştur. Fiziksel Android doğrulaması `not_run`. PRG-04 **başlatılmadı / not_started**.
+
+> Aşağıdaki metin kapanmış PRG-03 uygulama briefinin tarihsel kaydıdır; yeniden uygulanmaz ve PRG-04 briefi değildir. Ayrıntılı kanıt `GOREV_RAPORU.md` içindedir.
 
 ## Kimlik
 
