@@ -349,7 +349,7 @@ func _craft(owner_id: String, payload: Dictionary) -> Dictionary:
 		return _reject(OP_CRAFT, "output_capacity")
 	if not _inventory.apply_item_deltas_atomic(owner_id, deltas):
 		return _reject(OP_CRAFT, "atomic_commit_failed")
-	return {"accepted": true, "reason": "", "operation": OP_CRAFT, "recipe_id": recipe_id, "count": count, "outputs": outputs}
+	return {"accepted": true, "reason": "", "operation": OP_CRAFT, "recipe_id": recipe_id, "count": count}
 
 func _salvage(owner_id: String, payload: Dictionary) -> Dictionary:
 	if not _exact(payload, ["table_id", "source_item_id"]):
@@ -513,7 +513,7 @@ func _trophy_unlock(owner_id: String, payload: Dictionary) -> Dictionary:
 		return _reject(OP_TROPHY_UNLOCK, "atomic_commit_failed")
 	unlocks[trophy_id] = true
 	events[event_key] = trophy_id
-	return {"accepted": true, "reason": "", "operation": OP_TROPHY_UNLOCK, "trophy_id": trophy_id, "event_key": event_key, "rewards": rewards}
+	return {"accepted": true, "reason": "", "operation": OP_TROPHY_UNLOCK, "trophy_id": trophy_id, "event_key": event_key}
 
 func _core_candidate_error(owner_id: String, slot_id: String, item_id: String, ignore_slot: String) -> String:
 	var slots: Dictionary = _core_slots[owner_id]
