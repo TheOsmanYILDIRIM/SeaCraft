@@ -91,14 +91,29 @@ func _on_intent_applied(_sender: int, player_id: String, kind: String, _sequence
 					_abort("rejected outcome changed authority")
 					return
 				print("NET03_AUTHORITY_REJECTION_OK")
-			# Match VS-04 fixed progression: patrol while making the opening
-			# move; pause AI while lining up each broadside.
+			# Match VS-04 fixed progression. Normal movement still proves exact
+			# authoritative arrival. Once loot exists, the real gameplay contract
+			# completes movement at the pickup radius, exactly like
+			# VerticalSliceScenario._move_player_within(), instead of requiring
+			# direct steering to reach the drop's center.
+			var pickup_drop := not _last_drop_id.is_empty() and _loot.has_drop(_last_drop_id)
+			var pickup_position := Vector2.INF
+			if pickup_drop:
+				var drop_state := _loot.drop_snapshot(_last_drop_id)
+				pickup_position = Vector2(float(drop_state["x"]), float(drop_state["y"]))
+			var movement_complete := false
 			for _i in PROCESS_MOVE_FRAMES:
 				_step_frame(_moves == 0, true)
-				if not _player_motor.has_target():
+				if pickup_drop:
+					if _player_motor.global_position.distance_to(pickup_position) <= LootAuthority.PICKUP_RADIUS:
+						_player_motor.apply_authoritative_command(GameplayCommand.cancel())
+						movement_complete = true
+						break
+				elif not _player_motor.has_target():
+					movement_complete = true
 					break
-			if _player_motor.has_target():
-				_abort("authoritative movement did not arrive")
+			if not movement_complete:
+				_abort("authoritative pickup envelope did not arrive" if pickup_drop else "authoritative movement did not arrive")
 				return
 			_moves += 1
 		P.SELECT_COMBAT_TARGET:

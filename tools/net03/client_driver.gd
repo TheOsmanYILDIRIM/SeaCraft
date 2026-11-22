@@ -119,11 +119,12 @@ func _run() -> void:
 		_abort("invalid combat mirror events")
 		return
 	print("NET03_COMBAT_REPLICATION_OK")
-	# Approach within the real pickup envelope, not the drop's exact center:
-	# a loot point may be closer to the sector boundary than the ship's hull.
+	# Pickup completion is radius-based in production/offline authority. Do not
+	# require exact ShipMotor arrival at an arbitrary approach point: a sunk NPC
+	# can leave loot where direct steering reaches the pickup envelope before the
+	# requested point itself is navigable.
 	var drop_position := _position(drop_id)
-	var pickup_approach := drop_position.move_toward(_position(PLAYER), LootAuthority.PICKUP_RADIUS * 0.5)
-	if not await _move(pickup_approach):
+	if not await _move_within_pickup(drop_position):
 		return
 	if _position(PLAYER).distance_to(drop_position) > LootAuthority.PICKUP_RADIUS:
 		_abort("authoritative pickup approach is out of range")
@@ -195,6 +196,15 @@ func _move(destination: Vector2) -> bool:
 	if not await _intent(GameplayCommand.MOVE_TO_WORLD_POSITION, {"world_x": destination.x, "world_y": destination.y}):
 		return false
 	return await _wait(func() -> bool: return _client.last_snapshot_sequence() > seq_before and _position(PLAYER).distance_to(destination) <= 18.1, "authoritative arrival")
+
+
+func _move_within_pickup(drop_position: Vector2) -> bool:
+	var seq_before := _client.last_snapshot_sequence()
+	if not await _intent(GameplayCommand.MOVE_TO_WORLD_POSITION, {"world_x": drop_position.x, "world_y": drop_position.y}):
+		return false
+	return await _wait(func() -> bool:
+		return _client.last_snapshot_sequence() > seq_before and _position(PLAYER).distance_to(drop_position) <= LootAuthority.PICKUP_RADIUS,
+		"authoritative pickup envelope")
 
 
 func _proxy(entity_id: String) -> NetworkEntityProxy:
