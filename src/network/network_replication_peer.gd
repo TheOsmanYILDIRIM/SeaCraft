@@ -191,10 +191,7 @@ func consume_baseline_chunk(chunk: Dictionary) -> bool:
 		var entity_id := str(payload["entity_id"])
 		desired[entity_id] = true
 		if _registry.has_entity(entity_id):
-			var proxy := _registry.proxy(entity_id)
-			if _registry.generation(entity_id) != int(payload["generation"]) or proxy == null:
-				return false
-			if not _registry.apply_snapshot_row(_row_from_spawn(payload), int(_baseline_header["snapshot_sequence"]), int(_baseline_header["server_tick"])):
+			if not _registry.reconcile_mirror_baseline(payload):
 				return false
 		else:
 			var node := _spawn_proxy(payload)
