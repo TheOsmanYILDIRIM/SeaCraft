@@ -87,7 +87,11 @@ jobs:
         run: python3 tools/ci/verify_beehave_pin.py
 
       - name: Stage approved visual pilot atlas textures
-        run: python3 tools/ci/stage_ship_visual_pilot.py
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/visual-pilot-env"
+          "$RUNNER_TEMP/visual-pilot-env/bin/pip" install --disable-pip-version-check Pillow==11.3.0
+          "$RUNNER_TEMP/visual-pilot-env/bin/python" tools/ci/stage_ship_visual_pilot.py
 
       - name: Import and parse project resources
         shell: bash
@@ -451,8 +455,10 @@ jobs:
           unzip -tq build/android/SeaCraft-debug.apk
           unzip -Z1 build/android/SeaCraft-debug.apk > "$RUNNER_TEMP/apk-entry-list.txt"
           ! grep -Ei '^assets/.*(\.zip$|original.*\.png$)' "$RUNNER_TEMP/apk-entry-list.txt"
-          grep -Eq 'pilot_atlases/SC-02\.png\.(import|remap)$' "$RUNNER_TEMP/apk-entry-list.txt"
-          grep -Eq 'pilot_atlases/SC-03\.png\.(import|remap)$' "$RUNNER_TEMP/apk-entry-list.txt"
+          for atlas in src/presentation/ship/pilot_atlases/*.png; do
+            name="$(basename "$atlas" .png)"
+            grep -Eq "pilot_atlases/$name\\.png\\.(import|remap)$" "$RUNNER_TEMP/apk-entry-list.txt"
+          done
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump badging build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-badging.txt"
           grep -q "package: name='com.osmanyildirim.seacraft'" "$RUNNER_TEMP/apk-badging.txt"
           grep -Fx "native-code: 'arm64-v8a'" "$RUNNER_TEMP/apk-badging.txt"
