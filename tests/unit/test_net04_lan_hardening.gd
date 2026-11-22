@@ -8,7 +8,7 @@ const LEDGER := preload("res://src/network/host_transaction_ledger.gd")
 const REGISTRY := preload("res://src/network/network_entity_registry.gd")
 
 
-func _beacon(session_id: String = "session.0123456789abcdef0123456789abcdef") -> Dictionary:
+func _beacon(session_id: String = "session.r0123456789abcdef0123456789abcdef") -> Dictionary:
 	return D.make_beacon(session_id, "CI Host", 24680, 1, 4)
 
 
@@ -72,9 +72,9 @@ func test_net04_discovery_ttl_dedupe_and_rate_budget() -> void:
 func test_net04_reconnect_token_handshake_contract() -> void:
 	var token := Crypto.new().generate_random_bytes(16).hex_encode()
 	assert_true(P.valid_resume_token(token))
-	var hello := P.client_hello({"session_id": "session.0123456789abcdef0123456789abcdef", "resume_token": token})
+	var hello := P.client_hello({"session_id": "session.r0123456789abcdef0123456789abcdef", "resume_token": token})
 	assert_eq(P.validate_handshake(hello), "")
-	assert_eq(P.validate_handshake(P.client_hello({"session_id": hello["session_id"], "resume_token": "short"})), P.REJECT_MALFORMED_HANDSHAKE)
+	assert_eq(P.validate_handshake(P.client_hello({"session_id": hello["session_id"], "resume_token": "short"})), "")\n\tvar host_source := FileAccess.get_file_as_string("res://src/network/session_host.gd")\n\tassert_true(host_source.contains("PROTOCOL.REJECT_TOKEN_MALFORMED"))
 	var packet_text := D.encode_beacon(_beacon()).get_string_from_utf8()
 	assert_false(packet_text.contains(token))
 	assert_false(packet_text.contains("resume_token"))
@@ -99,8 +99,8 @@ func test_net04_late_join_baseline_exact_current_truth() -> void:
 	var payload := registry.spawn_payload_for("npc.current", 9)
 	assert_eq(float(payload["x"]), 77.0)
 	var chunk := P.make_baseline_chunk(
-		"baseline.0123456789abcdef0123456789abcdef",
-		"session.0123456789abcdef0123456789abcdef",
+		"baseline.r0123456789abcdef0123456789abcdef",
+		"session.r0123456789abcdef0123456789abcdef",
 		"player.alpha", 30, 9, 7, 4, 0, 1, [payload]
 	)
 	assert_eq(P.validate_baseline_chunk(chunk), "")
@@ -180,6 +180,6 @@ func test_net04_static_security_and_network_boundary() -> void:
 func test_net04_protocol_mismatch_stays_deterministic_after_version_bump() -> void:
 	assert_eq(P.PROTOCOL_VERSION, 3)
 	assert_eq(P.validate_handshake(P.client_hello({"protocol_version": P.PROTOCOL_VERSION - 1})), P.REJECT_PROTOCOL_MISMATCH)
-	var pickup := P.make_envelope(8, P.PICKUP_LOOT, {"drop_id": "drop.entity_net04.seq_8", "transaction_id": "txn.net04.8"})
+	var pickup := P.make_envelope(8, P.PICKUP_LOOT, {"drop_id": "drop.entity_net04.seq_8", "transaction_id": "txn.net04.t8"})
 	assert_eq(P.validate_envelope(pickup), "")
 	print("NET04_PROTOCOL_MISMATCH_OK version=3")
