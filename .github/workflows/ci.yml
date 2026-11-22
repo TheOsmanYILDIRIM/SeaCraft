@@ -373,14 +373,23 @@ jobs:
           fi
           test -x "$sdkmanager_bin"
           yes | "$sdkmanager_bin" --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
-          "$sdkmanager_bin" --sdk_root="$ANDROID_HOME" \
+          # Android 17 is currently published as the 37.0 preview package,
+          # not "platforms;android-37". Include preview channels explicitly and
+          # provide the bare android-37 alias expected by integer compileSdk
+          # consumers such as AGP/Godot.
+          "$sdkmanager_bin" --sdk_root="$ANDROID_HOME" --channel=3 \
             "platform-tools" \
             "build-tools;35.0.1" \
             "platforms;android-35" \
-            "platforms;android-37" \
+            "platforms;android-37.0" \
             "cmdline-tools;latest" \
             "cmake;3.10.2.4988404" \
             "ndk;28.1.13356709"
+          test -f "$ANDROID_HOME/platforms/android-37.0/android.jar"
+          if [[ ! -e "$ANDROID_HOME/platforms/android-37" ]]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
+          test -f "$ANDROID_HOME/platforms/android-37/android.jar"
           test -x "$ANDROID_HOME/build-tools/35.0.1/aapt"
           test -x "$ANDROID_HOME/platform-tools/adb"
           java -version
