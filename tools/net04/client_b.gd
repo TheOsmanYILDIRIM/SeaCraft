@@ -53,7 +53,7 @@ func _wait(check: Callable, stage: String) -> bool:
 			return true
 		await get_tree().process_frame
 	if not _failed:
-		_abort("stage timeout: %s" % stage)
+		_abort("stage timeout: %s state=%s rejection=%s" % [stage, _client.state(), _client.rejection_reason()])
 	return false
 
 
