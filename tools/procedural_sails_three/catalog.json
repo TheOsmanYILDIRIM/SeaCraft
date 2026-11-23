@@ -14,8 +14,8 @@
   "camera": {
     "elevation_deg": 55,
     "roll_deg": 0,
-    "orthographic_scale": 16,
-    "resolution": 448
+    "orthographic_scale": 12,
+    "resolution": 512
   },
   "primitive": {
     "A_square": {

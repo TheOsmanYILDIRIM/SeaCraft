@@ -6,6 +6,7 @@ const catalog=JSON.parse(fs.readFileSync(new URL('../catalog.json',import.meta.u
 
 test('catalog matches 6/12/15 canonical mast and sail roster',()=>{
   assert.equal(validateCatalog(catalog),true);
+  assert.deepEqual(catalog.camera,{elevation_deg:55,roll_deg:0,orthographic_scale:12,resolution:512});
   assert.equal(catalogs(catalog).length,33);
   assert.equal(catalog.ships['SC-14'].masts.length,4);
   assert.deepEqual(catalog.ships['SC-15'].masts.map(m=>m.broken),[false,true,false]);
