@@ -246,3 +246,26 @@ func _far_ship(instance_id: String, fleet_id: String, job: Dictionary, health: f
 		"payload": {"content_refs": ["ammo.core_round"]},
 	}
 	return FarFieldEntityState.attach(base, FarFieldEntityState.default_semantic(SimulationLOD.FAR, "faction.player", fleet_id, "merchant", job, FoundationSector.HAVEN_ID, 0.02, "low"))
+
+func test_prg05_market_panel_mobile_intents_are_bounded_and_price_untrusted() -> void:
+	var panel := Prg05MarketPanel.new()
+	add_child_autofree(panel)
+	var emitted: Array = []
+	panel.market_intent_requested.connect(func(operation: String, payload: Dictionary) -> void:
+		emitted.append({"operation": operation, "payload": payload.duplicate(true)})
+	)
+	assert_false(panel.request_trade(InventoryState.OP_MARKET_BUY, 1))
+	var s := _make()
+	assert_true(panel.consume_snapshot(M, s.economy_quote(P, M), s.economy_balance(P)))
+	assert_true(panel.set_quantity(2))
+	assert_false(panel.set_quantity(Prg05MarketPanel.MAX_ORDER + 1))
+	assert_true(panel.request_trade(InventoryState.OP_MARKET_BUY, 2))
+	assert_true(panel.request_trade(InventoryState.OP_MARKET_SELL, 1))
+	assert_false(panel.request_trade("economy_cheat", 1))
+	assert_false(panel.request_trade(InventoryState.OP_MARKET_BUY, 0))
+	assert_eq(emitted.size(), 2)
+	assert_eq(emitted[0]["operation"], InventoryState.OP_MARKET_BUY)
+	assert_eq(emitted[0]["payload"], {"market_id": M, "quantity": 2})
+	assert_false(emitted[0]["payload"].has("price"))
+	assert_false(emitted[0]["payload"].has("owner_id"))
+	print("PRG05_MOBILE_MARKET_INTENT_OK")

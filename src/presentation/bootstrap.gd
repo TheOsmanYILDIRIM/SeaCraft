@@ -15,6 +15,7 @@ const PRACTICE_CANNON := preload("res://src/data/content/weapon_vs01_practice_ca
 const ROUND_AMMO_PROFILE := preload("res://src/data/content/ammo_core_round.tres")
 const EMBER_AMMO_PROFILE := preload("res://src/data/content/ammo_core_ember.tres")
 const HARPOON_PROFILE := preload("res://src/data/content/harpoon_core02_debug.tres")
+const PILOT_MARKET_ID := "market.haven.salvage"
 
 var _combat: CombatAuthority
 var _relations := FactionRelationResolver.new(true)
@@ -40,6 +41,10 @@ var _core_buttons: Array[CombatFireButton] = []
 var _map_overlay: SectorMapOverlay
 var _map_button: Button
 var _world_map_open := false
+var _market_panel: Prg05MarketPanel
+var _market_button: Button
+var _market_open := false
+var _market_transaction_sequence := 0
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -120,6 +125,7 @@ func _ready() -> void:
 		_block_boot({"status": "sector_runtime_binding_failed"})
 		return
 	_setup_map_ui()
+	_setup_market_ui()
 	_setup_visual_pilot()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
@@ -318,6 +324,10 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	# Register the canonical pilot factions before restoring reputation saves.
 	if not _loot.inventory_state().register_economy_faction((PLAYER_SHIP_DEF as ShipDefinition).faction_id) or not _loot.inventory_state().register_economy_faction((PRACTICE_SHIP_DEF as ShipDefinition).faction_id):
 		push_error("PRG-05 faction registration failed")
+		return
+	if not _loot.inventory_state().register_economy_market(PILOT_MARKET_ID, (PLAYER_SHIP_DEF as ShipDefinition).faction_id,
+			(VS03_LOOT_ITEM as ItemDefinition).stable_id, FoundationSector.HAVEN_ID, 10, 8, 20):
+		push_error("PRG-05 pilot market registration failed")
 		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
@@ -668,6 +678,7 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
 	_save_service.mark_dirty()
 	request_checkpoint()
+	_refresh_market_access()
 	return result
 
 
@@ -685,6 +696,96 @@ func _sync_sector_local_presentation() -> void:
 	else:
 		_practice_marker.hide()
 		_npc_presenter.hide()
+
+
+
+func _setup_market_ui() -> void:
+	_market_panel = Prg05MarketPanel.new()
+	_market_panel.name = "Prg05MarketPanel"
+	_market_panel.hide()
+	_market_panel.market_intent_requested.connect(_on_market_intent)
+	_market_panel.close_requested.connect(_toggle_market)
+	$UI.add_child(_market_panel)
+	_market_button = Button.new()
+	_market_button.name = "Prg05MarketButton"
+	_market_button.text = "PAZAR"
+	_market_button.size = Vector2(150, 64)
+	_market_button.focus_mode = Control.FOCUS_NONE
+	_market_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_market_button.pressed.connect(_toggle_market)
+	$UI.add_child(_market_button)
+	get_viewport().size_changed.connect(_layout_market_ui)
+	_layout_market_ui()
+	_refresh_market_access()
+
+
+func _layout_market_ui() -> void:
+	if _market_button == null or _market_panel == null:
+		return
+	var bounds := get_viewport_rect()
+	var safe_margin := 24.0
+	_market_button.position = Vector2(maxf(safe_margin, bounds.size.x - _market_button.size.x - safe_margin), 98.0)
+	_market_panel.size = Vector2(minf(730.0, maxf(320.0, bounds.size.x - 2.0 * safe_margin)),
+		minf(490.0, maxf(350.0, bounds.size.y - 2.0 * safe_margin)))
+	_market_panel.position = (bounds.size - _market_panel.size) * 0.5
+
+
+func _refresh_market_access() -> void:
+	if _market_button == null or _market_panel == null:
+		return
+	var at_haven := active_sector() != null and active_sector().sector_id == FoundationSector.HAVEN_ID
+	_market_button.disabled = not at_haven
+	if not at_haven and _market_open:
+		_market_open = false
+		_market_panel.hide()
+		_market_button.text = "PAZAR"
+		($InputController as GameplayInputController).set_world_input_blocked(_world_map_open or _market_open)
+	if _market_open:
+		_refresh_market_quote()
+
+
+func _toggle_market() -> void:
+	if _market_panel == null or _market_button == null:
+		return
+	if not _market_open and (active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID):
+		return
+	if not _market_open and _world_map_open:
+		_toggle_world_map()
+	_market_open = not _market_open
+	_market_panel.visible = _market_open
+	_market_button.text = "KAPAT" if _market_open else "PAZAR"
+	($InputController as GameplayInputController).set_world_input_blocked(_world_map_open or _market_open)
+	if _market_open:
+		_refresh_market_quote()
+
+
+func _refresh_market_quote() -> void:
+	if _market_panel == null or _loot == null:
+		return
+	var inventory := _loot.inventory_state()
+	_market_panel.consume_snapshot(PILOT_MARKET_ID, inventory.economy_quote(FoundationSector.PLAYER, PILOT_MARKET_ID),
+		inventory.economy_balance(FoundationSector.PLAYER))
+
+
+func _on_market_intent(operation: String, payload: Dictionary) -> void:
+	# Offline/local host adapter. Never trust the panel for stock, price or identity.
+	if not _market_open or _loot == null or active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID:
+		return
+	if operation not in [InventoryState.OP_MARKET_BUY, InventoryState.OP_MARKET_SELL]:
+		return
+	if payload.size() != 2 or payload.get("market_id") != PILOT_MARKET_ID or typeof(payload.get("quantity")) != TYPE_INT:
+		return
+	var quantity := int(payload["quantity"])
+	if quantity < 1 or quantity > Prg05MarketPanel.MAX_ORDER:
+		return
+	_market_transaction_sequence += 1
+	var transaction_id := "txn.market.ui.%d.%06d" % [int(Time.get_unix_time_from_system()), _market_transaction_sequence]
+	var result := _loot.inventory_state().execute_transaction(FoundationSector.PLAYER, transaction_id, operation,
+		{"market_id": PILOT_MARKET_ID, "quantity": quantity})
+	if result.get("accepted", false):
+		_save_service.mark_dirty()
+	_refresh_market_quote()
+	_market_panel.show_result(result)
 
 
 func _setup_map_ui() -> void:
@@ -705,9 +806,13 @@ func _setup_map_ui() -> void:
 
 
 func _toggle_world_map() -> void:
+	if _market_open:
+		_market_open = false
+		_market_panel.hide()
+		_market_button.text = "PAZAR"
 	_world_map_open = not _world_map_open
 	var input: GameplayInputController = $InputController
-	input.set_world_input_blocked(_world_map_open)
+	input.set_world_input_blocked(_world_map_open or _market_open)
 	if _world_map_open:
 		_map_overlay.configure_world(_world.world_graph_snapshot(), _world.active().sector_id)
 	else:
