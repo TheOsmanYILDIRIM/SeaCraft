@@ -386,7 +386,7 @@ func test_prg05_bounty_combat_proof_reward_and_intel_save_resume() -> void:
 	assert_eq(restored.economy_intel_reports(P)[0]["tick"], 42)
 	assert_eq(restored.claim_economy_bounty_authoritative(P, bounty, Q, int(sunk["sequence_id"]), 0)["reward"], 80)
 	assert_eq(restored.economy_balance(P), 80)
-	var corrupted := json.duplicate(true)
+	var corrupted: Dictionary = json.duplicate(true)
 	corrupted["prg05"]["events"]["intel.prg05.raider"]["result"]["tick"] = 1.5
 	assert_false(Prg05EconomyState.validate_state(corrupted["prg05"]))
 	print("PRG05_BOUNTY_INTEL_COMBAT_SAVE_OK")
