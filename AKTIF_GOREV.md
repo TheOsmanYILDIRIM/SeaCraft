@@ -6,7 +6,9 @@ Başlangıç: a73633beb1dfec0d70c1b4e640bfd439ff823ede; yalnız `main`; Godot 4.
 
 **Doğrulanmış ek checkpoint:** AI-03 konvoy ve AI-04 FAR world teslim/kayıp settlement adaptörü, Güvenli Liman market içeriği ve dokunmatik pazar paneli. Exact kod SHA `0c821a58c904839a53cd0b51509f55e606e3e323`; [Actions 45249433521](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45249433521) `success`, 403/403 GUT, 9/9 PRG-05, Android/Linux artifact provenance/readback başarılı.
 
-**Açık PRG-05 işler:** AI-04 scheduler→ekonomi otomatik event-dispatch, bounty/intel, local company/crew, LAN host market konum doğrulaması, gerçek telefonda pazar smoke ve uzun Android LAN economy drift `not_run`. PRG-06'ya geçilmez. Kod CI geçmesi fiziksel Android testi değildir.
+**PRG-05 son doğrulanmış checkpoint:** AI-04 FAR scheduler→market settlement, LAN host market sector/ShipMotor proximity guard, bounty/intel combat proof + event ledger, PRG-01 crew equipment'ını kullanan local company/crew roster ve idempotent maaş settlement, JSON legacy migration ve strict state validation. Exact kod SHA **`11ddde3d4f2311283899e2b873485b38008d6a97`**, [Actions 45272356337](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45272356337) **success**, 410/410 GUT, 29.790 assert, PRG-05 16/16; Android/Linux artifact authenticated readback başarılı.
+
+**Açık PRG-05 kapıları:** Gerçek Android dokunmatik pazar smoke + uzun iki-cihaz LAN ekonomi drift `not_run`; üretim oyun sahnesi/host orchestration'ının uçtan-uca cihaz kabulü ve UI final polish ayrı. LAN/ekonomi kodu ve CI doğrulaması gerçek fiziksel cihaz testi yerine geçmez. PRG-05 `active` tutulur; PRG-06'ya geçilmez.
 
 ---
 
