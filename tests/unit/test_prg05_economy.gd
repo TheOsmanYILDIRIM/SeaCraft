@@ -468,9 +468,11 @@ func test_prg05_local_company_crew_payroll_persists_and_migrates_v1() -> void:
 	assert_true(s.grant_economy_currency_authoritative(P, "event.company.funding", 150)["accepted"])
 	var roster := s.economy_company_roster(company)
 	assert_eq(roster["members"].size(), 2)
-	assert_eq(roster["members"][1]["crew_item_id"], crew)
-	roster["members"][1]["wage"] = 999
-	assert_eq(s.economy_company_roster(company)["members"][1]["wage"], 30)
+	# Roster is sorted by owner stable ID; entity.other comes before entity.player.
+	assert_eq(roster["members"][0]["owner_id"], Q)
+	assert_eq(roster["members"][0]["crew_item_id"], crew)
+	roster["members"][0]["wage"] = 999
+	assert_eq(s.economy_company_roster(company)["members"][0]["wage"], 30)
 	var payroll := s.settle_economy_company_payroll_authoritative("event.company.pay.1", company, 10)
 	assert_true(payroll["accepted"])
 	assert_eq(payroll["paid"], 30)
