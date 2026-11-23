@@ -220,6 +220,10 @@ func sequence_id() -> int:
 	return _sequence
 
 
+func simulation_tick() -> int:
+	return _tick
+
+
 # Detached, read-only combat facts for authority-side tactical AI.
 # This method never consumes RNG, increments sequence IDs or exposes CombatantState/Resource objects.
 func tactical_snapshot(actor_id: String, target_ids: Array[String], heading: float, nearby_radius: float,

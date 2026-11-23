@@ -324,6 +324,28 @@ func register_economy_market(id: String, faction: String, item: String, sector: 
 func economy_market_cargo_spec(id: String) -> Dictionary:
 	return _prg05.market_cargo_spec(id) if _prg05 != null else {}
 
+func register_economy_bounty(bounty_id: String, faction_id: String, target_id: String,
+		reward: int, deadline_tick: int = 0) -> bool:
+	return _prg05 != null and _prg05.register_bounty_contract(bounty_id, faction_id, target_id, reward, deadline_tick)
+
+func economy_bounty_contract(bounty_id: String) -> Dictionary:
+	return _prg05.bounty_contract(bounty_id) if _prg05 != null else {}
+
+func economy_bounty_board(owner_id: String, tick: int) -> Array:
+	return _prg05.bounty_board(owner_id, tick) if _prg05 != null else []
+
+func claim_economy_bounty_authoritative(owner_id: String, bounty_id: String, target_id: String,
+		kill_sequence: int, tick: int) -> Dictionary:
+	return _prg05.claim_bounty_authoritative(owner_id, bounty_id, target_id, kill_sequence, tick) if _prg05 != null else {"accepted": false}
+
+func record_economy_intel_authoritative(owner_id: String, event_id: String, sector_id: String,
+		subject_id: String, tick: int) -> Dictionary:
+	return _prg05.record_intel_authoritative(owner_id, event_id, sector_id, subject_id, tick) if _prg05 != null else {"accepted": false}
+
+func economy_intel_reports(owner_id: String) -> Array:
+	return _prg05.intel_reports(owner_id) if _prg05 != null else []
+
+
 func register_economy_outpost(id: String, faction: String) -> bool:
 	return _prg05 != null and _prg05.register_outpost(id, faction)
 

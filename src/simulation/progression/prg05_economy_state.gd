@@ -8,6 +8,7 @@ const OP_SELL := "economy_market_sell"
 const MAX_CURRENCY := 2147483647
 const MAX_EVENTS := 256
 const MAX_QUANTITY := 10000
+const MAX_BOUNTIES := 32
 
 var _inventory
 var _owners: Dictionary = {}
@@ -15,6 +16,9 @@ var _diplomatic_owners: Dictionary = {}
 var _factions: Dictionary = {}
 var _markets: Dictionary = {}
 var _outposts: Dictionary = {}
+# Immutable server-registered content, re-registered from data after loading.
+# Accepted claims and sightings persist in the existing event/credit ledger.
+var _bounty_contracts: Dictionary = {}
 var _events: Dictionary = {}
 var _relations := FactionRelationResolver.new()
 var _authority := true
@@ -88,6 +92,102 @@ func market_cargo_spec(id: String) -> Dictionary:
 
 func has_event(event_id: String) -> bool:
 	return SectorIds.valid(event_id) and _events.has(event_id)
+
+
+func register_bounty_contract(bounty_id: String, faction_id: String, target_id: String,
+		reward: int, deadline_tick: int) -> bool:
+	if not _authority or not SectorIds.valid(bounty_id) or bounty_id.length() > 54:
+		return false
+	if _bounty_contracts.has(bounty_id) or _bounty_contracts.size() >= MAX_BOUNTIES:
+		return false
+	if not _factions.has(faction_id) or not SectorIds.valid(target_id) or reward <= 0 or reward > 1000000 or deadline_tick < 0 or deadline_tick > MAX_CURRENCY:
+		return false
+	_bounty_contracts[bounty_id] = {"faction_id": faction_id, "target_id": target_id,
+		"reward": reward, "deadline_tick": deadline_tick}
+	return true
+
+
+func bounty_contract(bounty_id: String) -> Dictionary:
+	return (_bounty_contracts.get(bounty_id, {}) as Dictionary).duplicate(true)
+
+
+func bounty_board(owner: String, tick: int) -> Array:
+	var rows: Array = []
+	if not _owners.has(owner) or tick < 0:
+		return rows
+	var ids := _bounty_contracts.keys()
+	ids.sort()
+	for id in ids:
+		var contract: Dictionary = _bounty_contracts[id]
+		var event_id := "event.prg05.bounty.%s" % id
+		rows.append({"bounty_id": id, "faction_id": contract["faction_id"],
+			"target_id": contract["target_id"], "reward": contract["reward"],
+			"expired": int(contract["deadline_tick"]) > 0 and tick > int(contract["deadline_tick"]),
+			"claimed": _events.has(event_id)})
+	return rows
+
+
+# Trusted combat or world-domain proof only; not exposed as a LAN intent.
+func claim_bounty_authoritative(owner: String, bounty_id: String, defeated_target: String,
+		kill_sequence: int, tick: int) -> Dictionary:
+	if not _authority or not _bounty_contracts.has(bounty_id) or not _owners.has(owner):
+		return {"accepted": false, "reason": "bounty_unavailable"}
+	var contract: Dictionary = _bounty_contracts[bounty_id]
+	var event_id := "event.prg05.bounty.%s" % bounty_id
+	var fingerprint := "claim|%s|%s|%s|%d" % [owner, bounty_id, defeated_target, kill_sequence]
+	var cached := _existing(event_id, fingerprint)
+	if not cached.is_empty():
+		return cached
+	if defeated_target != str(contract["target_id"]) or kill_sequence <= 0 or tick < 0:
+		return {"accepted": false, "reason": "invalid_bounty_proof"}
+	if int(contract["deadline_tick"]) > 0 and tick > int(contract["deadline_tick"]):
+		return {"accepted": false, "reason": "bounty_expired"}
+	if disposition(owner, str(contract["faction_id"])) == FactionRelationResolver.HOSTILE:
+		return {"accepted": false, "reason": "hostile_bounty_board"}
+	if _events.size() >= MAX_EVENTS:
+		return {"accepted": false, "reason": "event_limit"}
+	var payment := grant_currency_authoritative(owner, "credit.%s" % event_id, int(contract["reward"]))
+	if not bool(payment.get("accepted", false)):
+		return {"accepted": false, "reason": "bounty_payment_rejected"}
+	var result := {"accepted": true, "type": "bounty_claim", "owner_id": owner,
+		"bounty_id": bounty_id, "reward": int(contract["reward"])}
+	_remember(event_id, fingerprint, result)
+	return result
+
+
+func record_intel_authoritative(owner: String, event_id: String, sector_id: String,
+		subject_id: String, tick: int) -> Dictionary:
+	var fingerprint := "intel|%s|%s|%s|%d" % [owner, sector_id, subject_id, tick]
+	var cached := _existing(event_id, fingerprint)
+	if not cached.is_empty():
+		return cached
+	if not _authority or not _owners.has(owner) or not SectorIds.valid(event_id):
+		return {"accepted": false, "reason": "intel_unavailable"}
+	if not SectorIds.valid(sector_id) or not SectorIds.valid(subject_id) or tick < 0 or tick > MAX_CURRENCY or _events.size() >= MAX_EVENTS:
+		return {"accepted": false, "reason": "invalid_intel"}
+	var result := {"accepted": true, "type": "intel", "owner_id": owner,
+		"sector_id": sector_id, "subject_id": subject_id, "tick": tick}
+	_remember(event_id, fingerprint, result)
+	return result
+
+
+func intel_reports(owner: String) -> Array:
+	var rows: Array = []
+	if not _owners.has(owner):
+		return rows
+	var ids := _events.keys()
+	ids.sort()
+	for event_id in ids:
+		var result: Dictionary = _events[event_id]["result"]
+		if str(result.get("type", "")) == "intel" and result.get("owner_id") == owner:
+			var detached := result.duplicate(true)
+			detached["event_id"] = event_id
+			rows.append(detached)
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a["tick"]) != int(b["tick"]):
+			return int(a["tick"]) > int(b["tick"])
+		return str(a["event_id"]) < str(b["event_id"]))
+	return rows.slice(0, 32)
 
 
 func register_outpost(id: String, faction: String) -> bool:
@@ -330,6 +430,19 @@ static func validate_state(value: Variant) -> bool:
 		var entry: Dictionary = data["events"][id]
 		if entry.size() != 2 or not entry.get("fingerprint") is String or str(entry["fingerprint"]).length() != 64 or not entry.get("result") is Dictionary:
 			return false
+		var result: Dictionary = entry["result"]
+		if str(result.get("type", "")) == "intel":
+			if result.size() != 6 or result.get("accepted") != true or not _bounded(result.get("tick"), 0, MAX_CURRENCY):
+				return false
+			for key in ["owner_id", "sector_id", "subject_id"]:
+				if not result.get(key) is String or not SectorIds.valid(result[key]):
+					return false
+		elif str(result.get("type", "")) == "bounty_claim":
+			if result.size() != 5 or result.get("accepted") != true or not _bounded(result.get("reward"), 1, 1000000):
+				return false
+			for key in ["owner_id", "bounty_id"]:
+				if not result.get(key) is String or not SectorIds.valid(result[key]):
+					return false
 	var probe := FactionRelationResolver.new()
 	return probe.restore_state(data.get("relations"))
 

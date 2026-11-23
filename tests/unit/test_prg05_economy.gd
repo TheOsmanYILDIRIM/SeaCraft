@@ -335,6 +335,79 @@ func test_prg05_lan_market_sector_range_and_authoritative_position_gate() -> voi
 	print("PRG05_LAN_MARKET_ACCESS_GUARD_OK")
 
 
+func test_prg05_bounty_combat_proof_reward_and_intel_save_resume() -> void:
+	var s := _make()
+	var bounty := "bounty.prg05.raider"
+	assert_true(s.register_economy_bounty(bounty, F, Q, 80))
+	assert_false(s.register_economy_bounty(bounty, F, Q, 80))
+	assert_eq(s.economy_bounty_contract(bounty)["reward"], 80)
+	assert_eq(s.economy_bounty_board(P, 0)[0]["claimed"], false)
+	var sector := SectorRuntime.new()
+	sector.sector_id = "sector.harbor"
+	sector.bounds = Rect2(-640, -360, 1280, 720)
+	assert_true(sector.register_entity(P, Vector2.ZERO))
+	assert_true(sector.register_entity(Q, Vector2(0, 100)))
+	var weapon := WeaponDefinition.new()
+	weapon.stable_id = "weapon.bounty.test"
+	weapon.base_damage = 20.0
+	weapon.min_range_meters = 10.0
+	weapon.range_meters = 200.0
+	weapon.crit_multiplier = 2.0
+	var combat := CombatAuthority.new(sector, SeedStreams.new(51))
+	assert_true(combat.register(P, F, 100.0, weapon))
+	assert_true(combat.register(Q, E, 10.0))
+	var bridge := Prg05BountyCombatBridge.new(combat, s, true)
+	assert_true(bridge.bind_bounty(bounty, Q))
+	assert_false(bridge.bind_bounty(bounty, P))
+	var sunk := combat.fire(P, 0, CombatAuthority.fire_intent(Q))
+	assert_true(sunk["sunk"])
+	assert_eq(bridge.outcomes_snapshot().size(), 1)
+	assert_eq(s.economy_balance(P), 80)
+	assert_true(s.economy_bounty_board(P, 0)[0]["claimed"])
+	assert_eq(s.claim_economy_bounty_authoritative(P, bounty, Q, int(sunk["sequence_id"]), 0)["reward"], 80)
+	assert_eq(s.economy_balance(P), 80)
+	assert_eq(s.claim_economy_bounty_authoritative(Q, bounty, Q, 999, 0)["reason"], "event_conflict")
+	var intel := s.record_economy_intel_authoritative(P, "intel.prg05.raider", "sector.harbor", Q, 42)
+	assert_true(intel["accepted"])
+	assert_eq(intel, s.record_economy_intel_authoritative(P, "intel.prg05.raider", "sector.harbor", Q, 42))
+	assert_eq(s.record_economy_intel_authoritative(P, "intel.prg05.raider", "sector.other", Q, 42)["reason"], "event_conflict")
+	var reports := s.economy_intel_reports(P)
+	assert_eq(reports.size(), 1)
+	reports[0]["subject_id"] = "entity.injected"
+	assert_eq(s.economy_intel_reports(P)[0]["subject_id"], Q)
+	var saved := s.progression_snapshot()
+	var json: Variant = JSON.parse_string(JSON.stringify(saved))
+	assert_true(InventoryState.validate_progression_state(json))
+	var restored := _make()
+	assert_true(restored.register_economy_bounty(bounty, F, Q, 80))
+	assert_true(restored.restore_progression(json))
+	assert_eq(restored.economy_balance(P), 80)
+	assert_true(restored.economy_bounty_board(P, 0)[0]["claimed"])
+	assert_eq(restored.economy_intel_reports(P)[0]["tick"], 42)
+	assert_eq(restored.claim_economy_bounty_authoritative(P, bounty, Q, int(sunk["sequence_id"]), 0)["reward"], 80)
+	assert_eq(restored.economy_balance(P), 80)
+	var corrupted := json.duplicate(true)
+	corrupted["prg05"]["events"]["intel.prg05.raider"]["result"]["tick"] = 1.5
+	assert_false(Prg05EconomyState.validate_state(corrupted["prg05"]))
+	print("PRG05_BOUNTY_INTEL_COMBAT_SAVE_OK")
+
+
+func test_prg05_bounty_invalid_proofs_expiry_hostility_and_lan_spoof() -> void:
+	var s := _make()
+	var bounty := "bounty.prg05.expires"
+	assert_true(s.register_economy_bounty(bounty, F, Q, 100, 8))
+	assert_eq(s.claim_economy_bounty_authoritative(P, bounty, P, 1, 5)["reason"], "invalid_bounty_proof")
+	assert_eq(s.claim_economy_bounty_authoritative(P, bounty, Q, 0, 5)["reason"], "invalid_bounty_proof")
+	assert_eq(s.claim_economy_bounty_authoritative(P, bounty, Q, 1, 9)["reason"], "bounty_expired")
+	assert_true(s.adjust_economy_reputation_authoritative(P, F, "event.bounty.reputation", -300)["accepted"])
+	assert_eq(s.claim_economy_bounty_authoritative(P, bounty, Q, 1, 5)["reason"], "hostile_bounty_board")
+	assert_eq(s.economy_balance(P), 0)
+	assert_eq(s.record_economy_intel_authoritative(P, "intel.bad", "sector.harbor", Q, -1)["reason"], "invalid_intel")
+	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(1, "claim_bounty",
+		{"bounty_id": bounty, "target_id": Q})), SessionProtocol.REJECT_UNSUPPORTED_INTENT)
+	print("PRG05_BOUNTY_PROOF_GUARD_OK")
+
+
 func _far_job(fleet_id: String, job_id: String, quantity: int) -> Dictionary:
 	var cargo := WorldJob.cargo_mission("mission.%s" % job_id, I, quantity, "anchor.prg05.origin", FoundationSector.HAVEN_ID)
 	return WorldJob.create(job_id, WorldJob.TRADE, fleet_id, "anchor.prg05.origin", FoundationSector.HAVEN_ID, FoundationSector.ID, WorldJob.TRAVEL, "", cargo)
