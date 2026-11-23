@@ -507,6 +507,20 @@ func restore_state(value: Variant) -> bool:
 	_markets = (data["markets"] as Dictionary).duplicate(true) if not data["markets"].is_empty() else _markets
 	_outposts = (data["outposts"] as Dictionary).duplicate(true) if not data["outposts"].is_empty() else _outposts
 	_events = (data["events"] as Dictionary).duplicate(true)
+	# JSON restores integral DTO numbers as floats; canonicalize known
+	# authoritative result fields so cached lost-ACK/event replays preserve
+	# their original integer types across save/load.
+	for event_id in _events:
+		var entry: Dictionary = _events[event_id]
+		var result: Dictionary = entry["result"]
+		match str(result.get("type", "")):
+			"company_payroll":
+				for key in ["paid", "crew_count", "balance", "tick"]:
+					result[key] = int(result[key])
+			"bounty_claim":
+				result["reward"] = int(result["reward"])
+			"intel":
+				result["tick"] = int(result["tick"])
 	_companies = (data.get("companies", {}) as Dictionary).duplicate(true)
 	return true
 
@@ -610,6 +624,14 @@ static func validate_state(value: Variant) -> bool:
 			for key in ["owner_id", "bounty_id"]:
 				if not result.get(key) is String or not SectorIds.valid(result[key]):
 					return false
+		elif str(result.get("type", "")) == "company_payroll":
+			if result.size() != 8 or result.get("accepted") != true:
+				return false
+			for key in ["company_id", "captain_id"]:
+				if not result.get(key) is String or not SectorIds.valid(result[key]):
+					return false
+			if not _bounded(result.get("paid"), 0, MAX_CURRENCY) or not _bounded(result.get("crew_count"), 1, MAX_COMPANY_MEMBERS) or not _bounded(result.get("balance"), 0, MAX_CURRENCY) or not _bounded(result.get("tick"), 0, MAX_CURRENCY):
+				return false
 	var probe := FactionRelationResolver.new()
 	return probe.restore_state(data.get("relations"))
 
