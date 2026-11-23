@@ -2,13 +2,17 @@ class_name Prg05EconomyState
 extends RefCounted
 
 # Host/offline authority. Client payloads can request buy/sell only.
-const VERSION := 1
+const VERSION := 2
+const LEGACY_VERSION := 1
 const OP_BUY := "economy_market_buy"
 const OP_SELL := "economy_market_sell"
 const MAX_CURRENCY := 2147483647
 const MAX_EVENTS := 256
 const MAX_QUANTITY := 10000
 const MAX_BOUNTIES := 32
+const MAX_COMPANIES := 16
+const MAX_COMPANY_MEMBERS := 8
+const MAX_CREW_WAGE := 100000
 
 var _inventory
 var _owners: Dictionary = {}
@@ -19,6 +23,8 @@ var _outposts: Dictionary = {}
 # Immutable server-registered content, re-registered from data after loading.
 # Accepted claims and sightings persist in the existing event/credit ledger.
 var _bounty_contracts: Dictionary = {}
+# A company organizes player owners; crew equipment stays in PRG-01 inventory.
+var _companies: Dictionary = {}
 var _events: Dictionary = {}
 var _relations := FactionRelationResolver.new()
 var _authority := true
@@ -49,6 +55,16 @@ func reassign_owner(a: String, b: String) -> bool:
 	if _diplomatic_owners.has(a):
 		_diplomatic_owners.erase(a)
 		_diplomatic_owners[b] = true
+	for company_id in _companies:
+		var row: Dictionary = _companies[company_id]
+		var members: Dictionary = row["members"]
+		if members.has(a):
+			members[b] = (members[a] as Dictionary).duplicate(true)
+			members.erase(a)
+			if row["captain"] == a:
+				row["captain"] = b
+			row["members"] = members
+			_companies[company_id] = row
 	return true
 
 # The trusted host explicitly enables diplomacy only for player-owned actors.
@@ -92,6 +108,115 @@ func market_cargo_spec(id: String) -> Dictionary:
 
 func has_event(event_id: String) -> bool:
 	return SectorIds.valid(event_id) and _events.has(event_id)
+
+
+
+# These are host-local orchestration operations, not LAN client intents.
+# A company organizes ship owners while PRG-01 remains the sole truth for
+# equipped crew items and PRG-05 remains the sole currency ledger.
+func company_for_owner(owner: String) -> String:
+	for company_id in _companies:
+		if (_companies[company_id]["members"] as Dictionary).has(owner):
+			return str(company_id)
+	return ""
+
+
+func found_company_authoritative(company_id: String, captain: String) -> bool:
+	if not _authority or not SectorIds.valid(company_id) or not _owners.has(captain):
+		return false
+	if _companies.has(company_id) or _companies.size() >= MAX_COMPANIES or not company_for_owner(captain).is_empty():
+		return false
+	_companies[company_id] = {"captain": captain,
+		"members": {captain: {"rank": "captain", "wage": 0}},
+		"last_payroll_tick": -1}
+	return true
+
+
+func enlist_company_member_authoritative(company_id: String, captain: String,
+		member: String, rank: String = "sailor") -> bool:
+	if not _authority or not _companies.has(company_id) or not _owners.has(member):
+		return false
+	if rank not in ["officer", "sailor"] or not company_for_owner(member).is_empty():
+		return false
+	var company: Dictionary = _companies[company_id]
+	var members: Dictionary = company["members"]
+	if company["captain"] != captain or members.size() >= MAX_COMPANY_MEMBERS:
+		return false
+	members[member] = {"rank": rank, "wage": 0}
+	return true
+
+
+func set_company_crew_wage_authoritative(company_id: String, captain: String,
+		member: String, wage: int) -> bool:
+	if not _authority or not _companies.has(company_id) or wage < 0 or wage > MAX_CREW_WAGE:
+		return false
+	var company: Dictionary = _companies[company_id]
+	var members: Dictionary = company["members"]
+	if company["captain"] != captain or not members.has(member):
+		return false
+	var worker: Dictionary = members[member]
+	worker["wage"] = wage
+	return true
+
+
+func company_roster(company_id: String) -> Dictionary:
+	if not _companies.has(company_id) or _inventory == null:
+		return {}
+	var company: Dictionary = _companies[company_id]
+	var members: Dictionary = company["members"]
+	var roster: Array = []
+	var owner_ids := members.keys()
+	owner_ids.sort()
+	for owner in owner_ids:
+		var row: Dictionary = members[owner]
+		var equipped: Dictionary = _inventory.equipment_snapshot(str(owner))
+		roster.append({"owner_id": str(owner), "rank": str(row["rank"]),
+			"wage": int(row["wage"]), "crew_item_id": str(equipped.get("crew", ""))})
+	return {"company_id": company_id, "captain": str(company["captain"]),
+		"last_payroll_tick": int(company["last_payroll_tick"]),
+		"members": roster}
+
+
+func settle_company_payroll_authoritative(event_id: String, company_id: String, tick: int) -> Dictionary:
+	var fingerprint := "company_payroll|%s|%d" % [company_id, tick]
+	var cached := _existing(event_id, fingerprint)
+	if not cached.is_empty():
+		return cached
+	if not _authority or not SectorIds.valid(event_id) or not _companies.has(company_id):
+		return {"accepted": false, "reason": "company_unavailable"}
+	if tick < 0 or tick > MAX_CURRENCY or _events.size() >= MAX_EVENTS:
+		return {"accepted": false, "reason": "invalid_payroll"}
+	var company: Dictionary = _companies[company_id]
+	if tick <= int(company["last_payroll_tick"]):
+		return {"accepted": false, "reason": "payroll_already_settled"}
+	var captain := str(company["captain"])
+	if not _owners.has(captain) or _inventory == null:
+		return {"accepted": false, "reason": "captain_unavailable"}
+	var total := 0
+	var crew_count := 0
+	var members: Dictionary = company["members"]
+	for member in members:
+		var equipped: Dictionary = _inventory.equipment_snapshot(str(member))
+		var crew_id := str(equipped.get("crew", ""))
+		if crew_id.is_empty():
+			continue
+		# Crew truth comes from the existing typed inventory/equipment system.
+		var item_spec: Dictionary = _inventory.item_spec(crew_id)
+		if item_spec.is_empty() or str(item_spec.get("equip_slot", "")) != "crew":
+			return {"accepted": false, "reason": "invalid_crew_equipment"}
+		crew_count += 1
+		total += int((members[member] as Dictionary)["wage"])
+	if crew_count == 0:
+		return {"accepted": false, "reason": "no_crew_equipped"}
+	if total > balance(captain):
+		return {"accepted": false, "reason": "insufficient_company_funds"}
+	(_owners[captain] as Dictionary)["balance"] = balance(captain) - total
+	company["last_payroll_tick"] = tick
+	var result := {"accepted": true, "type": "company_payroll", "company_id": company_id,
+		"captain_id": captain, "paid": total, "crew_count": crew_count,
+		"balance": balance(captain), "tick": tick}
+	_remember(event_id, fingerprint, result)
+	return result
 
 
 func register_bounty_contract(bounty_id: String, faction_id: String, target_id: String,
@@ -350,7 +475,8 @@ func pvp_kill_authoritative(event: String, killer: String, victim: String, rewar
 
 func snapshot_state() -> Dictionary:
 	return {"version": VERSION, "owners": _owners.duplicate(true), "markets": _markets.duplicate(true),
-		"outposts": _outposts.duplicate(true), "events": _events.duplicate(true), "relations": _relations.snapshot_state()}
+		"outposts": _outposts.duplicate(true), "events": _events.duplicate(true),
+		"companies": _companies.duplicate(true), "relations": _relations.snapshot_state()}
 
 func restore_state(value: Variant) -> bool:
 	if not _authority or not validate_state(value) or _inventory == null:
@@ -381,20 +507,53 @@ func restore_state(value: Variant) -> bool:
 	_markets = (data["markets"] as Dictionary).duplicate(true) if not data["markets"].is_empty() else _markets
 	_outposts = (data["outposts"] as Dictionary).duplicate(true) if not data["outposts"].is_empty() else _outposts
 	_events = (data["events"] as Dictionary).duplicate(true)
+	_companies = (data.get("companies", {}) as Dictionary).duplicate(true)
 	return true
 
 static func empty_state() -> Dictionary:
 	return {"version": VERSION, "owners": {}, "markets": {}, "outposts": {}, "events": {},
-		"relations": {"version": FactionRelationResolver.VERSION, "relations": []}}
+		"companies": {}, "relations": {"version": FactionRelationResolver.VERSION, "relations": []}}
 
 static func validate_state(value: Variant) -> bool:
 	if not value is Dictionary or not DtoContract.is_primitive_safe(value):
 		return false
 	var data: Dictionary = value
-	if data.size() != 6 or data.get("version") != VERSION or not data.get("owners") is Dictionary or not data.get("markets") is Dictionary or not data.get("outposts") is Dictionary or not data.get("events") is Dictionary:
+	var version := int(data.get("version", -1))
+	if version not in [LEGACY_VERSION, VERSION] or data.size() != (6 if version == LEGACY_VERSION else 7):
+		return false
+	if not data.get("owners") is Dictionary or not data.get("markets") is Dictionary or not data.get("outposts") is Dictionary or not data.get("events") is Dictionary:
+		return false
+	if version == VERSION and not data.get("companies") is Dictionary:
 		return false
 	if data["owners"].size() > 32 or data["markets"].size() > 64 or data["outposts"].size() > 64 or data["events"].size() > MAX_EVENTS:
 		return false
+	var companies: Dictionary = data.get("companies", {})
+	if companies.size() > MAX_COMPANIES:
+		return false
+	var seen_members: Dictionary = {}
+	for company_id in companies:
+		if not company_id is String or not SectorIds.valid(company_id) or not companies[company_id] is Dictionary:
+			return false
+		var company: Dictionary = companies[company_id]
+		if company.size() != 3 or not company.get("captain") is String or not company.get("members") is Dictionary:
+			return false
+		if not _bounded(company.get("last_payroll_tick"), -1, MAX_CURRENCY):
+			return false
+		var members: Dictionary = company["members"]
+		var captain: String = company["captain"]
+		if members.is_empty() or members.size() > MAX_COMPANY_MEMBERS or not members.has(captain):
+			return false
+		for member in members:
+			if not member is String or not SectorIds.valid(member) or not data["owners"].has(member) or seen_members.has(member):
+				return false
+			if not members[member] is Dictionary:
+				return false
+			var crew: Dictionary = members[member]
+			if crew.size() != 2 or crew.get("rank") not in ["captain", "officer", "sailor"] or not _bounded(crew.get("wage"), 0, MAX_CREW_WAGE):
+				return false
+			if (str(member) == captain) != (crew["rank"] == "captain"):
+				return false
+			seen_members[member] = true
 	for owner in data["owners"]:
 		if not owner is String or not SectorIds.valid(owner) or not data["owners"][owner] is Dictionary:
 			return false
@@ -437,6 +596,14 @@ static func validate_state(value: Variant) -> bool:
 			for key in ["owner_id", "sector_id", "subject_id"]:
 				if not result.get(key) is String or not SectorIds.valid(result[key]):
 					return false
+		elif str(result.get("type", "")) == "company_payroll":
+			if result.size() != 8 or result.get("accepted") != true or not _bounded(result.get("paid"), 0, MAX_CREW_WAGE * MAX_COMPANY_MEMBERS):
+				return false
+			for key in ["company_id", "captain_id"]:
+				if not result.get(key) is String or not SectorIds.valid(result[key]):
+					return false
+			if not _bounded(result.get("crew_count"), 1, MAX_COMPANY_MEMBERS) or not _bounded(result.get("balance"), 0, MAX_CURRENCY) or not _bounded(result.get("tick"), 0, MAX_CURRENCY):
+				return false
 		elif str(result.get("type", "")) == "bounty_claim":
 			if result.size() != 5 or result.get("accepted") != true or not _bounded(result.get("reward"), 1, 1000000):
 				return false

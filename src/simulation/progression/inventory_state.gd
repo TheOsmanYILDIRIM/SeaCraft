@@ -324,6 +324,29 @@ func register_economy_market(id: String, faction: String, item: String, sector: 
 func economy_market_cargo_spec(id: String) -> Dictionary:
 	return _prg05.market_cargo_spec(id) if _prg05 != null else {}
 
+
+func found_economy_company_authoritative(company_id: String, captain_id: String) -> bool:
+	return _prg05 != null and _prg05.found_company_authoritative(company_id, captain_id)
+
+func enlist_economy_company_member_authoritative(company_id: String, captain_id: String,
+		member_id: String, rank: String = "sailor") -> bool:
+	return _prg05 != null and _prg05.enlist_company_member_authoritative(company_id, captain_id, member_id, rank)
+
+func set_economy_company_crew_wage_authoritative(company_id: String, captain_id: String,
+		member_id: String, wage: int) -> bool:
+	return _prg05 != null and _prg05.set_company_crew_wage_authoritative(company_id, captain_id, member_id, wage)
+
+func economy_company_for_owner(owner_id: String) -> String:
+	return _prg05.company_for_owner(owner_id) if _prg05 != null else ""
+
+func economy_company_roster(company_id: String) -> Dictionary:
+	return _prg05.company_roster(company_id) if _prg05 != null else {}
+
+func settle_economy_company_payroll_authoritative(event_id: String, company_id: String,
+		tick: int) -> Dictionary:
+	return _prg05.settle_company_payroll_authoritative(event_id, company_id, tick) if _prg05 != null else {"accepted": false, "reason": "company_unavailable"}
+
+
 func register_economy_bounty(bounty_id: String, faction_id: String, target_id: String,
 		reward: int, deadline_tick: int = 0) -> bool:
 	return _prg05 != null and _prg05.register_bounty_contract(bounty_id, faction_id, target_id, reward, deadline_tick)
