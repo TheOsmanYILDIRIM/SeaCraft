@@ -80,6 +80,12 @@ func register_market(id: String, faction: String, item: String, sector: String, 
 	_markets[id] = {"faction": faction, "item": item, "sector": sector, "price": price, "stock": stock, "capacity": capacity, "disruption": 0}
 	return true
 
+func market_cargo_spec(id: String) -> Dictionary:
+	if not _markets.has(id):
+		return {}
+	var row: Dictionary = _markets[id]
+	return {"item": str(row["item"]), "sector": str(row["sector"])}
+
 func register_outpost(id: String, faction: String) -> bool:
 	if not _authority or not SectorIds.valid(id) or not _factions.has(faction) or _outposts.has(id) or _outposts.size() >= 64:
 		return false
@@ -189,6 +195,21 @@ func convoy_loss_authoritative(event: String, market_id: String, loss: int) -> D
 	row["stock"] = maxi(0, int(row["stock"]) - loss)
 	row["disruption"] = mini(5, int(row["disruption"]) + 1)
 	var result := {"accepted": true, "stock": int(row["stock"])}
+	_remember(event, fp, result)
+	return result
+
+func convoy_delivery_authoritative(event: String, market_id: String, amount: int) -> Dictionary:
+	var fp := "convoy_delivery|%s|%d" % [market_id, amount]
+	var cached := _existing(event, fp)
+	if not cached.is_empty():
+		return cached
+	if not _authority or not SectorIds.valid(event) or not _markets.has(market_id) or amount <= 0 or amount > MAX_QUANTITY or _events.size() >= MAX_EVENTS:
+		return {"accepted": false, "reason": "invalid_convoy"}
+	var row: Dictionary = _markets[market_id]
+	var delivered := mini(amount, int(row["capacity"]) - int(row["stock"]))
+	row["stock"] = int(row["stock"]) + delivered
+	row["disruption"] = maxi(0, int(row["disruption"]) - 1)
+	var result := {"accepted": true, "stock": int(row["stock"]), "delivered": delivered}
 	_remember(event, fp, result)
 	return result
 

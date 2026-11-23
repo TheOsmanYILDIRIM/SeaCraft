@@ -317,6 +317,9 @@ func register_economy_faction(id: String) -> bool:
 func register_economy_market(id: String, faction: String, item: String, sector: String, price: int, stock: int, capacity: int) -> bool:
 	return _prg05 != null and _prg05.register_market(id, faction, item, sector, price, stock, capacity)
 
+func economy_market_cargo_spec(id: String) -> Dictionary:
+	return _prg05.market_cargo_spec(id) if _prg05 != null else {}
+
 func register_economy_outpost(id: String, faction: String) -> bool:
 	return _prg05 != null and _prg05.register_outpost(id, faction)
 
@@ -334,6 +337,9 @@ func grant_economy_currency_authoritative(owner: String, event: String, amount: 
 
 func record_economy_convoy_loss_authoritative(event: String, market: String, amount: int) -> Dictionary:
 	return _prg05.convoy_loss_authoritative(event, market, amount) if _prg05 != null else {"accepted": false}
+
+func record_economy_convoy_delivery_authoritative(event: String, market: String, amount: int) -> Dictionary:
+	return _prg05.convoy_delivery_authoritative(event, market, amount) if _prg05 != null else {"accepted": false}
 
 func capture_economy_outpost_authoritative(event: String, outpost: String, faction: String) -> Dictionary:
 	return _prg05.capture_outpost_authoritative(event, outpost, faction) if _prg05 != null else {"accepted": false}
