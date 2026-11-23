@@ -142,6 +142,16 @@ func advance_entity(instance_id: String, elapsed_ticks: int, hazard_facts: Dicti
 	return travel_result
 
 
+# Only the authoritative world queues FAR updates, never a client.
+func queue_far_update(instance_id: String, due_tick: int) -> bool:
+	if not _authority_enabled or due_tick < _current_tick or not _records.has(instance_id):
+		return false
+	var projection := FarFieldEntityState.project(_records[instance_id])
+	if projection.is_empty() or str(projection["lod"]) != SimulationLOD.FAR:
+		return false
+	return _scheduler.enqueue("far", instance_id, "", due_tick)
+
+
 func queue_path_job(instance_id: String, goal_id: String, due_tick: int) -> bool:
 	return _scheduler.enqueue("path", instance_id, goal_id, due_tick) if _authority_enabled else false
 

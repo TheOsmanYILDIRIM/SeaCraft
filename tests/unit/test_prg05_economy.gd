@@ -225,6 +225,75 @@ func test_prg05_ai04_far_world_arrival_and_sinking_settle_economy_once() -> void
 	print("PRG05_FAR_WORLD_BRIDGE_OK")
 
 
+func test_prg05_ai04_scheduler_dispatches_trade_once_and_restores_ledger() -> void:
+	var s := _make()
+	var market := "market.scheduler.deliver"
+	assert_true(s.register_economy_market(market, F, I, FoundationSector.HAVEN_ID, 10, 8, 20))
+	var world := WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(), 9402, true)
+	var merchant := "entity.scheduler.merchant"
+	var fleet := "fleet.scheduler.merchant"
+	assert_true(world.register_record(_far_ship(merchant, fleet, _far_job(fleet, "job.scheduler.merchant", 4), 100.0)))
+	var bridge := Prg05ConvoyBridge.new(s, FleetCoordinator.new(true), true)
+	var runner := Prg05EconomyWorldRunner.new(world, s, bridge, true)
+	assert_false(Prg05EconomyWorldRunner.new(world, s, bridge, false).bind_far_convoy(merchant, market))
+	assert_true(runner.bind_far_convoy(merchant, market))
+	assert_true(runner.bind_far_convoy(merchant, market))
+	assert_false(runner.bind_far_convoy(merchant, M))
+	var batch := runner.advance_tick(200)
+	assert_eq(batch["advanced"], [merchant])
+	assert_eq(batch["settlements"].size(), 1)
+	assert_eq(batch["settlements"][0]["result"]["event"]["event_type"], "trade_delivered")
+	assert_eq(s.economy_quote(P, market)["stock"], 12)
+	assert_true(runner.is_settled(merchant))
+	assert_true(runner.advance_tick(200).is_empty())
+	assert_eq(runner.advance_tick(208)["settlements"].size(), 0)
+	var saved := s.progression_snapshot()
+	var world_snapshot := world.snapshot_state()
+	var restored := _make()
+	assert_true(restored.register_economy_market(market, F, I, FoundationSector.HAVEN_ID, 10, 8, 20))
+	assert_true(restored.restore_progression(saved))
+	var new_world := WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(), 9402, true)
+	assert_true(new_world.restore_state(world_snapshot))
+	var resumed := Prg05EconomyWorldRunner.new(new_world, restored,
+		Prg05ConvoyBridge.new(restored, FleetCoordinator.new(true), true), true)
+	assert_true(resumed.bind_far_convoy(merchant, market, 208))
+	assert_true(resumed.is_settled(merchant))
+	assert_eq(resumed.advance_tick(216)["settlements"].size(), 0)
+	assert_eq(restored.economy_quote(P, market)["stock"], 12)
+	print("PRG05_AI04_SCHEDULER_DELIVERY_OK")
+
+
+func test_prg05_ai04_scheduler_combat_loss_precedes_market_delivery() -> void:
+	var s := _make()
+	var market := "market.scheduler.loss"
+	assert_true(s.register_economy_market(market, F, I, FoundationSector.HAVEN_ID, 10, 8, 20))
+	var world := WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(), 9402, true)
+	var merchant := "entity.scheduler.loss"
+	var raider_id := "entity.scheduler.raider"
+	var fleet := "fleet.scheduler.loss"
+	assert_true(world.register_record(_far_ship(merchant, fleet, _far_job(fleet, "job.scheduler.loss", 5), 5.0)))
+	var raider := _far_ship(raider_id, "", {}, 100.0)
+	var semantic := FarFieldEntityState.semantic(raider)
+	semantic["faction_id"] = "faction.practice_hostile"
+	semantic["role"] = "raider"
+	semantic["combat"]["strength"] = 500.0
+	semantic["combat"]["hostile"] = true
+	assert_true(world.register_record(FarFieldEntityState.attach(raider, semantic)))
+	var runner := Prg05EconomyWorldRunner.new(world, s,
+		Prg05ConvoyBridge.new(s, FleetCoordinator.new(true), true), true)
+	assert_true(runner.bind_far_convoy(merchant, market))
+	assert_true(world.queue_far_encounter("encounter.scheduler.loss", [merchant, raider_id], 4))
+	var batch := runner.advance_tick(8)
+	assert_eq(batch["encounters"].size(), 1)
+	assert_true(batch["encounters"][0]["sunk_ids"].has(merchant))
+	assert_eq(batch["settlements"].size(), 1)
+	assert_eq(batch["settlements"][0]["result"]["event"]["event_type"], "convoy_lost")
+	assert_eq(s.economy_quote(P, market)["stock"], 3)
+	assert_eq(runner.advance_tick(16)["settlements"].size(), 0)
+	assert_eq(s.economy_quote(P, market)["stock"], 3)
+	print("PRG05_AI04_SCHEDULER_LOSS_OK")
+
+
 func _far_job(fleet_id: String, job_id: String, quantity: int) -> Dictionary:
 	var cargo := WorldJob.cargo_mission("mission.%s" % job_id, I, quantity, "anchor.prg05.origin", FoundationSector.HAVEN_ID)
 	return WorldJob.create(job_id, WorldJob.TRADE, fleet_id, "anchor.prg05.origin", FoundationSector.HAVEN_ID, FoundationSector.ID, WorldJob.TRAVEL, "", cargo)

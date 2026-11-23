@@ -86,6 +86,10 @@ func market_cargo_spec(id: String) -> Dictionary:
 	var row: Dictionary = _markets[id]
 	return {"item": str(row["item"]), "sector": str(row["sector"])}
 
+func has_event(event_id: String) -> bool:
+	return SectorIds.valid(event_id) and _events.has(event_id)
+
+
 func register_outpost(id: String, faction: String) -> bool:
 	if not _authority or not SectorIds.valid(id) or not _factions.has(faction) or _outposts.has(id) or _outposts.size() >= 64:
 		return false

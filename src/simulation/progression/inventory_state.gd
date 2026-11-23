@@ -311,6 +311,10 @@ func enable_economy_diplomacy(owner_id: String) -> bool:
 func economy_actor_disposition(owner_id: String, faction_id: String) -> String:
 	return _prg05.actor_disposition(owner_id, faction_id) if _prg05 != null else FactionRelationResolver.NEUTRAL
 
+func economy_event_applied(event_id: String) -> bool:
+	return _prg05 != null and _prg05.has_event(event_id)
+
+
 func register_economy_faction(id: String) -> bool:
 	return _prg05 != null and _prg05.register_faction(id)
 
