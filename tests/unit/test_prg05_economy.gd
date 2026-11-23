@@ -166,3 +166,83 @@ func test_prg05_ai03_world_convoy_outcome_to_live_market_is_authoritative_and_pe
 	assert_eq(resumed_bridge.settle(delivered["fleet_id"], 15)["stock"], 10)
 	assert_true(Prg05EconomyState.validate_state(restored.progression_snapshot()["prg05"]))
 	print("PRG05_CONVOY_WORLD_BRIDGE_OK")
+
+func test_prg05_ai04_far_world_arrival_and_sinking_settle_economy_once() -> void:
+	var market := "market.ai04.haven"
+	var s := _make()
+	assert_true(s.register_economy_market(market, F, I, FoundationSector.HAVEN_ID, 10, 8, 20))
+	var world := WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(), 9402, true)
+	var fleet_id := "fleet.prg05.far.deliver"
+	var merchant_id := "entity.prg05.far.deliver"
+	var job := _far_job(fleet_id, "job.prg05.far.deliver", 4)
+	assert_true(world.register_record(_far_ship(merchant_id, fleet_id, job, 100.0)))
+	var bridge := Prg05ConvoyBridge.new(s, FleetCoordinator.new(true), true)
+	assert_true(bridge.bind_far_convoy(world, merchant_id, market))
+	assert_false(bridge.bind_far_convoy(world, merchant_id, M))
+	assert_eq(bridge.settle_far_convoy(world, merchant_id, 1)["reason"], "convoy_in_transit")
+	assert_false(Prg05ConvoyBridge.new(s, FleetCoordinator.new(true), false).bind_far_convoy(world, merchant_id, market))
+	var traveled := world.advance_entity(merchant_id, 200)
+	assert_true(traveled["arrived"])
+	var delivered := bridge.settle_far_convoy(world, merchant_id, 200)
+	assert_true(delivered["accepted"])
+	assert_eq(delivered["event"]["event_type"], "trade_delivered")
+	assert_eq(delivered["delivered"], 4)
+	assert_eq(s.economy_quote(P, market)["stock"], 12)
+	assert_eq(bridge.settle_far_convoy(world, merchant_id, 201)["stock"], 12)
+	var snapshot := s.progression_snapshot()
+	var restored := _make()
+	assert_true(restored.register_economy_market(market, F, I, FoundationSector.HAVEN_ID, 10, 8, 20))
+	assert_true(restored.restore_progression(snapshot))
+	var world_restored := WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(), 9402, true)
+	assert_true(world_restored.restore_state(world.snapshot_state()))
+	var replay := Prg05ConvoyBridge.new(restored, FleetCoordinator.new(true), true)
+	assert_true(replay.bind_far_convoy(world_restored, merchant_id, market))
+	assert_eq(replay.settle_far_convoy(world_restored, merchant_id, 202)["stock"], 12)
+	var attacker_id := "entity.prg05.far.raider"
+	var victim_id := "entity.prg05.far.lost"
+	var lost_job := _far_job("fleet.prg05.far.lost", "job.prg05.far.lost", 5)
+	var victim := _far_ship(victim_id, "fleet.prg05.far.lost", lost_job, 5.0)
+	var raider := _far_ship(attacker_id, "", {}, 100.0)
+	var raider_semantic := FarFieldEntityState.semantic(raider)
+	raider_semantic["faction_id"] = "faction.practice_hostile"
+	raider_semantic["role"] = "raider"
+	raider_semantic["combat"]["strength"] = 500.0
+	raider_semantic["combat"]["hostile"] = true
+	raider = FarFieldEntityState.attach(raider, raider_semantic)
+	assert_true(world_restored.register_record(victim))
+	assert_true(world_restored.register_record(raider))
+	assert_true(replay.bind_far_convoy(world_restored, victim_id, market))
+	assert_true(world_restored.queue_far_encounter("encounter.prg05.far.loss", [victim_id, attacker_id], 4))
+	var combat_results := world_restored.process_far_encounters()
+	assert_eq(combat_results.size(), 1)
+	assert_true(combat_results[0]["sunk_ids"].has(victim_id))
+	var lost := replay.settle_far_convoy(world_restored, victim_id, 203)
+	assert_true(lost["accepted"])
+	assert_eq(lost["event"]["event_type"], "convoy_lost")
+	assert_eq(restored.economy_quote(P, market)["stock"], 7)
+	assert_eq(replay.settle_far_convoy(world_restored, victim_id, 204)["stock"], 7)
+	assert_true(Prg05EconomyState.validate_state(restored.progression_snapshot()["prg05"]))
+	print("PRG05_FAR_WORLD_BRIDGE_OK")
+
+
+func _far_job(fleet_id: String, job_id: String, quantity: int) -> Dictionary:
+	var cargo := WorldJob.cargo_mission("mission.%s" % job_id, I, quantity, "anchor.prg05.origin", FoundationSector.HAVEN_ID)
+	return WorldJob.create(job_id, WorldJob.TRADE, fleet_id, "anchor.prg05.origin", FoundationSector.HAVEN_ID, FoundationSector.ID, WorldJob.TRAVEL, "", cargo)
+
+
+func _far_ship(instance_id: String, fleet_id: String, job: Dictionary, health: float) -> Dictionary:
+	var base := {
+		"instance_id": instance_id,
+		"definition_id": "ship.vs02_practice",
+		"entity_kind": "npc_ship",
+		"sector_id": FoundationSector.ID,
+		"position": {"x": 100.0, "y": -100.0},
+		"motion": {"heading": 0.25, "vx": 1.0, "vy": -1.0},
+		"health": health,
+		"alive": true,
+		"route": {"patrol_index": 0, "intent_id": 0},
+		"cooldowns": {"reload": 10, "repair": 20},
+		"inventory": {"item.vs03_salvage_scrap": 1},
+		"payload": {"content_refs": ["ammo.core_round"]},
+	}
+	return FarFieldEntityState.attach(base, FarFieldEntityState.default_semantic(SimulationLOD.FAR, "faction.player", fleet_id, "merchant", job, FoundationSector.HAVEN_ID, 0.02, "low"))
