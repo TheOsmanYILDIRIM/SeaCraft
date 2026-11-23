@@ -291,6 +291,7 @@ func test_prg04_timed_failure_save_load_v4_migration_and_corrupt_rejection() -> 
 	var legacy := progression.duplicate(true)
 	legacy["version"] = 3
 	legacy.erase("prg04")
+	legacy.erase("prg05")
 	assert_true(InventoryState.validate_progression_state(legacy))
 	var migrated := _state()
 	assert_true(migrated.restore_progression(legacy))

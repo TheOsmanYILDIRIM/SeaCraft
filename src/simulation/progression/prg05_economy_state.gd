@@ -291,6 +291,9 @@ static func validate_state(value: Variant) -> bool:
 	var probe := FactionRelationResolver.new()
 	return probe.restore_state(data.get("relations"))
 
+static func _int_between(value: Variant, lo: int, hi: int) -> bool:
+	return _bounded(value, lo, hi)
+
 static func _bounded(value: Variant, lo: int, hi: int) -> bool:
 	return typeof(value) == TYPE_INT and int(value) >= lo and int(value) <= hi
 

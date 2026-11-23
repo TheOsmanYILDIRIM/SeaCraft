@@ -258,6 +258,7 @@ func test_prg03_persistence_v3_v2_migration_and_corrupt_rejection() -> void:
 	legacy["version"] = 2
 	legacy.erase("prg03")
 	legacy.erase("prg04")
+	legacy.erase("prg05")
 	assert_true(InventoryState.validate_progression_state(legacy))
 	var migrated := _state()
 	_register_standard(migrated)
