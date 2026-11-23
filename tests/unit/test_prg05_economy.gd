@@ -356,6 +356,7 @@ func test_prg05_bounty_combat_proof_reward_and_intel_save_resume() -> void:
 	var combat := CombatAuthority.new(sector, SeedStreams.new(51))
 	assert_true(combat.register(P, F, 100.0, weapon))
 	assert_true(combat.register(Q, E, 10.0))
+	assert_true(combat.select(P, Q))
 	var bridge := Prg05BountyCombatBridge.new(combat, s, true)
 	assert_true(bridge.bind_bounty(bounty, Q))
 	assert_false(bridge.bind_bounty(bounty, P))
