@@ -4,7 +4,9 @@ Başlangıç: a73633beb1dfec0d70c1b4e640bfd439ff823ede; yalnız `main`; Godot 4.
 
 **Bu dilim:** host-owned faction relations/reputation, market buy/sell, convoy supply etkisi, outpost ownership, repeat-kill PvP diminishing returns; inventory v5 save/load; LAN client yalnız market_id/quantity ile trade intent gönderebilir. Gemi sprite'larından bağımsızdır.
 
-**Açık PRG-05 işler:** NPC/convoy domain event adaptörleri, company/crew, AI hostility bağlama, sahici runtime market content + mobil UI, tam LAN cihaz/Android doğrulama. PRG-06'ya geçilmez. CI ve artifact readback gerçek doğrulama olmadan görev kapanmaz.
+**Doğrulanmış ek checkpoint:** AI-03 konvoy ve AI-04 FAR world teslim/kayıp settlement adaptörü, Güvenli Liman market içeriği ve dokunmatik pazar paneli. Exact kod SHA `0c821a58c904839a53cd0b51509f55e606e3e323`; [Actions 45249433521](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45249433521) `success`, 403/403 GUT, 9/9 PRG-05, Android/Linux artifact provenance/readback başarılı.
+
+**Açık PRG-05 işler:** AI-04 scheduler→ekonomi otomatik event-dispatch, bounty/intel, local company/crew, LAN host market konum doğrulaması, gerçek telefonda pazar smoke ve uzun Android LAN economy drift `not_run`. PRG-06'ya geçilmez. Kod CI geçmesi fiziksel Android testi değildir.
 
 ---
 

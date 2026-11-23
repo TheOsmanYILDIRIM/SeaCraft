@@ -986,3 +986,17 @@ SC-02 oyuncu: onaylı 4×2 master atlastan **160 px** hücre; SC-03 NPC: AUTO FI
 - [Linux artifact 14846294929](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45232141806/artifacts/14846294929): authenticated readback başarı, artifact ZIP SHA-256 `f338c78a43b7b226792fc22482f438ed310b2b15367109f32617d9e899c6244b`.
 - Kapsam: typed host economy state, reputation, faction relations, trade idempotency + atomic inventory/funds/stock, convex scarcity+convoy disruption price, region outpost ownership, repeat-kill PvP reward, JSON round-trip save v5/legacy migration, server-bound LAN intents, economy reputation ile CombatAuthority runtime hostility (NPC ve oyuncu karşılıklı, faction-safe), bootstrap wiring.
 - **Henüz doğrulanmamış:** Android cihazda uzun LAN ekonomi drift, gerçek market UI, far-field olayının markete otomatik bağı, company/crew ve bounty/intel. Görsel asset/sprite üretimi bu dilime bağımlı değildir; eski Android smoke fiziksel cihaz retesti `not_run`. PRG-05 `active` kalır, PRG-06 `not_started`.
+
+---
+
+## PRG-05 — Konvoy ekonomisi, AI-04 uzak dünya ve Güvenli Liman mobil pazar checkpoint'i
+
+**Durum:** `verified_checkpoint`; PRG-05 kanonik görevi hâlâ **active**. PRG-06 başlatılmadı. Bu rapor PRG-05 kapanış receipt'i değildir.
+
+- Kod doğrulaması (main): `2f229ac4eeb7d95c5809d879624be18d4c0ca101` (AI-03 market köprüsü) → `3396fff4779237353b8580db1a3ee0ae80f3416b` (AI-04 FAR varış/batma köprüsü) → **`0c821a58c904839a53cd0b51509f55e606e3e323`** (gerçek Güvenli Liman pazarı + dokunmatik UI).
+- [Son exact CI run 45249433521](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45249433521): **success**; 403/403 GUT test, 29546 assert, PRG-05 verifier **9/9**; ENet real-process NET-01/02/03/04 kontrolleri, Linux/Android debug export ve authenticated artifact readback başarılı. İlk iki checkpoint'in CI'ları da sırasıyla [45247201073](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45247201073) ve [45248332851](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45248332851): success.
+- [Android artifact 14855516010](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45249433521/artifacts/14855516010): readback **OK**, ZIP SHA-256 `cc7f9610a85b1c1a769e718d2317f25c13b52250d0aa4fbb4f348b0c068a7e9b`; SHA eşleşmesi exact.
+- [Linux artifact 14855416066](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45249433521/artifacts/14855416066): readback **OK**, ZIP SHA-256 `95c0c1ebbfb2df965f1ece8353e3bf65c1f802174f85e258668f63efc0f7318d`; SHA eşleşmesi exact.
+- İşlenen alan: host-owned stok/price için AI-03 trade teslim/kayıp olay bağlama, AI-04 FAR world authoritative varış/batma sonucu settlement, stable event ID + idempotent replay/save roundtrip, limanda gerçekten kayıtlı `market.haven.salvage`, dokunmatik ekran paneli, yalnız güvenli limanda gösterme/alış-satış ve fiyat/kimlik sahteciliğini kabul etmeyen host-side UI adapter. Yeni test markerları: `PRG05_CONVOY_WORLD_BRIDGE_OK`, `PRG05_FAR_WORLD_BRIDGE_OK`, `PRG05_MOBILE_MARKET_INTENT_OK`.
+- **Açık sınırlar:** AI-04 world scheduler→economy bridge otomatik event-dispatch wiring'i (şu an güvenilir host çağrısıyla çalışan adaptör), bounty/intel ve local company/crew domain, LAN tarafında gerçek market proximity/sector proof, telefonda gerçek dokunmatik pazar smoke ve uzun LAN ekonomi drift testi **not_run**. Artifact oluşması cihaz testi değildir. PRG-05 kanonik kapatma geçidi henüz tamamlanmadı; PRG-06 `not_started`.
+
