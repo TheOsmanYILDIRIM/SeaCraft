@@ -685,3 +685,21 @@ Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up
 **Bağımsız renksiz 2×2 clay arma modülleri:** SQ-1=tek kare, SQ-2=çift kare, GF-1=gaff, JB-1=flok, LT-1=latin. Bir gemi için birleşik arma renderı zorunlu değil; ihtiyaç listesi belirlenir ve yalnız eksik modül üretilir. SC-03 reçetesi **ön SQ-1 + ana SQ-1 + kıç LT-1**; kısa-geniş tüccar oranları promptla uyarlanır, otomatik SQ-1B açılmaz. Bu arma modülleri gemi-özel nihai sprite değildir.
 
 **Doğrudan 8-yön radial üretimde referans sırası:** (1) renksiz kamera referansı, (2) renkli süreklilik referansı, (3) *ayrı* SeaCraft texture atlası, (4+) gerekli arma modülleri. Gemi geometrisi kanonik SC fişinden gelir; ortak GLB gemisinin gövdesi kopyalanmaz. Radial panoda temas varsa kesimle yama yapma, üretimi tekrar et. Devamı **`sprite_radial_extract.py` → kaynak çözünürlük kapısı → `sprite_normalize.py` (N Lab/LUT) → `seacraft_showlook.py --stage v3` → HTML manuel JSON QA → final 8 yön / 4×2 atlas / GIF / manifest / orijinal kaynak**. SC-03 final hücre 224², atlas 896×448; 12 dosyalık oyun ZIP'i, GLB/referans geliştirme arşivinden ayrıdır. Runtime'da sekiz yön atlası ve ±10° görsel Sprite2D geçişi kullanılabilir; gerçek gemi rotası ile dalga yalpası ayrı tutulur; GIF gerçek Godot entegrasyonu değildir.
+
+## 2026-11-24 — SC-01 / SC-04 ve yeni sprite kalite kararları
+
+> Bu kayıt görsel üretim kararları içindir; oyun içi entegrasyon/cihaz testi kanıtı değildir. M-01 ve M-02 dosyaları kullanıcı tarafından ayrıca aktarılmıştır, burada tekrar yüklenmez.
+
+### Onaylanan yeni arma modülleri
+- LG-1 lug: dört köşeli yelken, eğik üst seren, tek kısa direk, alt bumba yok. GF-1 ile karıştırma. SC-01 Sis İğnesi tek LG-1'li, dar çift uçlu, açık kokpitli keşif filikasıdır. Onaylı 2×2 gri referansın beyaz kenar saçakları finalde görünmemeli.
+- SQG-1: arka direk için TEK direğe bağlı üstte enine SQ-1 kare yelken ve altta kıça doğru boyuna uzanan GF-1 gaff/spanker; farklı sail plane, yaklaşık dik. Gaff'ın üstünde eğik pik, altında kıça uzanan bumba vardır. İki ayrı referans üçüncü direk gibi yorumlandığından birleşik 2×2 referans onaylandı. Ön/arka görünümde kare yelken geniş, yan görünümde gaff geniş görünmelidir.
+- SC-04 Yarık Çene: sadece iki direk ve dört yelken. Ön SQ-2 iki kare, arka SQG-1 bir kare + bir gaff. Üç direkli ilk çıktı reddedildi; iki sonraki seçenekten ikinci radial görüntü seçildi. SC04_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip SeaCraft/main'de.
+- SC-01 Sis İğnesi: SW yönü ilk hizalamada eksikti; sağlam kaynaktan kurtarılarak çapraz yönlere göre düzeltildi. SC01_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip SeaCraft/main'de.
+
+### Kalıcı görsel QA ve çözünürlük kararları
+- Bundan sonraki üretim promptları tam sekiz yönlü radial 1:1 kare çıktının ÜÇ AYRI GPT Image varyantını ister: tam üç bağımsız resim, kolaj değil. Kullanıcı birini seçmeden pipeline'a geçme.
+- Esas ölçü PNG canvas çözünürlüğü değil, nesnenin alfa bounding box genişlik/yüksekliğidir. 256×256 tuvalde örneğin 75×127 dolu piksel kalite kaybıdır; 1024×1024 boş çalışma tuvali yeni detay üretmez.
+- Radial orijinal korunur. Her yön gerçek nesne sınırına göre ve şeffaf payla ayrılır. Tekil AI upscale gerektiğinde her yönün gerçek detay ve anatomisi ayrı kontrol edilir. Sabit kareye hem x hem y ölçekleyerek nesneyi ezmek yasak; en-boy oranı korunur.
+- Kullanıcı elle hizalama yaptıysa eski JSON merkez/ölçek referansıdır; yeni crop/upscale sonuçlarıyla dünya pivotu korunur ama şekil yeniden doğrulanır. Eksik yön için karşı açıyı aynalama geçici olabilir, asimetrik nesneyi geometrik olarak doğrulamadan son kabul sayılmaz.
+- HTML'de hangi gerçek tekil PNG'lerin gömüldüğü ve dolu piksel alanları kontrol edilir; küçük preview/test canvas görsellerini upscale master diye sunma. Mobilde 8/8 yükleme ve JSON dışa aktarımı doğrulanır.
+- Oyun paketi 8 RGBA PNG, 4×2 atlas, dönüş GIF'i, manifest ve dokunulmamış radial kaynak = 12 dosya. Gerçek AI-upscale master ile interpolasyon veya boş canvas büyütmesini birbirinden açıkça ayır. Godot/Android entegrasyonu ayrı kanıttır.
