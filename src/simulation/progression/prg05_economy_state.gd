@@ -295,7 +295,10 @@ static func _int_between(value: Variant, lo: int, hi: int) -> bool:
 	return _bounded(value, lo, hi)
 
 static func _bounded(value: Variant, lo: int, hi: int) -> bool:
-	return typeof(value) == TYPE_INT and int(value) >= lo and int(value) <= hi
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value)
+	return is_finite(number) and number == floorf(number) and number >= float(lo) and number <= float(hi)
 
 func _existing(event: String, fp: String) -> Dictionary:
 	if not _events.has(event):
