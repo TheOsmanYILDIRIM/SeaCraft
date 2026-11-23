@@ -294,6 +294,47 @@ func test_prg05_ai04_scheduler_combat_loss_precedes_market_delivery() -> void:
 	print("PRG05_AI04_SCHEDULER_LOSS_OK")
 
 
+func test_prg05_lan_market_sector_range_and_authoritative_position_gate() -> void:
+	var s := _make()
+	var harbor := SectorRuntime.new()
+	harbor.sector_id = "sector.harbor"
+	harbor.bounds = Rect2(-600, -300, 1200, 600)
+	assert_true(harbor.register_entity(P, Vector2(0, 0)))
+	var motor := ShipMotor.new()
+	motor.global_position = Vector2(0, 0)
+	var gate := Prg05MarketAccessGuard.new(s)
+	assert_true(gate.is_bound_to(s))
+	assert_false(Prg05MarketAccessGuard.new(_make()).is_bound_to(s))
+	assert_false(gate.bind_market(M, harbor, Vector2(0, 0), INF))
+	assert_false(gate.bind_market(M, harbor, Vector2(0, 0), 0.0))
+	assert_true(gate.bind_market(M, harbor, Vector2(40, 0), 100.0))
+	assert_false(gate.bind_market(M, harbor, Vector2(40, 0), 100.0))
+	assert_true(gate.allows(P, M, motor))
+	assert_false(gate.allows(Q, M, motor))
+	assert_false(gate.allows(P, "market.nonexistent", motor))
+	motor.global_position = Vector2(300, 0)
+	assert_false(gate.allows(P, M, motor))
+	motor.global_position = Vector2(0, 0)
+	assert_true(harbor.move_entity(P, Vector2(300, 0)))
+	assert_false(gate.allows(P, M, motor))
+	assert_true(harbor.move_entity(P, Vector2(0, 0)))
+	assert_true(gate.allows(P, M, motor))
+	motor.authority_enabled = false
+	assert_false(gate.allows(P, M, motor))
+	motor.free()
+	var wrong_sector := SectorRuntime.new()
+	wrong_sector.sector_id = "sector.elsewhere"
+	wrong_sector.bounds = harbor.bounds
+	assert_false(Prg05MarketAccessGuard.new(s).bind_market(M, wrong_sector, Vector2.ZERO))
+	# Real SessionHost also fails closed before binding, no bypass via client payload.
+	var host := SessionHost.new()
+	assert_eq(host.call("_execute_gameplay_intent", 1, P, InventoryState.OP_MARKET_BUY,
+		{"transaction_id": "txn.market.host", "market_id": M, "quantity": 1}),
+		SessionProtocol.REJECT_AUTHORITY_COMMAND)
+	host.free()
+	print("PRG05_LAN_MARKET_ACCESS_GUARD_OK")
+
+
 func _far_job(fleet_id: String, job_id: String, quantity: int) -> Dictionary:
 	var cargo := WorldJob.cargo_mission("mission.%s" % job_id, I, quantity, "anchor.prg05.origin", FoundationSector.HAVEN_ID)
 	return WorldJob.create(job_id, WorldJob.TRADE, fleet_id, "anchor.prg05.origin", FoundationSector.HAVEN_ID, FoundationSector.ID, WorldJob.TRAVEL, "", cargo)

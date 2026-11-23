@@ -26,6 +26,7 @@ var _replication: NetworkReplicationPeer
 var _combat_authority: CombatAuthority
 var _loot_authority: LootAuthority
 var _inventory_state: InventoryState
+var _market_access_guard: Prg05MarketAccessGuard
 var _player_motors: Dictionary = {}
 var _player_ids: Array[String] = []
 var _peer_states: Dictionary = {}
@@ -111,6 +112,7 @@ func stop() -> void:
 	_combat_authority = null
 	_loot_authority = null
 	_inventory_state = null
+	_market_access_guard = null
 	if _peer != null:
 		_peer.close()
 	if multiplayer.multiplayer_peer != null:
@@ -425,6 +427,17 @@ func bind_progression_authority(inventory: InventoryState) -> bool:
 	return true
 
 
+# Called only by the trusted host after authoritative simulation setup.
+# When unbound, LAN market purchases fail closed (other progression is unaffected).
+func bind_market_access_authority(guard: Prg05MarketAccessGuard) -> bool:
+	if not _running or _inventory_state == null or guard == null or _market_access_guard != null:
+		return false
+	if not guard.is_bound_to(_inventory_state):
+		return false
+	_market_access_guard = guard
+	return true
+
+
 func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: String, payload: Dictionary) -> String:
 	if intent_type in PROTOCOL.PROGRESSION_INTENTS:
 		if _inventory_state == null:
@@ -442,6 +455,13 @@ func _execute_gameplay_intent(peer_id: int, player_id: String, intent_type: Stri
 		if status == LEDGER.STATUS_CACHED:
 			_bridge.send_transaction_result(peer_id, transaction_id, lookup["result"])
 			return ""
+		# Strict market location proof is evaluated AFTER cached-ACK retrieval
+		# (so a player who leaves the harbor can still receive a lost ACK),
+		# but BEFORE any new transaction or ledger mutation.
+		if intent_type in [InventoryState.OP_MARKET_BUY, InventoryState.OP_MARKET_SELL]:
+			var motor := _player_motors.get(player_id) as ShipMotor
+			if _market_access_guard == null or not _market_access_guard.allows(player_id, str(operation_payload["market_id"]), motor):
+				return PROTOCOL.REJECT_AUTHORITY_COMMAND
 		var result := _inventory_state.execute_transaction(player_id, transaction_id, intent_type, operation_payload)
 		if not _ledger.commit(player_id, transaction_id, intent_type, fingerprint, result):
 			return PROTOCOL.REJECT_TRANSACTION_CONFLICT
