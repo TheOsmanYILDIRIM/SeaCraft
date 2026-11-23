@@ -315,6 +315,10 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _loot.inventory_state().configure_prg05():
 		push_error("PRG-05 economy setup failed")
 		return
+	# Register the canonical pilot factions before restoring reputation saves.
+	if not _loot.inventory_state().register_economy_faction((PLAYER_SHIP_DEF as ShipDefinition).faction_id) or not _loot.inventory_state().register_economy_faction((PRACTICE_SHIP_DEF as ShipDefinition).faction_id):
+		push_error("PRG-05 faction registration failed")
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
@@ -323,6 +327,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	_loot.initialize_missing_stock(CORE_STOCK)
 	_loot.initialize_missing_stock(NPC_STOCK)
+	if not _loot.inventory_state().enable_economy_diplomacy(FoundationSector.PLAYER) or not _combat.bind_economy_authority(_loot.inventory_state()):
+		push_error("PRG-05 combat diplomacy integration failed")
+		return
 	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(ROUND_AMMO_PROFILE as AmmoProfile) or not _combat.register_ammo(EMBER_AMMO_PROFILE as AmmoProfile):
 		return
 	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):

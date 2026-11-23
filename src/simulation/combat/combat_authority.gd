@@ -23,6 +23,7 @@ const TACTICAL_FIRE_CORRIDOR_RADIUS := 24.0
 var _enabled := true
 var _inventory: LootAuthority
 var _relations: FactionRelationResolver
+var _economy_inventory: InventoryState
 var _ammo_profiles: Dictionary = {}
 var _status_actors: Dictionary = {}
 
@@ -484,6 +485,18 @@ func relation(observer_id: String, other_id: String) -> String:
 		return FactionRelationResolver.NEUTRAL
 	if observer.faction_id == other.faction_id:
 		return FactionRelationResolver.FRIENDLY
+	if _economy_inventory != null:
+		# Faction-wide relations apply to any ship; reputation applies only to
+		# actors that the host registered as diplomatic player owners.
+		var observer_disposition := _economy_inventory.economy_actor_disposition(observer_id, other.faction_id)
+		var other_disposition := _economy_inventory.economy_actor_disposition(other_id, observer.faction_id)
+		if observer_disposition == FactionRelationResolver.HOSTILE or other_disposition == FactionRelationResolver.HOSTILE:
+			return FactionRelationResolver.HOSTILE
+		if observer_disposition == FactionRelationResolver.FRIENDLY or other_disposition == FactionRelationResolver.FRIENDLY:
+			return FactionRelationResolver.FRIENDLY
+		var faction_relation := _economy_inventory.economy_faction_relation(observer.faction_id, other.faction_id)
+		if faction_relation != FactionRelationResolver.NEUTRAL:
+			return faction_relation
 	if _relations != null:
 		return _relations.relation(observer.faction_id, other.faction_id)
 	return FactionRelationResolver.HOSTILE
@@ -508,6 +521,13 @@ func bind_relation_resolver(resolver: FactionRelationResolver) -> bool:
 	if resolver == null or _relations != null:
 		return false
 	_relations = resolver
+	return true
+
+
+func bind_economy_authority(inventory: InventoryState) -> bool:
+	if inventory == null or _economy_inventory != null:
+		return false
+	_economy_inventory = inventory
 	return true
 
 

@@ -11,6 +11,7 @@ const MAX_QUANTITY := 10000
 
 var _inventory
 var _owners: Dictionary = {}
+var _diplomatic_owners: Dictionary = {}
 var _factions: Dictionary = {}
 var _markets: Dictionary = {}
 var _outposts: Dictionary = {}
@@ -41,7 +42,23 @@ func reassign_owner(a: String, b: String) -> bool:
 	if _owners.has(a):
 		_owners[b] = _owners[a]
 		_owners.erase(a)
+	if _diplomatic_owners.has(a):
+		_diplomatic_owners.erase(a)
+		_diplomatic_owners[b] = true
 	return true
+
+# The trusted host explicitly enables diplomacy only for player-owned actors.
+# NPC inventory accounts never acquire a reputation override implicitly.
+func enable_player_diplomacy(owner: String) -> bool:
+	if not _authority or not _owners.has(owner):
+		return false
+	_diplomatic_owners[owner] = true
+	return true
+
+func actor_disposition(owner: String, faction: String) -> String:
+	if not _diplomatic_owners.has(owner) or not _factions.has(faction):
+		return FactionRelationResolver.NEUTRAL
+	return disposition(owner, faction)
 
 func register_faction(id: String) -> bool:
 	if not _authority or not SectorIds.valid(id) or _factions.has(id) or _factions.size() >= 64:

@@ -5,9 +5,10 @@ def main():
     log = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
     names = ["test_prg05_faction_reputation_and_hostility", "test_prg05_market_atomic_trade_price_and_lost_ack",
              "test_prg05_convoy_outpost_pvp_diminishing_and_events", "test_prg05_persistence_v5_migration_and_invalid_rejection",
+             "test_prg05_reputation_controls_runtime_combat_hostility",
              "test_prg05_lan_host_intent_limits_price_and_identity_spoof"]
     markers = ["PRG05_FACTION_REPUTATION_OK", "PRG05_TRADE_ATOMIC_OK", "PRG05_CONVOY_OUTPOST_PVP_OK",
-               "PRG05_PERSISTENCE_V5_OK", "PRG05_LAN_HOST_GUARD_OK"]
+               "PRG05_PERSISTENCE_V5_OK", "PRG05_RUNTIME_DIPLOMACY_OK", "PRG05_LAN_HOST_GUARD_OK"]
     if "res://tests/unit/test_prg05_economy.gd" not in log:
         raise SystemExit("PRG-05 GUT script not executed")
     for row in names + markers:

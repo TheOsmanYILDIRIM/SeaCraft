@@ -84,6 +84,32 @@ func test_prg05_persistence_v5_migration_and_invalid_rejection() -> void:
 	assert_false(restored.restore_progression(invalid))
 	print("PRG05_PERSISTENCE_V5_OK")
 
+func test_prg05_reputation_controls_runtime_combat_hostility() -> void:
+	var s := _make()
+	var sector := SectorRuntime.new()
+	sector.bounds = Rect2(-640, -360, 1280, 720)
+	assert_true(sector.register_entity(P, Vector2.ZERO))
+	assert_true(sector.register_entity(Q, Vector2(0, 100)))
+	var combat := CombatAuthority.new(sector, SeedStreams.new(42))
+	assert_true(combat.register(P, "faction.player", 100.0))
+	assert_true(combat.register(Q, F, 100.0))
+	var base_relations := FactionRelationResolver.new()
+	assert_true(base_relations.set_relation("faction.player", F, FactionRelationResolver.HOSTILE))
+	assert_true(combat.bind_relation_resolver(base_relations))
+	assert_true(combat.bind_economy_authority(s))
+	assert_eq(combat.relation(P, Q), FactionRelationResolver.HOSTILE)
+	# A non-opted-in NPC inventory owner cannot masquerade as the player.
+	assert_eq(s.economy_actor_disposition(Q, F), FactionRelationResolver.NEUTRAL)
+	assert_true(s.enable_economy_diplomacy(P))
+	assert_true(s.adjust_economy_reputation_authoritative(P, F, "event.diplomacy.friendly", 300)["accepted"])
+	assert_eq(combat.relation(P, Q), FactionRelationResolver.FRIENDLY)
+	assert_eq(combat.relation(Q, P), FactionRelationResolver.FRIENDLY)
+	assert_false(combat.hostile(Q, P))
+	assert_true(s.adjust_economy_reputation_authoritative(P, F, "event.diplomacy.hostile", -600)["accepted"])
+	assert_eq(combat.relation(P, Q), FactionRelationResolver.HOSTILE)
+	assert_true(combat.hostile(Q, P))
+	print("PRG05_RUNTIME_DIPLOMACY_OK")
+
 func test_prg05_lan_host_intent_limits_price_and_identity_spoof() -> void:
 	var envelope := SessionProtocol.make_envelope(1, InventoryState.OP_MARKET_BUY,
 		{"transaction_id": "txn.market.lan", "market_id": M, "quantity": 1})

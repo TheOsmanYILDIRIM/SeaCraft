@@ -305,6 +305,12 @@ func configure_prg05() -> bool:
 		_pending_prg05_state.clear()
 	return true
 
+func enable_economy_diplomacy(owner_id: String) -> bool:
+	return _prg05 != null and _prg05.enable_player_diplomacy(owner_id)
+
+func economy_actor_disposition(owner_id: String, faction_id: String) -> String:
+	return _prg05.actor_disposition(owner_id, faction_id) if _prg05 != null else FactionRelationResolver.NEUTRAL
+
 func register_economy_faction(id: String) -> bool:
 	return _prg05 != null and _prg05.register_faction(id)
 
