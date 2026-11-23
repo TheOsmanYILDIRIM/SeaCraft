@@ -532,7 +532,9 @@ static func validate_state(value: Variant) -> bool:
 	if not value is Dictionary or not DtoContract.is_primitive_safe(value):
 		return false
 	var data: Dictionary = value
-	var version := int(data.get("version", -1))
+	if not _bounded(data.get("version"), LEGACY_VERSION, VERSION):
+		return false
+	var version := int(data["version"])
 	if version not in [LEGACY_VERSION, VERSION] or data.size() != (6 if version == LEGACY_VERSION else 7):
 		return false
 	if not data.get("owners") is Dictionary or not data.get("markets") is Dictionary or not data.get("outposts") is Dictionary or not data.get("events") is Dictionary:
@@ -624,14 +626,6 @@ static func validate_state(value: Variant) -> bool:
 			for key in ["owner_id", "bounty_id"]:
 				if not result.get(key) is String or not SectorIds.valid(result[key]):
 					return false
-		elif str(result.get("type", "")) == "company_payroll":
-			if result.size() != 8 or result.get("accepted") != true:
-				return false
-			for key in ["company_id", "captain_id"]:
-				if not result.get(key) is String or not SectorIds.valid(result[key]):
-					return false
-			if not _bounded(result.get("paid"), 0, MAX_CURRENCY) or not _bounded(result.get("crew_count"), 1, MAX_COMPANY_MEMBERS) or not _bounded(result.get("balance"), 0, MAX_CURRENCY) or not _bounded(result.get("tick"), 0, MAX_CURRENCY):
-				return false
 	var probe := FactionRelationResolver.new()
 	return probe.restore_state(data.get("relations"))
 

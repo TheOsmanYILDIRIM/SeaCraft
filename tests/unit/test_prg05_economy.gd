@@ -534,6 +534,12 @@ func test_prg05_company_rejects_spoofed_roles_and_atomic_insufficient_wages() ->
 	assert_false(Prg05EconomyState.validate_state(bad["prg05"]))
 	assert_false(s.restore_progression(bad))
 	assert_eq(s.progression_snapshot(), before)
+	var malformed_version := before.duplicate(true)
+	malformed_version["prg05"]["version"] = 1.5
+	assert_false(Prg05EconomyState.validate_state(malformed_version["prg05"]))
+	var malformed_payroll := before.duplicate(true)
+	malformed_payroll["prg05"]["events"]["event.company.funded"]["result"]["paid"] = 0.5
+	assert_false(Prg05EconomyState.validate_state(malformed_payroll["prg05"]))
 	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(1, "company_set_wage",
 		{"company_id": company, "owner_id": P, "wage": 100000})), SessionProtocol.REJECT_FORBIDDEN_IDENTITY)
 	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(2, "company_set_wage",
