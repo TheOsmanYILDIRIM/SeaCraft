@@ -473,13 +473,13 @@ func test_prg05_local_company_crew_payroll_persists_and_migrates_v1() -> void:
 	assert_eq(roster["members"][0]["crew_item_id"], crew)
 	roster["members"][0]["wage"] = 999
 	assert_eq(s.economy_company_roster(company)["members"][0]["wage"], 30)
-	var payroll := s.settle_economy_company_payroll_authoritative("event.company.pay.1", company, 10)
+	var payroll := s.settle_economy_company_payroll_authoritative("event.company.pay.a", company, 10)
 	assert_true(payroll["accepted"])
 	assert_eq(payroll["paid"], 30)
 	assert_eq(payroll["crew_count"], 1)
 	assert_eq(s.economy_balance(P), 120)
-	assert_eq(s.settle_economy_company_payroll_authoritative("event.company.pay.1", company, 10), payroll)
-	assert_eq(s.settle_economy_company_payroll_authoritative("event.company.pay.1", company, 11)["reason"], "event_conflict")
+	assert_eq(s.settle_economy_company_payroll_authoritative("event.company.pay.a", company, 10), payroll)
+	assert_eq(s.settle_economy_company_payroll_authoritative("event.company.pay.a", company, 11)["reason"], "event_conflict")
 	assert_eq(s.settle_economy_company_payroll_authoritative("event.company.pay.another", company, 10)["reason"], "payroll_already_settled")
 	var saved := s.progression_snapshot()
 	assert_true(Prg05EconomyState.validate_state(saved["prg05"]))
@@ -490,8 +490,8 @@ func test_prg05_local_company_crew_payroll_persists_and_migrates_v1() -> void:
 	assert_true(restored.restore_progression(json))
 	assert_eq(restored.economy_company_roster(company)["members"].size(), 2)
 	assert_eq(restored.economy_balance(P), 120)
-	assert_eq(restored.settle_economy_company_payroll_authoritative("event.company.pay.1", company, 10), payroll)
-	assert_true(restored.settle_economy_company_payroll_authoritative("event.company.pay.2", company, 11)["accepted"])
+	assert_eq(restored.settle_economy_company_payroll_authoritative("event.company.pay.a", company, 10), payroll)
+	assert_true(restored.settle_economy_company_payroll_authoritative("event.company.pay.b", company, 11)["accepted"])
 	assert_eq(restored.economy_balance(P), 90)
 	var legacy: Dictionary = json.duplicate(true)
 	legacy["prg05"]["version"] = Prg05EconomyState.LEGACY_VERSION
@@ -535,5 +535,7 @@ func test_prg05_company_rejects_spoofed_roles_and_atomic_insufficient_wages() ->
 	assert_false(s.restore_progression(bad))
 	assert_eq(s.progression_snapshot(), before)
 	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(1, "company_set_wage",
-		{"company_id": company, "owner_id": P, "wage": 100000})), SessionProtocol.REJECT_UNSUPPORTED_INTENT)
+		{"company_id": company, "owner_id": P, "wage": 100000})), SessionProtocol.REJECT_FORBIDDEN_IDENTITY)
+	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(2, "company_set_wage",
+		{"company_id": company, "wage": 100000})), SessionProtocol.REJECT_UNSUPPORTED_INTENT)
 	print("PRG05_COMPANY_CREW_HOST_GUARD_OK")
