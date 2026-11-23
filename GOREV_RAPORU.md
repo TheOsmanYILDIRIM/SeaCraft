@@ -971,3 +971,18 @@ SC-02 oyuncu: onaylı 4×2 master atlastan **160 px** hücre; SC-03 NPC: AUTO FI
 - **Yön/pivot:** Sekiz karenin merkez referansı aynı. E/W'de gövde oturuşu daha tutarlı; SC-02 N/S görünüşünde aynı pivot çevresinde pruva-kıç orta noktasında birkaç 1× piksel görünür fark var; SC-03 N/S ile çaprazları arasında da benzer küçük destek farkı görünüyor. Bunlar bake edilmiş perspektif/siluet farkı; canlı dönüşte cihaz doğrulaması yapılmadı. Master alfa sınır teması SC-02 **E/W**, SC-03 **SE/SW/W**; kaynak yerleşime dokunulmadı.
 - **Işık/kontrast:** İki zemin de yelken-gövde ayrımını koruyor. SC-02 E/W/NW yelken vurguları N/S'den daha güçlü; SC-03 sekiz yönde daha tutarlı ve koyu borda 1×'ta okunuyor. Önizleme suyu belirgin parlak çizgi üretmedi.
 - **Gerçek piksel yoğunluğu:** 1× E/W gövde izdüşümüne göre runtime atlasın gövdedeki örnek sayısı yaklaşık SC-02 **108–120**, SC-03 **178–195**; bu değerler hücre ölçüsü değildir. SC-03 normalizasyon arşivindeki **ham gövde ekseni** ölçüleri, yön sırasıyla **633 / 964 / 1031 / 883 / 675 / 956 / 1256 / 1251 px**. SC-02'nin ham, normalize öncesi görüntüleri bu arşivde yok; ham yoğunluk `unverified`. 2×'ta SC-02 E/W'nin ince kaplaması daha yumuşak; kullanılan 160 px runtime atlasın 208 px'e görüntülenmesi tek başına ham kaynakta AI upscale gerektiğini kanıtlamıyor. İncelenen karelerde zorunlu **AI upscale gerekli** kararı çıkmadı; SC-07 için karar `not_run`. AI upscale uygulanmadı.
+
+
+---
+
+## PRG-05 — İlk doğrulanmış kodlama checkpoint'i (faction/economy + combat diplomacy)
+
+**Durum:** `verified_checkpoint`, genel PRG-05 görevi `active`; bu kayıt PRG-05 kapanış receipt'i değildir.
+
+- Kanonik Beyin görev kaynağı: `tasks/seacraft-prg05-faction-economy-trade-20261123.md` (resmî v3.12 task-create, revision 1, active, readback).
+- Başlangıç main: `a73633beb1dfec0d70c1b4e640bfd439ff823ede`; doğrulanmış kod commit'i `6140a383ff47b354968cf2966bec2686f5d6d28d`.
+- [CI run 45232141806](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45232141806): **success**; 29 GUT script, **400/400** test, **29439** assert, PRG-05 **6/6** test + marker; NET04 real-process/reconnect/discovery/lost-ACK; Linux ve Android export.
+- [Android artifact 14847088562](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45232141806/artifacts/14847088562): authenticated readback başarı, artifact ZIP SHA-256 `928953d72fc793210202746b3861f8ebf45642ebcf7e72a0b7779ea655e83290`.
+- [Linux artifact 14846294929](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45232141806/artifacts/14846294929): authenticated readback başarı, artifact ZIP SHA-256 `f338c78a43b7b226792fc22482f438ed310b2b15367109f32617d9e899c6244b`.
+- Kapsam: typed host economy state, reputation, faction relations, trade idempotency + atomic inventory/funds/stock, convex scarcity+convoy disruption price, region outpost ownership, repeat-kill PvP reward, JSON round-trip save v5/legacy migration, server-bound LAN intents, economy reputation ile CombatAuthority runtime hostility (NPC ve oyuncu karşılıklı, faction-safe), bootstrap wiring.
+- **Henüz doğrulanmamış:** Android cihazda uzun LAN ekonomi drift, gerçek market UI, far-field olayının markete otomatik bağı, company/crew ve bounty/intel. Görsel asset/sprite üretimi bu dilime bağımlı değildir; eski Android smoke fiziksel cihaz retesti `not_run`. PRG-05 `active` kalır, PRG-06 `not_started`.

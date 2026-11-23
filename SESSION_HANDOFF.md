@@ -15,7 +15,7 @@
 - Kaynak sprite ZIP arşivleri exporttan çıkarıldı; APK içinde bulunmuyor.
 - APK boyutunun ana bileşeni Godot debug engine: `libgodot_android.so` = `76181608` byte.
 - Fiziksel Android yeni-build doğrulaması: **awaiting_retest / not_run**
-- PRG-05: **not_started**
+- PRG-05: **active**; 400/400 CI-doğrulanmış ilk ekonomi/diplomasi dilimi (`6140a383ff47b354968cf2966bec2686f5d6d28d`)
 
 ## Android smoke hotfix
 
@@ -25,7 +25,7 @@ Exact SHA üzerinde full GUT ve mevcut VS/CORE/AI/NET regresyonları, Linux expo
 
 ## Sonraki kapı
 
-Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi tekrar yapılmalıdır. Bu cihaz kanıtı tamamlanana kadar yalnız cihaz sonucu `awaiting_retest / not_run` kalır. PRG-05 ayrı kanonik görev açılmadan başlatılmaz.
+Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi tekrar yapılmalıdır. Bu cihaz kanıtı tamamlanana kadar yalnız cihaz sonucu `awaiting_retest / not_run` kalır. PRG-05 kanonik Beyin görevi `tasks/seacraft-prg05-faction-economy-trade-20261123.md` resmî motorla açıldı; dünya olayı entegrasyonu, company/crew ve gerçek Android LAN ekonomi drift ölçümü açık. PRG-06 başlamadı.
 
 
 ## Sprite üretim handoff — SC-07 / radial kaynak standardı
@@ -42,3 +42,11 @@ Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi
 - Kanonik renk hattı: `sprite_normalize.py → seacraft_showlook.py --stage v3 → final PNG/atlas`.
 - SC-07 final oyun hücresi: 224×224; atlas sırası `N, NE, E, SE / S, SW, W, NW`.
 - Bu sprite işi PRG-04/PRG-05 gameplay görev durumunu değiştirmez; `AKTIF_GOREV.md` kapalı PRG-04 kaydı olarak bırakıldı.
+
+
+## PRG-05 kodlama checkpoint — 2026-11-23
+
+- Exact kod SHA: `6140a383ff47b354968cf2966bec2686f5d6d28d`; [CI 45232141806](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45232141806) **success**, GUT **400/400**, PRG-05 **6/6**, NET04 gerçek süreç testleri geçti.
+- Android artifact ID `14847088562`, ZIP SHA-256 `928953d72fc793210202746b3861f8ebf45642ebcf7e72a0b7779ea655e83290`; Linux artifact ID `14846294929`, ZIP SHA-256 `f338c78a43b7b226792fc22482f438ed310b2b15367109f32617d9e899c6244b`; ikisi de authenticated readback geçmiştir.
+- Kod: sunucu yetkili faction/reputation, piyasa fiyat/stok, atomik al/sat, konvoy kayıp etki API'si, karakol sahipliği, tekrarlı PvP ödül azaltımı; economy save v5; runtime CombatAuthority dinamik faction/reputation hostility ve canlı safe-zone kontrollerini kullanır. Client fiyat/owner belirleyemez.
+- **PRG-05 açık:** far-field/NPC convoy world event adaptörü, market içerikleri ve Android UI, bounty/intel, company/crew, uzun LAN ekonomi drift gerçek cihaz gözlemi. Sprite üretimi bağımsız; PRG-06'ya geçilmedi. Android gameplay smoke fiziksel cihaz retesti halen `not_run`.
