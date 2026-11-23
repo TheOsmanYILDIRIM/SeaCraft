@@ -1,0 +1,56 @@
+name: SeaCraft Procedural 3D Rig Library (Three.js)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/procedural_sails_three/**'
+      - '.github/workflows/procedural-rigs-three.yml'
+  pull_request:
+    paths:
+      - 'tools/procedural_sails_three/**'
+      - '.github/workflows/procedural-rigs-three.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  generate-render-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: tools/procedural_sails_three
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual Three.js and CPU GLB/preview dependencies
+        run: |
+          npm install --no-audit --no-fund --package-lock=false
+          python -m pip install --no-cache-dir 'numpy>=1.26,<3' 'pillow>=10,<13' 'opencv-python-headless>=4.9,<5' 'trimesh>=4,<5'
+      - name: Validate 33 parametrized mesh families and original Three.js scene graph
+        run: |
+          npm run test:geometry
+          npm run test:three
+      - name: Produce 6 + 12 + 15 source geometries once
+        run: npm run models
+      - name: Clay reference rasterization, 138 RGBA images and 33 GLB files
+        run: npm run gallery
+      - name: Strict artifact readback and no-clipping QA
+        run: npm run verify
+      - name: Record exact source SHA
+        run: |
+          printf '%s\n' "$GITHUB_SHA" > output/COMMIT_SHA.txt
+          find output/models output/png output/atlas output/gallery -type f -print0 | sort -z | xargs -0 sha256sum > output/SHA256SUMS.txt
+      - name: Upload verifiable procedural output
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaCraft-Procedural-ThreeJS-${{ github.sha }}
+          path: tools/procedural_sails_three/output
+          if-no-files-found: error
+          retention-days: 30

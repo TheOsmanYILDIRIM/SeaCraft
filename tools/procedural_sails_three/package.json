@@ -1,0 +1,14 @@
+{
+  "name":"seacraft-procedural-3d-rigging",
+  "private":true,
+  "type":"module",
+  "version":"1.0.0",
+  "scripts":{
+    "models":"node generate_models.mjs",
+    "test:geometry":"node --test tests/geometry.test.mjs",
+    "test:three":"node --test tests/three.test.mjs",
+    "gallery":"python3 render_reference.py --mode all",
+    "verify":"python3 verify_artifact.py"
+  },
+  "dependencies":{"three":"0.186.1"}
+}

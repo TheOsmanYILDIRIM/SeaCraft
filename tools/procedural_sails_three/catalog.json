@@ -1,0 +1,1161 @@
+{
+  "schema": "seacraft.procedural_rig.v1",
+  "units": "SeaCraft artist-reference world units, bow +Y, Z up, ship origin at waterline center",
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW"
+  ],
+  "camera": {
+    "elevation_deg": 55,
+    "roll_deg": 0,
+    "orthographic_scale": 12,
+    "resolution": 512
+  },
+  "primitive": {
+    "A_square": {
+      "name": "A — Square Sail",
+      "length": 3.8,
+      "bow_y": 1.9,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.5,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.79,
+              "width": 2.5,
+              "height": 1.75,
+              "billow": 0.24
+            }
+          ]
+        }
+      ]
+    },
+    "B_gaff": {
+      "name": "B — Gaff Sail",
+      "length": 4.1,
+      "bow_y": 2.05,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "level": 0.76,
+              "gaff_length": 2.1,
+              "boom_length": 2.15,
+              "gaff_angle": 22,
+              "billow": 0.19
+            }
+          ]
+        }
+      ]
+    },
+    "C_lateen": {
+      "name": "C — Lateen Sail",
+      "length": 4.4,
+      "bow_y": 2.2,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "level": 0.62,
+              "yard_length": 4.4,
+              "billow": 0.2
+            }
+          ]
+        }
+      ]
+    },
+    "D_lug": {
+      "name": "D — Lug Sail",
+      "length": 3.7,
+      "bow_y": 1.85,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lug",
+              "level": 0.72,
+              "yard_length": 3.25,
+              "billow": 0.22
+            }
+          ]
+        }
+      ]
+    },
+    "E_jib": {
+      "name": "E — Jib / Staysail",
+      "length": 4.3,
+      "bow_y": 2.15,
+      "masts": [
+        {
+          "y": -0.9,
+          "height": 3.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "jib",
+              "head_level": 0.83,
+              "anchor_y": 2.1,
+              "billow": 0.15
+            }
+          ]
+        }
+      ]
+    },
+    "F_bermuda": {
+      "name": "F — Bermuda Sail",
+      "length": 4.2,
+      "bow_y": 2.1,
+      "masts": [
+        {
+          "y": 0,
+          "height": 4.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "bermuda",
+              "boom_length": 2.65,
+              "billow": 0.22
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "rigs": {
+    "R01": {
+      "name": "Single Lug",
+      "length": 3.7,
+      "bow_y": 1.85,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lug"
+            }
+          ]
+        }
+      ]
+    },
+    "R02": {
+      "name": "Gaff + Jib",
+      "length": 4.6,
+      "bow_y": 2.3,
+      "masts": [
+        {
+          "y": -0.25,
+          "height": 3.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff"
+            },
+            {
+              "type": "jib"
+            }
+          ]
+        }
+      ]
+    },
+    "R03": {
+      "name": "Gaff + Topsquare + 2 Jibs",
+      "length": 5.2,
+      "bow_y": 2.6,
+      "masts": [
+        {
+          "y": -0.3,
+          "height": 4.6,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff"
+            },
+            {
+              "type": "square",
+              "level": 0.91,
+              "width": 1.9,
+              "height": 0.7
+            },
+            {
+              "type": "jib",
+              "head_level": 0.82,
+              "anchor_y": 2.35
+            },
+            {
+              "type": "jib",
+              "head_level": 0.64,
+              "anchor_y": 2.6
+            }
+          ]
+        }
+      ]
+    },
+    "R04": {
+      "name": "Single Square",
+      "length": 4.0,
+      "bow_y": 2.0,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.5,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square"
+            }
+          ]
+        }
+      ]
+    },
+    "R05": {
+      "name": "Two Square Tiers",
+      "length": 4.6,
+      "bow_y": 2.3,
+      "masts": [
+        {
+          "y": 0,
+          "height": 4.5,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.85,
+              "width": 2.1,
+              "height": 1.3
+            },
+            {
+              "type": "square",
+              "level": 0.53,
+              "width": 2.7,
+              "height": 1.4
+            }
+          ]
+        }
+      ]
+    },
+    "R06": {
+      "name": "Single Lateen",
+      "length": 4.4,
+      "bow_y": 2.2,
+      "masts": [
+        {
+          "y": 0,
+          "height": 3.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen"
+            }
+          ]
+        }
+      ]
+    },
+    "R07": {
+      "name": "Two Lateen Masts",
+      "length": 6.0,
+      "bow_y": 3.0,
+      "masts": [
+        {
+          "y": 1.3,
+          "height": 3.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen"
+            }
+          ]
+        },
+        {
+          "y": -1.6,
+          "height": 3.4,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 3.25
+            }
+          ]
+        }
+      ]
+    },
+    "R08": {
+      "name": "Square + Lateen",
+      "length": 6.0,
+      "bow_y": 3.0,
+      "masts": [
+        {
+          "y": 1.4,
+          "height": 4.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square"
+            }
+          ]
+        },
+        {
+          "y": -1.5,
+          "height": 3.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen"
+            }
+          ]
+        }
+      ]
+    },
+    "R09": {
+      "name": "Square + Square + Lateen",
+      "length": 7.4,
+      "bow_y": 3.7,
+      "masts": [
+        {
+          "y": 2.3,
+          "height": 4.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square"
+            }
+          ]
+        },
+        {
+          "y": 0,
+          "height": 4.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square"
+            }
+          ]
+        },
+        {
+          "y": -2.5,
+          "height": 3.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen"
+            }
+          ]
+        }
+      ]
+    },
+    "R10": {
+      "name": "Multiple Squares + Gaff",
+      "length": 6.5,
+      "bow_y": 3.25,
+      "masts": [
+        {
+          "y": 1.6,
+          "height": 4.6,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 2.3,
+              "height": 1.1
+            },
+            {
+              "type": "square",
+              "level": 0.57,
+              "width": 2.8,
+              "height": 1.25
+            }
+          ]
+        },
+        {
+          "y": -1.6,
+          "height": 4.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff"
+            }
+          ]
+        }
+      ]
+    },
+    "R11": {
+      "name": "Tiered Squares + Gaff",
+      "length": 8.0,
+      "bow_y": 4.0,
+      "masts": [
+        {
+          "y": 2.5,
+          "height": 4.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 2.3,
+              "height": 1.1
+            },
+            {
+              "type": "square",
+              "level": 0.57,
+              "width": 3.0,
+              "height": 1.4
+            }
+          ]
+        },
+        {
+          "y": 0.0,
+          "height": 5.2,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.89,
+              "width": 2.45,
+              "height": 1.3
+            },
+            {
+              "type": "square",
+              "level": 0.56,
+              "width": 3.15,
+              "height": 1.5
+            }
+          ]
+        },
+        {
+          "y": -2.6,
+          "height": 4.0,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff"
+            }
+          ]
+        }
+      ]
+    },
+    "R12": {
+      "name": "Two Raked Triangles + Jib",
+      "length": 6.4,
+      "bow_y": 3.2,
+      "masts": [
+        {
+          "y": 1.1,
+          "height": 4.0,
+          "lean": 10,
+          "broken": false,
+          "sails": [
+            {
+              "type": "bermuda"
+            },
+            {
+              "type": "jib",
+              "anchor_y": 3.1,
+              "head_level": 0.79
+            }
+          ]
+        },
+        {
+          "y": -1.7,
+          "height": 4.5,
+          "lean": 13,
+          "broken": false,
+          "sails": [
+            {
+              "type": "bermuda"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "ships": {
+    "SC-01": {
+      "name": "Sis İğnesi",
+      "length": 2.3,
+      "bow_y": 1.15,
+      "masts": [
+        {
+          "y": 0,
+          "height": 2.45,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lug",
+              "yard_length": 2.7
+            }
+          ]
+        }
+      ]
+    },
+    "SC-02": {
+      "name": "Kül Dikişi",
+      "length": 2.75,
+      "bow_y": 1.375,
+      "masts": [
+        {
+          "y": -0.3,
+          "height": 2.85,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 1.7,
+              "boom_length": 1.85
+            },
+            {
+              "type": "jib",
+              "anchor_y": 1.38
+            }
+          ]
+        }
+      ]
+    },
+    "SC-03": {
+      "name": "Tuz Ambarı",
+      "length": 4.35,
+      "bow_y": 2.175,
+      "masts": [
+        {
+          "y": 1.35,
+          "height": 2.55,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 1.7,
+              "height": 1.05
+            }
+          ]
+        },
+        {
+          "y": -0.15,
+          "height": 2.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 1.9,
+              "height": 1.1
+            }
+          ]
+        },
+        {
+          "y": -1.6,
+          "height": 2.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 2.6
+            }
+          ]
+        }
+      ]
+    },
+    "SC-04": {
+      "name": "Yarık Çene",
+      "length": 4.9,
+      "bow_y": 2.45,
+      "masts": [
+        {
+          "y": 1.2,
+          "height": 3.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.85,
+              "width": 2.0,
+              "height": 1.15
+            },
+            {
+              "type": "square",
+              "level": 0.5,
+              "width": 2.5,
+              "height": 1.2
+            }
+          ]
+        },
+        {
+          "y": -1.45,
+          "height": 3.5,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.78,
+              "width": 2,
+              "height": 1.1
+            },
+            {
+              "type": "gaff",
+              "gaff_length": 1.3,
+              "boom_length": 1.3,
+              "level": 0.43
+            }
+          ]
+        }
+      ]
+    },
+    "SC-05": {
+      "name": "Kör Mühür",
+      "length": 3.6,
+      "bow_y": 1.8,
+      "masts": [
+        {
+          "y": -0.2,
+          "height": 4.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 2.45,
+              "boom_length": 2.3,
+              "level": 0.65
+            },
+            {
+              "type": "square",
+              "level": 0.92,
+              "width": 1.8,
+              "height": 0.75
+            },
+            {
+              "type": "jib",
+              "anchor_y": 1.75,
+              "head_level": 0.83
+            },
+            {
+              "type": "jib",
+              "anchor_y": 1.9,
+              "head_level": 0.62
+            }
+          ]
+        }
+      ]
+    },
+    "SC-06": {
+      "name": "Perçin Hattı",
+      "length": 4.6,
+      "bow_y": 2.3,
+      "masts": [
+        {
+          "y": 1.2,
+          "height": 4.1,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 1.7,
+              "height": 1.1
+            },
+            {
+              "type": "square",
+              "level": 0.55,
+              "width": 2.0,
+              "height": 1.25
+            }
+          ]
+        },
+        {
+          "y": -1.4,
+          "height": 4.4,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 2.15,
+              "level": 0.7
+            },
+            {
+              "type": "square",
+              "level": 0.93,
+              "width": 1.55,
+              "height": 0.65
+            }
+          ]
+        }
+      ]
+    },
+    "SC-07": {
+      "name": "Akıntı Bıçağı",
+      "length": 5.65,
+      "bow_y": 2.825,
+      "masts": [
+        {
+          "y": 1.25,
+          "height": 3.65,
+          "lean": 12,
+          "broken": false,
+          "sails": [
+            {
+              "type": "bermuda",
+              "boom_length": 2.2
+            },
+            {
+              "type": "jib",
+              "anchor_y": 2.85,
+              "head_level": 0.58
+            }
+          ]
+        },
+        {
+          "y": -1.5,
+          "height": 3.9,
+          "lean": 14,
+          "broken": false,
+          "sails": [
+            {
+              "type": "bermuda",
+              "boom_length": 2.4
+            }
+          ]
+        }
+      ]
+    },
+    "SC-08": {
+      "name": "Demir Mezar",
+      "length": 6.7,
+      "bow_y": 3.35,
+      "masts": [
+        {
+          "y": 2.1,
+          "height": 4.9,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 2.6,
+              "height": 1.3
+            },
+            {
+              "type": "square",
+              "level": 0.55,
+              "width": 3.2,
+              "height": 1.5
+            }
+          ]
+        },
+        {
+          "y": 0,
+          "height": 5.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.88,
+              "width": 2.8,
+              "height": 1.35
+            },
+            {
+              "type": "square",
+              "level": 0.55,
+              "width": 3.4,
+              "height": 1.6
+            }
+          ]
+        },
+        {
+          "y": -2.4,
+          "height": 4.25,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.84,
+              "width": 2.35,
+              "height": 1.15
+            },
+            {
+              "type": "gaff",
+              "gaff_length": 1.5,
+              "boom_length": 1.5,
+              "level": 0.47
+            }
+          ]
+        }
+      ]
+    },
+    "SC-09": {
+      "name": "Kör Havan",
+      "length": 4.25,
+      "bow_y": 2.125,
+      "masts": [
+        {
+          "y": -0.3,
+          "height": 2.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 1.65,
+              "height": 0.85
+            }
+          ]
+        },
+        {
+          "y": -1.6,
+          "height": 2.35,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 2.35
+            }
+          ]
+        }
+      ]
+    },
+    "SC-10": {
+      "name": "Kanca Ağzı",
+      "length": 5.1,
+      "bow_y": 2.55,
+      "masts": [
+        {
+          "y": 1.0,
+          "height": 2.75,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 3.1,
+              "level": 0.59
+            }
+          ]
+        },
+        {
+          "y": -1.45,
+          "height": 2.65,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 2.4,
+              "level": 0.55
+            }
+          ]
+        }
+      ]
+    },
+    "SC-11": {
+      "name": "Dikiş Feneri",
+      "length": 4.4,
+      "bow_y": 2.2,
+      "masts": [
+        {
+          "y": 1.5,
+          "height": 2.85,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 1.95,
+              "height": 1.1
+            }
+          ]
+        },
+        {
+          "y": -1.6,
+          "height": 2.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 1.25,
+              "boom_length": 1.1,
+              "level": 0.55
+            }
+          ]
+        }
+      ],
+      "clear_zone": {
+        "center_y": [
+          -0.85,
+          0.85
+        ],
+        "description": "reserved for central A-frame winch"
+      }
+    },
+    "SC-12": {
+      "name": "Kervan Kandili",
+      "length": 5.9,
+      "bow_y": 2.95,
+      "masts": [
+        {
+          "y": 1.9,
+          "height": 3.65,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 2.9,
+              "height": 1.7
+            }
+          ]
+        },
+        {
+          "y": 0,
+          "height": 3.85,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 3.15,
+              "height": 1.8
+            }
+          ]
+        },
+        {
+          "y": -2.0,
+          "height": 3.55,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 4.0
+            }
+          ]
+        }
+      ]
+    },
+    "SC-13": {
+      "name": "Kara Mihver",
+      "length": 7.2,
+      "bow_y": 3.6,
+      "masts": [
+        {
+          "y": 2.25,
+          "height": 5.35,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 2.25,
+              "height": 1.25
+            },
+            {
+              "type": "square",
+              "level": 0.55,
+              "width": 2.65,
+              "height": 1.5
+            }
+          ]
+        },
+        {
+          "y": -0.2,
+          "height": 5.7,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "level": 0.87,
+              "width": 2.35,
+              "height": 1.35
+            },
+            {
+              "type": "square",
+              "level": 0.55,
+              "width": 2.8,
+              "height": 1.5
+            }
+          ]
+        },
+        {
+          "y": -2.55,
+          "height": 5.2,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 2.5,
+              "boom_length": 2.35,
+              "level": 0.75
+            },
+            {
+              "type": "square",
+              "level": 0.93,
+              "width": 1.9,
+              "height": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    "SC-14": {
+      "name": "Dip Çanı",
+      "length": 9.45,
+      "bow_y": 4.725,
+      "masts": [
+        {
+          "y": 3.1,
+          "height": 4.95,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 2.3,
+              "height": 1.55
+            }
+          ]
+        },
+        {
+          "y": 1.05,
+          "height": 5.3,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 2.6,
+              "height": 1.65
+            }
+          ]
+        },
+        {
+          "y": -1.5,
+          "height": 5.65,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 3.35,
+              "height": 1.8
+            }
+          ]
+        },
+        {
+          "y": -3.7,
+          "height": 4.35,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "gaff",
+              "gaff_length": 1.85,
+              "boom_length": 1.7,
+              "level": 0.55
+            }
+          ]
+        }
+      ]
+    },
+    "SC-15": {
+      "name": "Solgun Omurga",
+      "length": 6.15,
+      "bow_y": 3.075,
+      "masts": [
+        {
+          "y": 2.05,
+          "height": 4.1,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "square",
+              "width": 2.55,
+              "height": 1.25,
+              "damaged": true
+            }
+          ]
+        },
+        {
+          "y": 0,
+          "height": 1.55,
+          "lean": 0,
+          "broken": true,
+          "sails": []
+        },
+        {
+          "y": -2.25,
+          "height": 3.8,
+          "lean": 0,
+          "broken": false,
+          "sails": [
+            {
+              "type": "lateen",
+              "yard_length": 3.55,
+              "damaged": true
+            }
+          ]
+        }
+      ],
+      "damage": "wreck",
+      "notes": "middle mast stump must carry zero sails"
+    }
+  }
+}
