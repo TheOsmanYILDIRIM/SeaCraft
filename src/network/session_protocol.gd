@@ -113,11 +113,14 @@ const PROGRESSION_GATE_COMPLETE := InventoryState.OP_GATE_COMPLETE
 const PROGRESSION_CHALLENGE_EVENT := InventoryState.OP_CHALLENGE_EVENT
 const QUEST_ACCEPT := InventoryState.OP_QUEST_ACCEPT
 const QUEST_TURN_IN := InventoryState.OP_QUEST_TURN_IN
+const MARKET_BUY := InventoryState.OP_MARKET_BUY
+const MARKET_SELL := InventoryState.OP_MARKET_SELL
 const PROGRESSION_INTENTS := [
 	INVENTORY_TRANSFER, INVENTORY_EQUIP, INVENTORY_UNEQUIP, INVENTORY_SOCKET_INSERT, INVENTORY_SOCKET_UPGRADE, INVENTORY_PRESET_APPLY,
 	PROGRESSION_CRAFT, PROGRESSION_SALVAGE, PROGRESSION_SHIP_UPGRADE, PROGRESSION_CORE_INSERT, PROGRESSION_CORE_REMOVE, PROGRESSION_CORE_REPLACE, PROGRESSION_TROPHY_UNLOCK,
 	PROGRESSION_SKILL_SPEND, PROGRESSION_RESPEC, PROGRESSION_GATE_COMPLETE, PROGRESSION_CHALLENGE_EVENT,
 	QUEST_ACCEPT, QUEST_TURN_IN,
+	MARKET_BUY, MARKET_SELL,
 ]
 const AUTHORITY_INTENTS := [SELECT_COMBAT_TARGET, FIRE_WEAPON, PICKUP_LOOT] + PROGRESSION_INTENTS
 const NPC_SEMANTIC_KEYS := ["ai_state_id", "ai_intent_id"]
@@ -145,6 +148,8 @@ const NETWORK_INTENTS := [
 	PROGRESSION_CHALLENGE_EVENT,
 	QUEST_ACCEPT,
 	QUEST_TURN_IN,
+	MARKET_BUY,
+	MARKET_SELL,
 	BASELINE_ACK,
 	COMMANDS.MOVE_TO_WORLD_POSITION,
 	COMMANDS.SELECT_WORLD_POSITION,
@@ -654,6 +659,9 @@ static func _validate_intent_payload(intent_type: String, payload: Dictionary) -
 				return REJECT_MALFORMED_PAYLOAD
 		QUEST_ACCEPT, QUEST_TURN_IN:
 			if not _has_exact_keys(payload, ["transaction_id", "quest_id", "npc_id"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["quest_id"]) or not valid_stable_id(payload["npc_id"]):
+				return REJECT_MALFORMED_PAYLOAD
+		MARKET_BUY, MARKET_SELL:
+			if not _has_exact_keys(payload, ["transaction_id", "market_id", "quantity"]) or not valid_transaction_id(str(payload["transaction_id"])) or not valid_stable_id(payload["market_id"]) or not _is_int(payload["quantity"]) or int(payload["quantity"]) <= 0 or int(payload["quantity"]) > Prg05EconomyState.MAX_QUANTITY:
 				return REJECT_MALFORMED_PAYLOAD
 		BASELINE_ACK:
 			if not _has_exact_keys(payload, ["baseline_id"]) or not valid_stable_id(payload["baseline_id"]) or not str(payload["baseline_id"]).begins_with("baseline."):

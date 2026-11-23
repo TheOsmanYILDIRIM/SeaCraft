@@ -312,6 +312,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _loot.inventory_state().configure_prg04():
 		push_error("PRG-04 quest authority setup failed")
 		return
+	if not _loot.inventory_state().configure_prg05():
+		push_error("PRG-05 economy setup failed")
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return

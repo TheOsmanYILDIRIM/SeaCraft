@@ -24,7 +24,7 @@ env:
 
 jobs:
   foundation:
-    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 + NET-01 + NET-02 + NET-03 + NET-04 + PRG-01 + PRG-02 + PRG-03 + PRG-04 verification and exports
+    name: FND-01 + FND-02 + FND-03 + FND-04 + FND-05 + FND-06 + VS-01 + VS-02 + VS-03 + VS-04 + CORE-01 + CORE-02 + CORE-03 + CORE-04 + AI-01 + AI-02 + AI-03 + AI-04 + NET-01 + NET-02 + NET-03 + NET-04 + PRG-01 + PRG-02 + PRG-03 + PRG-04 + PRG-05 verification and exports
     runs-on: ubuntu-24.04
     timeout-minutes: 45
 
@@ -120,7 +120,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT full suite through PRG-04
+      - name: GUT full suite through PRG-05
         shell: bash
         run: |
           set -euo pipefail
@@ -146,6 +146,7 @@ jobs:
           grep -Fq "test_prg02_progression.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg03_progression.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg04_quest.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_prg05_economy.gd" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"
@@ -162,6 +163,7 @@ jobs:
           python3 tools/ci/verify_prg02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_prg03_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_prg04_suite.py "$RUNNER_TEMP/gut.log"
+          python3 tools/ci/verify_prg05_suite.py "$RUNNER_TEMP/gut.log"
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script|Ignoring script|Failing Tests[[:space:]]+[1-9]|([Oo]rphans?[[:space:]]+[1-9][0-9]*|[1-9][0-9]*[[:space:]]+[Oo]rphans?)' "$RUNNER_TEMP/gut.log"; then
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1

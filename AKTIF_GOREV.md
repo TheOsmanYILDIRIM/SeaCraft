@@ -1,3 +1,13 @@
+# AKTİF GÖREV — PRG-05 · faction ve ekonomi (devam ediyor)
+
+Başlangıç: a73633beb1dfec0d70c1b4e640bfd439ff823ede; yalnız `main`; Godot 4.7.2. Kaynak: `GELISTIRME_GOREV_PLANI.md` PRG-05. PRG-04 kapalı; Android smoke hotfix gerçek cihaz retesti ayrı `awaiting_retest`.
+
+**Bu dilim:** host-owned faction relations/reputation, market buy/sell, convoy supply etkisi, outpost ownership, repeat-kill PvP diminishing returns; inventory v5 save/load; LAN client yalnız market_id/quantity ile trade intent gönderebilir. Gemi sprite'larından bağımsızdır.
+
+**Açık PRG-05 işler:** NPC/convoy domain event adaptörleri, company/crew, AI hostility bağlama, sahici runtime market content + mobil UI, tam LAN cihaz/Android doğrulama. PRG-06'ya geçilmez. CI ve artifact readback gerçek doğrulama olmadan görev kapanmaz.
+
+---
+
 # AKTİF GÖREV — PRG-04
 
 > Bu dosya SeaCraft'ın kanonik aktif uygulama briefidir. Sohbette uzun brief tekrarlanmaz.

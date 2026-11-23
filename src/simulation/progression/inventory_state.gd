@@ -4,8 +4,9 @@ extends RefCounted
 const PRG02 := preload("res://src/simulation/progression/prg02_progression_state.gd")
 const PRG03 := preload("res://src/simulation/progression/prg03_progression_state.gd")
 const PRG04 := preload("res://src/simulation/progression/prg04_quest_state.gd")
+const PRG05 := preload("res://src/simulation/progression/prg05_economy_state.gd")
 
-const VERSION := 4
+const VERSION := 5
 const MAX_QUANTITY := 2147483647
 const MAX_ITEMS := 128
 const MAX_EQUIPMENT_SLOTS := 16
@@ -33,6 +34,8 @@ const OP_GATE_COMPLETE := PRG03.OP_GATE_COMPLETE
 const OP_CHALLENGE_EVENT := PRG03.OP_CHALLENGE_EVENT
 const OP_QUEST_ACCEPT := PRG04.OP_ACCEPT
 const OP_QUEST_TURN_IN := PRG04.OP_TURN_IN
+const OP_MARKET_BUY := PRG05.OP_BUY
+const OP_MARKET_SELL := PRG05.OP_SELL
 
 var _catalog: Dictionary = {}
 var _containers: Dictionary = {}
@@ -48,6 +51,8 @@ var _prg03
 var _pending_prg03_state: Dictionary = {}
 var _prg04
 var _pending_prg04_state: Dictionary = {}
+var _prg05
+var _pending_prg05_state: Dictionary = {}
 
 func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 1000000.0) -> bool:
 	if not SectorIds.valid(owner_id) or max_slots <= 0 or max_slots > MAX_ITEMS or not is_finite(max_weight) or max_weight < 0.0 or _containers.has(owner_id):
@@ -61,6 +66,8 @@ func bind_owner(owner_id: String, max_slots: int = 64, max_weight: float = 10000
 	if _prg03 != null and not _prg03.bind_owner(owner_id):
 		return false
 	if _prg04 != null and not _prg04.bind_owner(owner_id):
+		return false
+	if _prg05 != null and not _prg05.bind_owner(owner_id):
 		return false
 	return true
 
@@ -80,6 +87,8 @@ func reassign_owner(from_id: String, to_id: String) -> bool:
 	if _prg03 != null and not _prg03.reassign_owner(from_id, to_id):
 		return false
 	if _prg04 != null and not _prg04.reassign_owner(from_id, to_id):
+		return false
+	if _prg05 != null and not _prg05.reassign_owner(from_id, to_id):
 		return false
 	return true
 
@@ -281,6 +290,60 @@ static func empty_quest_journal_snapshot(owner_id: String) -> Dictionary:
 static func validate_quest_journal_snapshot(value: Variant) -> bool:
 	return PRG04.validate_journal(value)
 
+func configure_prg05() -> bool:
+	if _prg05 != null:
+		return false
+	_prg05 = PRG05.new(self)
+	for owner_id in _containers:
+		if not _prg05.bind_owner(str(owner_id)):
+			_prg05 = null
+			return false
+	if not _pending_prg05_state.is_empty():
+		if not _prg05.restore_state(_pending_prg05_state):
+			_prg05 = null
+			return false
+		_pending_prg05_state.clear()
+	return true
+
+func register_economy_faction(id: String) -> bool:
+	return _prg05 != null and _prg05.register_faction(id)
+
+func register_economy_market(id: String, faction: String, item: String, sector: String, price: int, stock: int, capacity: int) -> bool:
+	return _prg05 != null and _prg05.register_market(id, faction, item, sector, price, stock, capacity)
+
+func register_economy_outpost(id: String, faction: String) -> bool:
+	return _prg05 != null and _prg05.register_outpost(id, faction)
+
+func set_economy_faction_relation(a: String, b: String, relation: String) -> bool:
+	return _prg05 != null and _prg05.set_relation_authoritative(a, b, relation)
+
+func economy_faction_relation(a: String, b: String) -> String:
+	return _prg05.faction_relation(a, b) if _prg05 != null else FactionRelationResolver.NEUTRAL
+
+func adjust_economy_reputation_authoritative(owner: String, faction: String, event: String, amount: int) -> Dictionary:
+	return _prg05.adjust_reputation_authoritative(owner, faction, event, amount) if _prg05 != null else {"accepted": false}
+
+func grant_economy_currency_authoritative(owner: String, event: String, amount: int) -> Dictionary:
+	return _prg05.grant_currency_authoritative(owner, event, amount) if _prg05 != null else {"accepted": false}
+
+func record_economy_convoy_loss_authoritative(event: String, market: String, amount: int) -> Dictionary:
+	return _prg05.convoy_loss_authoritative(event, market, amount) if _prg05 != null else {"accepted": false}
+
+func capture_economy_outpost_authoritative(event: String, outpost: String, faction: String) -> Dictionary:
+	return _prg05.capture_outpost_authoritative(event, outpost, faction) if _prg05 != null else {"accepted": false}
+
+func record_economy_pvp_kill_authoritative(event: String, killer: String, victim: String, reward: int) -> Dictionary:
+	return _prg05.pvp_kill_authoritative(event, killer, victim, reward) if _prg05 != null else {"accepted": false}
+
+func economy_quote(owner: String, market: String) -> Dictionary:
+	return _prg05.quote(owner, market) if _prg05 != null else {}
+
+func economy_balance(owner: String) -> int:
+	return _prg05.balance(owner) if _prg05 != null else 0
+
+func economy_outpost_owner(outpost: String) -> String:
+	return _prg05.outpost_owner(outpost) if _prg05 != null else ""
+
 func progression_view(owner_id: String) -> Dictionary:
 	if _prg03 == null:
 		return {}
@@ -409,6 +472,7 @@ func progression_snapshot() -> Dictionary:
 		"prg02": _prg02.snapshot_state() if _prg02 != null else PRG02.empty_state(),
 		"prg03": _prg03.snapshot_state() if _prg03 != null else PRG03.empty_state(),
 		"prg04": _prg04.snapshot_state() if _prg04 != null else PRG04.empty_state(),
+		"prg05": _prg05.snapshot_state() if _prg05 != null else PRG05.empty_state(),
 	}
 
 func restore_progression(value: Variant) -> bool:
@@ -429,6 +493,9 @@ func restore_progression(value: Variant) -> bool:
 	elif source_version == 3:
 		state["prg04"] = PRG04.empty_state()
 		state["version"] = VERSION
+	if source_version <= 4:
+		state["prg05"] = PRG05.empty_state()
+		state["version"] = VERSION
 	var prg02_state: Dictionary = state["prg02"]
 	if _prg02 != null:
 		if not _prg02.restore_state(prg02_state):
@@ -447,6 +514,12 @@ func restore_progression(value: Variant) -> bool:
 			return false
 	else:
 		_pending_prg04_state = prg04_state.duplicate(true)
+	var prg05_state: Dictionary = state["prg05"]
+	if _prg05 != null:
+		if not _prg05.restore_state(prg05_state):
+			return false
+	else:
+		_pending_prg05_state = prg05_state.duplicate(true)
 	for owner_id in state["equipment"]:
 		if not _containers.has(owner_id):
 			return false
@@ -470,8 +543,11 @@ static func validate_progression_state(value: Variant, catalog: Dictionary = {})
 	elif version == 3:
 		if state.size() != 7 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")):
 			return false
-	elif version == VERSION:
+	elif version == 4:
 		if state.size() != 8 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")) or not PRG04.validate_state(state.get("prg04")):
+			return false
+	elif version == VERSION:
+		if state.size() != 9 or not PRG02.validate_state(state.get("prg02")) or not PRG03.validate_state(state.get("prg03")) or not PRG04.validate_state(state.get("prg04")) or not PRG05.validate_state(state.get("prg05")):
 			return false
 	else:
 		return false
@@ -516,6 +592,11 @@ func stat_value(owner_id: String, stat_id: String, base_value: float) -> float:
 
 func _execute_uncached(actor_id: String, operation: String, payload: Dictionary) -> Dictionary:
 	var result := {"accepted": false, "reason": "", "operation": operation}
+	if PRG05.supports_operation(operation):
+		if _prg05 == null:
+			result["reason"] = "economy_unavailable"
+			return result
+		return _prg05.execute(actor_id, operation, payload)
 	if PRG04.supports_operation(operation):
 		if _prg04 == null:
 			result["reason"] = "quest_unavailable"
