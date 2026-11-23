@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SeaCraft • Procedural Sail & Rigging 3D</title>
+<script type="importmap">{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}</script>
+<style>
+:root{color-scheme:dark;font:15px system-ui,sans-serif;background:#11161c;color:#e2e7ec}
+*{box-sizing:border-box}body{margin:0;display:grid;grid-template-columns:285px 1fr;height:100dvh}
+aside{background:#1b222b;border-right:1px solid #3a4551;padding:24px;overflow:auto}h1{font-size:20px;margin:0 0 6px}p{font-size:13px;color:#aab8c7;line-height:1.5}
+label{display:block;margin-top:19px;color:#bbc6d1;font-size:13px;font-weight:600}select,input,button{width:100%;margin-top:6px;border-radius:8px;border:1px solid #586777;background:#28323e;color:white;padding:10px;font:inherit}
+button{background:#34526b;cursor:pointer}button:hover{background:#45708b}output{font-size:13px;color:#b3c0cf}
+main{position:relative;min-width:0}canvas{display:block;width:100%;height:100%}#status{position:absolute;bottom:16px;left:20px;right:20px;pointer-events:none;color:#aebdcc;background:#151b22c7;padding:9px 12px;border-radius:6px;font:12px ui-monospace,monospace}
+#fail{color:#ffafb0}code{font-size:12px}
+@media(max-width:720px){body{grid-template-columns:1fr;grid-template-rows:auto 1fr}aside{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:10px}aside h1,aside p{grid-column:span 2;margin:0}aside label{margin:0}main{min-height:55vh}}
+</style></head>
+<body><aside>
+<h1>SeaCraft · 3D Armalar</h1><p>Gerçek 3D mesh · dokusuz clay · 55° ortografik. Kamera ve ışık sabit; yalnız kök yönü değişir.</p>
+<label>Arma grubu<select id="group"><option value="primitive">6 temel yelken</option><option value="rigs">12 arma düzeni</option><option value="ships" selected>15 SeaCraft gemisi</option></select></label>
+<label>Model<select id="preset"></select></label>
+<label>Yön<select id="direction"><option>N</option><option selected>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option></select></label>
+<label>Ortografik ölçek<input id="scale" type="range" min="8" max="20" step="0.5" value="12"></label>
+<label>Model bilgisi<output id="info">—</output></label>
+<button id="glb">Bu modeli GLB indir</button><button id="png">Şeffaf PNG indir</button>
+<p>Modelin direk ve yelkenleri heading değişiminde yeniden üretilmez. Gövde, su, dokular ve sahne zemini yoktur.</p>
+</aside><main id="viewport"><div id="status">3D motor yükleniyor…</div></main>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {buildRig,validateCatalog} from './geometry.mjs';
+import {makeThreeRig,setHeading,makeCamera,makeLights} from './three_adapter.mjs';
+const $=id=>document.getElementById(id),holder=$('viewport');
+const status=$('status');
+const catalog=await (await fetch('./catalog.json')).json();validateCatalog(catalog);
+const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'high-performance'});
+renderer.setClearColor(0x000000,0);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+holder.insertBefore(renderer.domElement,status);
+const scene=new THREE.Scene();makeLights(scene);let rig=null,model=null;
+let camera=makeCamera(1,12);
+function resize(){const w=holder.clientWidth,h=holder.clientHeight;renderer.setSize(w,h,false);
+  const aspect=w/Math.max(1,h),scale=Number($('scale').value);
+  camera.left=-scale*aspect/2;camera.right=scale*aspect/2;camera.top=scale/2;camera.bottom=-scale/2;camera.updateProjectionMatrix();render();}
+function render(){renderer.render(scene,camera);}
+function selectModel(){
+ const group=$('group').value,id=$('preset').value;
+ if(rig){scene.remove(rig);rig.traverse(o=>{if(o.isMesh)o.geometry.dispose();});}
+ model=buildRig(catalog[group][id],id);rig=makeThreeRig(model);scene.add(rig);
+ setHeading(rig,$('direction').value);$('info').textContent=`${model.masts.length} direk · ${model.sails.length} yelken · ${model.meshes.length} mesh`;
+ status.textContent=`${id} · ${model.name} · yaw ${rig.rotation.z.toFixed(4)} rad · sabit 55° ortografik`;
+ render();
+}
+function pick(){let group=catalog[$('group').value];$('preset').innerHTML='';for(let [id,ship] of Object.entries(group)){let o=document.createElement('option');o.value=id;o.textContent=`${id} · ${ship.name}`;$('preset').appendChild(o);}selectModel();}
+$('group').onchange=pick;$('preset').onchange=selectModel;
+$('direction').onchange=()=>{setHeading(rig,$('direction').value);status.textContent=`${model.id} · ${model.name} · yaw ${rig.rotation.z.toFixed(4)} rad`;render();};
+$('scale').oninput=resize;new ResizeObserver(resize).observe(holder);
+function saveBlob(blob,filename){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+$('glb').onclick=async()=>{
+ const exporter=new GLTFExporter();
+ const buffer=await exporter.parseAsync(rig,{binary:true,onlyVisible:true});
+ saveBlob(new Blob([buffer],{type:'model/gltf-binary'}),`${model.id}.glb`);
+};
+$('png').onclick=()=>{renderer.domElement.toBlob(blob=>blob&&saveBlob(blob,`${model.id}_${$('direction').value}.png`),'image/png');};
+pick();resize();
+</script></body></html>
