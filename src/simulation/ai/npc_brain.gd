@@ -35,6 +35,7 @@ var max_tactical_escape_evaluated: int = 0
 var max_tactical_line_of_fire_inspected: int = 0
 
 var _valid := false
+var _runtime_active := false
 var _authority_enabled := true
 var _sunk := false
 var _entity_id := ""
@@ -96,15 +97,17 @@ func _configure(entity_id: String, sector: SectorRuntime, combat: CombatAuthorit
 		tuning: NpcAiTuning, authority_enabled: bool, role_profile: NpcRoleProfile) -> bool:
 	if not SectorIds.valid(entity_id) or sector == null or combat == null or motor == null or tuning == null or not tuning.valid():
 		return false
-	if not combat.has_combatant(entity_id) or not sector.entity_position(entity_id).is_finite():
+	if not combat.has_combatant(entity_id):
 		return false
-	for point in tuning.patrol_waypoints:
-		if not sector.navigation.accessible(point):
-			return false
+	var runtime_active := sector.entity_position(entity_id).is_finite()
+	if runtime_active:
+		for point in tuning.patrol_waypoints:
+			if not sector.navigation.accessible(point):
+				return false
 	var selected_role := role_profile if role_profile != null else DEFAULT_ROLE as NpcRoleProfile
 	if selected_role == null or not selected_role.valid():
 		return false
-	if not _executor.configure(motor, sector.navigation):
+	if runtime_active and not _executor.configure(motor, sector.navigation):
 		return false
 	if not _memory.configure(tuning.memory_max_entries, tuning.memory_expiry_ticks):
 		return false
@@ -119,6 +122,7 @@ func _configure(entity_id: String, sector: SectorRuntime, combat: CombatAuthorit
 	_tuning = tuning.duplicate(true) as NpcAiTuning
 	_role = selected_role.duplicate(true) as NpcRoleProfile
 	_authority_enabled = authority_enabled
+	_runtime_active = runtime_active
 	_destination = _tuning.patrol_waypoints[0]
 	_valid = true
 	return true
@@ -135,11 +139,21 @@ func rebind_sector(sector: SectorRuntime, combat: CombatAuthority) -> bool:
 	_fleet_command_sequence = -1
 	_sense_snapshot.clear()
 	_last_sense_query_tick = -1
-	return _executor.configure(_motor, sector.navigation)
+	_runtime_active = sector.entity_position(_entity_id).is_finite()
+	if not _runtime_active:
+		return true
+	for point in _tuning.patrol_waypoints:
+		if not sector.navigation.accessible(point):
+			_runtime_active = false
+			return false
+	if not _executor.configure(_motor, sector.navigation):
+		_runtime_active = false
+		return false
+	return true
 
 
 func decision_tick(simulation_tick: int) -> bool:
-	if not _valid or not _authority_enabled or _sunk or simulation_tick < 0 or not _combat.is_alive(_entity_id):
+	if not _valid or not _runtime_active or not _authority_enabled or _sunk or simulation_tick < 0 or not _combat.is_alive(_entity_id):
 		return false
 	decision_count += 1
 	_decision_sequence += 1
