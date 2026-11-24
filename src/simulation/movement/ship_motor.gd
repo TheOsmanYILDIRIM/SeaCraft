@@ -112,7 +112,9 @@ func step_authoritative(delta: float, apply_collision: bool = true) -> void:
 			# A nearby target behind the bow can otherwise produce a permanent orbit:
 			# the ship accelerates faster than its available turn radius permits.
 			# Retain bounded forward motion (no pivot-in-place or reverse thrust).
-			if turn_error > PI / 6.0:
+			# Only the near-arrival envelope needs this limit; longer courses
+			# retain the existing maneuvering behavior and combat approach.
+			if turn_error > PI / 6.0 and distance_to_target <= _positive_or_zero(profile.arrival_radius) * 5.0:
 				var turn_rate := deg_to_rad(_positive_or_zero(profile.turn_rate_degrees_per_second))
 				if turn_rate > MIN_POSITIVE:
 					var turning_speed := maxf(_positive_or_zero(profile.minimum_maneuvering_speed), distance_to_target * turn_rate * 0.5)
