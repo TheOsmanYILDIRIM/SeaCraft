@@ -947,7 +947,7 @@ func start_lan_host(game_port: int, discovery_port: int = 0, advertised_address:
 	if not inventory.enable_economy_diplomacy(LAN_REMOTE_PLAYER_ID):
 		return {"accepted": false, "reason": "guest_diplomacy_setup_failed"}
 	var host := ProductionLanHost.new()
-	host.name = "ProductionLanHost"
+	host.name = "LanSession"
 	host.authority_mutated.connect(_on_lan_authority_mutated)
 	add_child(host)
 	var saved_ledger: Dictionary = {}
