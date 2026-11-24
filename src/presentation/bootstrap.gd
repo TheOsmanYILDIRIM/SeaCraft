@@ -18,6 +18,12 @@ const HARPOON_PROFILE := preload("res://src/data/content/harpoon_core02_debug.tr
 const PILOT_MARKET_ID := "market.haven.salvage"
 const PILOT_MARKET_ANCHOR := "anchor.haven_center"
 const PILOT_MARKET_RADIUS := 128.0
+const PILOT_BOUNTY_ID := "bounty.foundation.practice"
+const PILOT_BOUNTY_REWARD := 80
+const PILOT_CONVOY_ID := "entity.haven.supply_convoy"
+const PILOT_CONVOY_FLEET := "fleet.haven.supply_convoy"
+const PILOT_CONVOY_JOB := "job.haven.supply_convoy.v1"
+const PILOT_CONVOY_CARGO := 4
 
 var _combat: CombatAuthority
 var _relations := FactionRelationResolver.new(true)
@@ -46,7 +52,9 @@ var _world_map_open := false
 var _market_panel: Prg05MarketPanel
 var _market_button: Button
 var _market_open := false
-var _market_transaction_sequence := 0
+var _bounty_bridge: Prg05BountyCombatBridge
+var _economy_world: WorldSimulationAuthority
+var _economy_runner: Prg05EconomyWorldRunner
 var _market_anchor: SectorAnchor
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
@@ -183,6 +191,7 @@ func active_sector() -> SectorRuntime:
 func _physics_process(_delta: float) -> void:
 	if _combat != null:
 		_combat.advance_tick()
+		_advance_background_economy()
 	var position_now := _ship_motor.global_position
 	if _diag_physics_left > 0:
 		ANDROID_TRACE.record("physics", "frame=%s pos=%s displacement=%s velocity=%s target=%s collisions=%s" % [
@@ -333,6 +342,10 @@ func _setup_combat(sector: SectorRuntime) -> void:
 			(VS03_LOOT_ITEM as ItemDefinition).stable_id, FoundationSector.HAVEN_ID, 10, 8, 20):
 		push_error("PRG-05 pilot market registration failed")
 		return
+	if not _loot.inventory_state().register_economy_bounty(PILOT_BOUNTY_ID,
+			(PLAYER_SHIP_DEF as ShipDefinition).faction_id, PRACTICE_TARGET, PILOT_BOUNTY_REWARD):
+		push_error("PRG-05 pilot bounty registration failed")
+		return
 	if not _loot.restore_state(_pending_loot_state if not _pending_loot_state.is_empty() else SaveSnapshot.empty_loot_state()):
 		push_error("VS-03 loot restore failed")
 		return
@@ -356,6 +369,14 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _combat.configure_defense(FoundationSector.PLAYER, 0.15, {}, 8.0, 8.0) or not _combat.configure_defense(PRACTICE_TARGET, 0.1, {CoreCombatRules.FIRE: -0.2}, 0.0, 6.0):
 		return
 	if _pending_combat.has("combat") and not _combat.restore_state(_pending_combat["combat"]):
+		return
+	_bounty_bridge = Prg05BountyCombatBridge.new(_combat, _loot.inventory_state(), true)
+	if not _bounty_bridge.bind_bounty(PILOT_BOUNTY_ID, PRACTICE_TARGET):
+		push_error("PRG-05 pilot bounty binding failed")
+		return
+	_bounty_bridge.bounty_awarded.connect(_on_bounty_awarded)
+	if not _setup_background_economy():
+		push_error("PRG-05 background economy setup failed")
 		return
 	if _pending_combat.has("npc_motion"):
 		var motion: Variant = _pending_combat["npc_motion"]
@@ -431,6 +452,67 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	_combat.ship_sunk.connect(_on_ship_sunk)
 	_refresh_npc_state()
 	_refresh_combat_indicator()
+
+
+# This authored pilot is a distinct abstract FAR cargo convoy; the existing
+# practice NPC and player remain owned by the local combat/movement runtime.
+# AI-04 owns the only convoy record, scheduler and travel progress.
+func _setup_background_economy() -> bool:
+	var inventory := _loot.inventory_state()
+	_economy_world = WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(),
+		int(_streams.snapshot_state()["master_seed"]), true)
+	var tick := _combat.simulation_tick()
+	if _pending_combat.has("ai04_world"):
+		if not _economy_world.restore_state(_pending_combat["ai04_world"]):
+			return false
+		if int(_pending_combat["ai04_world"]["current_tick"]) > tick:
+			return false
+	else:
+		var item_id := (VS03_LOOT_ITEM as ItemDefinition).stable_id
+		var cargo := WorldJob.cargo_mission("mission.haven.supply", item_id,
+			PILOT_CONVOY_CARGO, FoundationSector.FOUNDATION_GATE, FoundationSector.HAVEN_ID)
+		var job := WorldJob.create(PILOT_CONVOY_JOB, WorldJob.TRADE, PILOT_CONVOY_FLEET,
+			FoundationSector.FOUNDATION_GATE, FoundationSector.HAVEN_ID, FoundationSector.ID,
+			WorldJob.TRAVEL, "", cargo)
+		var base := {
+			"instance_id": PILOT_CONVOY_ID, "definition_id": (PLAYER_SHIP_DEF as ShipDefinition).stable_id,
+			"entity_kind": "npc_ship", "sector_id": FoundationSector.ID,
+			"position": {"x": 520.0, "y": 0.0},
+			"motion": {"heading": 0.0, "vx": 0.0, "vy": 0.0},
+			"health": 100.0, "alive": true, "route": {}, "cooldowns": {},
+			"inventory": {item_id: PILOT_CONVOY_CARGO}, "payload": {"content_refs": []},
+		}
+		var semantic := FarFieldEntityState.default_semantic(SimulationLOD.FAR,
+			(PLAYER_SHIP_DEF as ShipDefinition).faction_id, PILOT_CONVOY_FLEET, "merchant",
+			job, FoundationSector.HAVEN_ID, 0.001, "low")
+		semantic["last_simulation_tick"] = tick
+		semantic["next_due_tick"] = tick + WorldSimulationAuthority.FAR_INTERVAL_TICKS
+		if not _economy_world.register_record(FarFieldEntityState.attach(base, semantic)):
+			return false
+	_economy_runner = Prg05EconomyWorldRunner.new(_economy_world, inventory,
+		Prg05ConvoyBridge.new(inventory, _fleet_coordinator, true), true)
+	return _economy_runner.bind_far_convoy(PILOT_CONVOY_ID, PILOT_MARKET_ID, tick + WorldSimulationAuthority.FAR_INTERVAL_TICKS)
+
+
+func _advance_background_economy() -> void:
+	if _economy_runner == null or _economy_runner.is_settled(PILOT_CONVOY_ID):
+		return
+	var tick := _combat.simulation_tick()
+	if tick % WorldSimulationAuthority.FAR_INTERVAL_TICKS != 0:
+		return
+	var batch := _economy_runner.advance_tick(tick)
+	if not batch.get("advanced", []).is_empty() or not batch.get("settlements", []).is_empty():
+		_save_service.mark_dirty()
+	if _market_open and not batch.get("settlements", []).is_empty():
+		_refresh_market_quote()
+
+
+func _on_bounty_awarded(result: Dictionary) -> void:
+	if result.get("owner_id") != FoundationSector.PLAYER:
+		return
+	_save_service.mark_dirty()
+	if _market_open:
+		_refresh_market_quote()
 
 
 func _target_at(world_position: Vector2) -> String:
@@ -644,6 +726,12 @@ func _flush_checkpoint() -> void:
 	var authority_state: Dictionary = {"sector_world": _world.snapshot_state(FoundationSector.PLAYER)}
 	if _loot != null:
 		authority_state["progression"] = _loot.inventory_state().progression_snapshot()
+	if _economy_world != null:
+		var economy_world_state := _economy_world.snapshot_state()
+		if economy_world_state.is_empty():
+			save_status = {"status": "economy_world_snapshot_failed"}
+			return
+		authority_state["ai04_world"] = economy_world_state
 	if _combat != null and _npc_brain != null:
 		var combat_state := _combat.snapshot_state()
 		var npc_state := _npc_brain.persistence_state()
@@ -777,6 +865,8 @@ func _refresh_market_quote() -> void:
 	var inventory := _loot.inventory_state()
 	_market_panel.consume_snapshot(PILOT_MARKET_ID, inventory.economy_quote(FoundationSector.PLAYER, PILOT_MARKET_ID),
 		inventory.economy_balance(FoundationSector.PLAYER))
+	_market_panel.consume_bounty_board(inventory.economy_bounty_board(FoundationSector.PLAYER, _combat.simulation_tick()))
+	_market_panel.consume_convoy_status(_economy_runner != null and _economy_runner.is_settled(PILOT_CONVOY_ID))
 
 
 func _on_market_intent(operation: String, payload: Dictionary) -> void:
@@ -790,8 +880,8 @@ func _on_market_intent(operation: String, payload: Dictionary) -> void:
 	var quantity := int(payload["quantity"])
 	if quantity < 1 or quantity > Prg05MarketPanel.MAX_ORDER:
 		return
-	_market_transaction_sequence += 1
-	var transaction_id := "txn.market.ui.%d.%06d" % [int(Time.get_unix_time_from_system()), _market_transaction_sequence]
+	# New local intent IDs cannot collide with a persisted transaction after restart.
+	var transaction_id := "txn.market.ui.%s" % Crypto.new().generate_random_bytes(16).hex_encode()
 	var result := _loot.inventory_state().execute_transaction(FoundationSector.PLAYER, transaction_id, operation,
 		{"market_id": PILOT_MARKET_ID, "quantity": quantity})
 	if result.get("accepted", false):

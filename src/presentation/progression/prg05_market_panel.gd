@@ -13,6 +13,9 @@ var _quantity := 1
 var _summary: Label
 var _amount: Label
 var _feedback: Label
+var _world_status: Label
+var _bounty_status := ""
+var _convoy_status := ""
 
 
 func _ready() -> void:
@@ -35,6 +38,10 @@ func _ready() -> void:
 	_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary.custom_minimum_size.y = 120
 	column.add_child(_summary)
+	_world_status = Label.new()
+	_world_status.add_theme_font_size_override("font_size", 20)
+	_world_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_world_status)
 	var quantity_bar := HBoxContainer.new()
 	column.add_child(quantity_bar)
 	var less := _button("−", 90)
@@ -88,6 +95,28 @@ func consume_snapshot(market_id: String, quote: Dictionary, balance: int) -> boo
 	_balance = balance
 	_refresh()
 	return true
+
+
+func consume_bounty_board(board: Array) -> void:
+	_bounty_status = ""
+	# Only a detached host snapshot; no claim button or client reward mutation.
+	for row in board:
+		if not row is Dictionary or row.get("bounty_id") != "bounty.foundation.practice":
+			continue
+		_bounty_status = "Ödül: %d — %s" % [int(row.get("reward", 0)),
+			"Alındı" if bool(row.get("claimed", false)) else ("Süresi doldu" if bool(row.get("expired", false)) else "Düşman gemisini batır")]
+		break
+	_refresh_world_status()
+
+
+func consume_convoy_status(settled: bool) -> void:
+	_convoy_status = "Liman ikmali: tamamlandı" if settled else "Liman ikmali: konvoy yolda"
+	_refresh_world_status()
+
+
+func _refresh_world_status() -> void:
+	if _world_status != null:
+		_world_status.text = "\n".join(PackedStringArray([_bounty_status, _convoy_status]))
 
 
 func set_quantity(quantity: int) -> bool:

@@ -566,3 +566,111 @@ func test_prg05_haven_market_shared_interaction_geometry() -> void:
 	assert_true(sector.move_entity(P, outside))
 	assert_false(sector.entity_within_interaction_range(P, outside, center, 128.0))
 	print("PRG05_HAVEN_INTERACTION_GEOMETRY_OK")
+
+
+func test_prg05_packed_bootstrap_economy_combat_convoy_market_save_resume() -> void:
+	# Exercise the shipped composition root with an isolated save, not a parallel
+	# fixture economy. Advance the authoritative clock without wall-clock waits.
+	var scene := preload("res://src/presentation/bootstrap.tscn").instantiate()
+	var directory := "user://prg05-bootstrap-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	scene.set("_save_service", SaveService.new(directory))
+	add_child_autofree(scene)
+	scene.set_process(false)
+	scene.set_physics_process(false)
+	var motor := scene.get_node("ShipMotor") as ShipMotor
+	motor.set_physics_process(false)
+	var npc_motor := scene.get("_npc_motor") as ShipMotor
+	assert_not_null(npc_motor)
+	if npc_motor == null:
+		return
+	npc_motor.set_physics_process(false)
+	var combat := scene.get("_combat") as CombatAuthority
+	var loot := scene.get("_loot") as LootAuthority
+	var inventory := loot.inventory_state()
+	var player := FoundationSector.PLAYER
+	var market := "market.haven.salvage"
+	var target := "entity.vs02_sc03"
+	assert_eq(inventory.economy_balance(player), 0)
+	assert_eq(inventory.economy_quote(player, market)["stock"], 8)
+	assert_false(scene._can_access_market())
+	motor.global_position = Vector2(-520.0, 120.0)
+	motor.rotation = 0.0
+	assert_true(scene.active_sector().move_entity(player, motor.global_position))
+	assert_true(combat.select(player, target))
+	for shot in range(16):
+		if not combat.is_alive(target):
+			break
+		for tick in range(80):
+			combat.advance_tick()
+			scene._advance_background_economy()
+		var result := combat.fire(player, 0.0, CombatAuthority.fire_intent(target))
+		assert_true(result.get("accepted", false), str(result))
+	assert_false(combat.is_alive(target))
+	assert_eq(inventory.economy_balance(player), 80)
+	assert_true(inventory.economy_bounty_board(player, combat.simulation_tick())[0]["claimed"])
+	# First save mid-route; preserve actual background scheduler/progress.
+	var runner := scene.get("_economy_runner") as Prg05EconomyWorldRunner
+	assert_false(runner.is_settled("entity.haven.supply_convoy"))
+	scene._flush_checkpoint()
+	var service := scene.get("_save_service") as SaveService
+	var saved := service.load()
+	assert_eq(saved["status"], SaveService.OK_STATUS)
+	if saved["status"] != SaveService.OK_STATUS:
+		return
+	assert_true(SaveSnapshot.authoritative_state(saved["snapshot"]).has("ai04_world"))
+	scene.free()
+	var resumed := preload("res://src/presentation/bootstrap.tscn").instantiate()
+	resumed.set("_save_service", SaveService.new(directory))
+	add_child_autofree(resumed)
+	resumed.set_process(false)
+	resumed.set_physics_process(false)
+	motor = resumed.get_node("ShipMotor") as ShipMotor
+	motor.set_physics_process(false)
+	var resumed_npc := resumed.get("_npc_motor") as ShipMotor
+	assert_not_null(resumed_npc)
+	if resumed_npc == null:
+		return
+	resumed_npc.set_physics_process(false)
+	combat = resumed.get("_combat") as CombatAuthority
+	loot = resumed.get("_loot") as LootAuthority
+	inventory = loot.inventory_state()
+	assert_eq(inventory.economy_balance(player), 80)
+	assert_false(combat.is_alive(target))
+	assert_eq(inventory.economy_quote(player, market)["stock"], 8)
+	for tick in range(2200):
+		combat.advance_tick()
+		resumed._advance_background_economy()
+	assert_eq(inventory.economy_quote(player, market)["stock"], 12)
+	assert_true((resumed.get("_economy_runner") as Prg05EconomyWorldRunner).is_settled("entity.haven.supply_convoy"))
+	# Travel through real sector gates, then use the shipped market panel.
+	motor.global_position = resumed.active_sector().anchor(FoundationSector.FOUNDATION_GATE).position
+	assert_true(resumed.request_sector_transition(FoundationSector.GATE_FOUNDATION_OUTER)["accepted"])
+	motor.global_position = resumed.active_sector().anchor(FoundationSector.OUTER_EAST).position
+	assert_true(resumed.request_sector_transition(FoundationSector.GATE_OUTER_HAVEN)["accepted"])
+	assert_false(resumed._can_access_market())
+	motor.global_position = resumed.active_sector().anchor("anchor.haven_center").position
+	assert_true(resumed.active_sector().move_entity(player, motor.global_position))
+	resumed._refresh_market_access()
+	assert_true(resumed._can_access_market())
+	resumed._toggle_market()
+	var panel := resumed.get_node("UI/Prg05MarketPanel") as Prg05MarketPanel
+	assert_true(panel.visible)
+	var price := int(inventory.economy_quote(player, market)["buy"])
+	assert_true(panel.request_trade(InventoryState.OP_MARKET_BUY, 1))
+	assert_eq(inventory.economy_balance(player), 80 - price)
+	assert_eq(inventory.economy_quote(player, market)["stock"], 11)
+	motor.global_position = Vector2(200.0, 0.0)
+	assert_true(resumed.active_sector().move_entity(player, motor.global_position))
+	resumed._refresh_market_access()
+	assert_false(panel.visible)
+	assert_true(panel.request_trade(InventoryState.OP_MARKET_BUY, 1))
+	assert_eq(inventory.economy_quote(player, market)["stock"], 11)
+	resumed._flush_checkpoint()
+	var loaded := (resumed.get("_save_service") as SaveService).load()
+	assert_eq(loaded["status"], SaveService.OK_STATUS)
+	if loaded["status"] != SaveService.OK_STATUS:
+		return
+	var saved_authority := SaveSnapshot.authoritative_state(loaded["snapshot"])
+	assert_true(saved_authority.has("ai04_world"))
+	assert_eq(int(saved_authority["progression"]["prg05"]["markets"][market]["stock"]), 11)
+	print("PRG05_PACKED_BOOTSTRAP_ECONOMY_OK")

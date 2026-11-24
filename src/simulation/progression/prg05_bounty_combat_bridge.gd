@@ -3,6 +3,8 @@ extends RefCounted
 
 # Uses only CombatAuthority's actual lethal-damage + sunk event pair.
 # Client-supplied damage/kill proofs never reach this adapter.
+signal bounty_awarded(result: Dictionary)
+
 const MAX_BOUND_BOUNTIES := 32
 var _combat: CombatAuthority
 var _economy: InventoryState
@@ -66,3 +68,4 @@ func _on_ship_sunk(target_id: String, sequence: int) -> void:
 			str(bounty_id), target_id, sequence, _combat.simulation_tick())
 		if bool(result.get("accepted", false)):
 			_results.append(result.duplicate(true))
+			bounty_awarded.emit(result.duplicate(true))
