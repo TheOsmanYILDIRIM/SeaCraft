@@ -115,7 +115,9 @@ func test_packed_bootstrap_routes_native_tap_to_player_motor() -> void:
 	var tap := Vector2.ZERO
 	for offset in [Vector2(240, 0), Vector2(-240, 0), Vector2(0, 240), Vector2(0, -240)]:
 		var screen := camera.world_to_screen_position(start + offset)
-		if viewport.get_visible_rect().has_point(screen) and not scene._ui_captures_touch(screen) and scene._target_at(camera.screen_to_world_position(screen)).is_empty():
+		var world_position := camera.screen_to_world_position(screen)
+		if viewport.get_visible_rect().has_point(screen) and not scene._ui_captures_touch(screen) \
+				and scene.active_sector().navigation.accessible(world_position) and scene._target_at(world_position).is_empty():
 			tap = screen
 			break
 	assert_ne(tap, Vector2.ZERO, "fixture must provide a visible empty-water tap")
