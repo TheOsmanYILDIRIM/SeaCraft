@@ -71,6 +71,9 @@ var _lan_join: Button
 var _lan_marker: Polygon2D
 const LAN_GAME_PORT := 17350
 const LAN_DISCOVERY_PORT := 17351
+var _lan_game_port := LAN_GAME_PORT
+var _lan_discovery_port := LAN_DISCOVERY_PORT
+var _lan_advertised_address := "255.255.255.255"
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -1090,7 +1093,8 @@ func _refresh_lan_ui() -> void:
 	var running := bool(lan_host_snapshot().get("running", false))
 	_lan_button.text = "LAN • AÇIK" if running else "LAN"
 	if _lan_marker != null:
-		_lan_marker.visible = running
+		var connected: Dictionary = lan_host_snapshot().get("peer_to_player", {})
+		_lan_marker.visible = running and not connected.is_empty()
 		if running and is_instance_valid(_lan_remote_motor):
 			_lan_marker.global_position = _lan_remote_motor.global_position
 			_lan_marker.rotation = _lan_remote_motor.rotation
@@ -1107,13 +1111,14 @@ func _refresh_lan_ui() -> void:
 		for address in IP.get_local_addresses():
 			if SessionProtocol.valid_ipv4(address) and not address.begins_with("127."):
 				addresses.append(address)
-		_lan_status.text = "Oda açık • %d/2 oyuncu\nIP: %s • Port: %d" % [1 + peers.size(), ", ".join(addresses), LAN_GAME_PORT]
+		_lan_status.text = "Oda açık • %d/2 oyuncu\nIP: %s • Port: %d" % [1 + peers.size(), ", ".join(addresses), _lan_game_port]
 	elif not _lan_status.has_meta("error"):
 		_lan_status.text = "Aynı Wi-Fi ağına bağlanın. Oda açmak için Güvenli Liman pazarına yaklaşın." if not _can_access_market() else "Güvenli Liman • Oda oluşturabilir veya başka odaya katılabilirsiniz."
 
 
 func _lan_travel_pressed() -> void:
-	_lan_status.remove_meta("error")
+	if _lan_status.has_meta("error"):
+		_lan_status.remove_meta("error")
 	var sector := active_sector()
 	var anchor_id := "anchor.haven_center"
 	var gate_id := ""
@@ -1150,12 +1155,13 @@ func _lan_start_pressed() -> void:
 		_lan_status.text = "Yerel ağ iznine izin verin, sonra tekrar deneyin: " + permission
 		_lan_status.set_meta("error", true)
 		return
-	var result := start_lan_host(LAN_GAME_PORT, LAN_DISCOVERY_PORT)
+	var result := start_lan_host(_lan_game_port, _lan_discovery_port, _lan_advertised_address)
 	if not result.get("accepted", false):
 		_lan_status.text = "Oda açılamadı: " + str(result.get("reason", ""))
 		_lan_status.set_meta("error", true)
 		return
-	_lan_status.remove_meta("error")
+	if _lan_status.has_meta("error"):
+		_lan_status.remove_meta("error")
 	# Pilot guests receive a single persisted, authority-owned starting grant.
 	var grant := _loot.inventory_state().grant_economy_currency_authoritative(LAN_REMOTE_PLAYER_ID, "event.lan.pilot.starting_credit", 1000)
 	if not grant.get("accepted", false):
@@ -1235,6 +1241,8 @@ func _refresh_market_access() -> void:
 
 
 func _toggle_market() -> void:
+	if _lan_menu != null and _lan_menu.visible:
+		return
 	if _market_panel == null or _market_button == null:
 		return
 	if not _market_open and not _can_access_market():
@@ -1307,6 +1315,8 @@ func _setup_map_ui() -> void:
 
 
 func _toggle_world_map() -> void:
+	if _lan_menu != null and _lan_menu.visible:
+		return
 	if _market_open:
 		_market_open = false
 		_market_panel.hide()

@@ -3,7 +3,7 @@ extends Node
 const GUEST := "player.lan.guest"
 const HOST_PLAYER := FoundationSector.PLAYER
 const MARKET := "market.haven.salvage"
-const TXN := "txn.prg05.production.market"
+const GUEST_SCENE := preload("res://src/presentation/lan_guest.tscn")
 
 var _client: SessionClient
 var _discovery: LanDiscoveryClient
@@ -12,6 +12,8 @@ var _discovery_port := 0
 var _work := ""
 var _failed := false
 var _first_result: Dictionary = {}
+var _transaction_id := ""
+var _guest_scene: Node
 
 
 func start_case(game_port: int, discovery_port: int, work: String) -> void:
@@ -34,18 +36,12 @@ func _run() -> void:
 	if int(row.get("game_port", 0)) != _game_port or str(row.get("address", "")) != "127.0.0.1":
 		_abort("discovery endpoint")
 		return
-	var bootstrap := Node.new()
-	bootstrap.name = "Bootstrap"
-	add_child(bootstrap)
-	var lan_session := Node.new()
-	lan_session.name = "LanSession"
-	bootstrap.add_child(lan_session)
-	_client = SessionClient.new()
-	_client.name = "Session"
-	lan_session.add_child(_client, true)
-	if _client.join("127.0.0.1", _game_port) != OK:
-		_abort("join")
-		return
+	_guest_scene = GUEST_SCENE.instantiate()
+	add_child(_guest_scene)
+	_client = _guest_scene.get("_client") as SessionClient
+	(_guest_scene.get("_address") as LineEdit).text = "127.0.0.1"
+	_guest_scene.set("_port", _game_port)
+	(_guest_scene.get("_join") as Button).pressed.emit()
 	if not await _wait(func() -> bool: return _client.state() == SessionClient.STATE_READY, "initial baseline"):
 		return
 	if _client.assigned_player_id() != GUEST:
@@ -55,16 +51,22 @@ func _run() -> void:
 	if registry == null or registry.proxy(GUEST) == null or registry.proxy(HOST_PLAYER) == null:
 		_abort("production replicated players")
 		return
-	var sequence := _client.next_sequence()
-	if not _client.send_intent(InventoryState.OP_MARKET_BUY,
-			{"market_id": MARKET, "quantity": 1, "transaction_id": TXN}):
-		_abort("first market intent")
+	if not await _wait(func() -> bool: return bool(_guest_scene.get("_quote_allowed")), "guest market snapshot"):
 		return
+	(_guest_scene.get("_market_button") as Button).pressed.emit()
+	var panel := _guest_scene.get("_market") as Prg05MarketPanel
+	if not panel.visible or not panel.request_trade(InventoryState.OP_MARKET_BUY, 1):
+		_abort("guest market panel intent")
+		return
+	_transaction_id = str(_guest_scene.get("_pending_txn"))
+	if not SessionProtocol.valid_transaction_id(_transaction_id):
+		_abort("guest market transaction ID")
+		return
+	print("PRG05_LAN_GUEST_UI_OK")
 	if not await _wait(func() -> bool:
-		return _client.accepted_sequences().has(sequence) and not _client.transaction_result(TXN).is_empty(),
-		"first market result"):
+		return not _client.transaction_result(_transaction_id).is_empty(), "first market result"):
 		return
-	_first_result = _client.transaction_result(TXN)
+	_first_result = _client.transaction_result(_transaction_id)
 	if not bool(_first_result.get("accepted", false)) or int(_first_result.get("stock", -1)) != 7:
 		_abort("first market rejected " + str(_first_result))
 		return
@@ -83,14 +85,14 @@ func _run() -> void:
 		return
 	var retry_sequence := _client.next_sequence()
 	if not _client.send_intent(InventoryState.OP_MARKET_BUY,
-			{"market_id": MARKET, "quantity": 1, "transaction_id": TXN}):
+			{"market_id": MARKET, "quantity": 1, "transaction_id": _transaction_id}):
 		_abort("cached market retry")
 		return
 	if not await _wait(func() -> bool:
-		return _client.accepted_sequences().has(retry_sequence) and not _client.transaction_result(TXN).is_empty(),
+		return _client.accepted_sequences().has(retry_sequence) and not _client.transaction_result(_transaction_id).is_empty(),
 		"cached market result"):
 		return
-	var replay := _client.transaction_result(TXN)
+	var replay := _client.transaction_result(_transaction_id)
 	if not bool(replay.get("accepted", false)) or int(replay.get("stock", -1)) != int(_first_result.get("stock", -2)) \
 			or int(replay.get("balance", -1)) != int(_first_result.get("balance", -2)):
 		_abort("cached result changed " + str(replay))

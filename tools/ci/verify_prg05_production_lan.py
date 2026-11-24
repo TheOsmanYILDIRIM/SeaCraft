@@ -7,6 +7,8 @@ from pathlib import Path
 log = Path(sys.argv[1]).read_text(encoding="utf-8", errors="replace")
 log = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", log)
 markers = [
+    "PRG05_LAN_HOST_UI_OK",
+    "PRG05_LAN_GUEST_UI_OK",
     "PRG05_PRODUCTION_LAN_HOST_READY",
     "PRG05_PRODUCTION_LAN_CLIENT_TRADE_OK",
     "PRG05_PRODUCTION_LAN_SAVE_OK",

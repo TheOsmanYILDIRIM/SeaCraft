@@ -34,19 +34,29 @@ func _run() -> void:
 	if not _scene.active_sector().move_entity(PLAYER, center):
 		_abort("host market placement")
 		return
-	var started: Dictionary = _scene.start_lan_host(_game_port, _discovery_port, "127.0.0.1")
-	if not bool(started.get("accepted", false)) or started.get("remote_player_id") != GUEST:
+	_scene.set("_lan_game_port", _game_port)
+	_scene.set("_lan_discovery_port", _discovery_port)
+	_scene.set("_lan_advertised_address", "127.0.0.1")
+	(_scene.get("_lan_button") as Button).pressed.emit()
+	var start_button := _scene.get("_lan_start") as Button
+	if not (_scene.get("_lan_menu") as Control).visible or start_button.disabled:
+		_abort("host lobby not usable")
+		return
+	start_button.pressed.emit()
+	var started: Dictionary = _scene.lan_host_snapshot()
+	if not bool(started.get("running", false)) or started.get("remote_player_id") != GUEST:
 		_abort("production host start " + str(started))
 		return
 	var inventory := (_scene.get("_loot") as LootAuthority).inventory_state()
-	if not inventory.grant_economy_currency_authoritative(GUEST, "event.prg05.production.credit", CREDIT).get("accepted", false):
-		_abort("guest credit")
+	if inventory.economy_balance(GUEST) != CREDIT:
+		_abort("guest starting credit")
 		return
 	var quote := inventory.economy_quote(GUEST, MARKET)
 	_initial_price = int(quote.get("buy", 0))
 	if _initial_price <= 0 or int(quote.get("stock", -1)) != 8:
 		_abort("initial quote")
 		return
+	print("PRG05_LAN_HOST_UI_OK")
 	print("PRG05_PRODUCTION_LAN_HOST_READY session=%s guest=%s" % [started["session_id"], GUEST])
 	if not await _wait_file("client_trade_done", "first trade"):
 		return

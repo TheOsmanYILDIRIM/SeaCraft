@@ -71,6 +71,7 @@ func _ready() -> void:
 	_address = LineEdit.new()
 	_address.placeholder_text = "Host IPv4 adresi (örn. 192.168.1.10)"
 	_address.custom_minimum_size.y = 60
+	_address.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DECIMAL
 	_address.add_theme_font_size_override("font_size", 22)
 	column.add_child(_address)
 	_join = _button(column, "IP ile / seçili odaya katıl", _join_room)
@@ -292,7 +293,7 @@ func _process(_delta: float) -> void:
 		var rows := _discovery.compatible_sessions()
 		var signature := ""
 		for row in rows:
-			signature += "%s:%s:%s;" % [row.get("address"), row.get("game_port"), row.get("player_count")]
+			signature += "%s:%s:%s:%s;" % [row.get("session_id"), row.get("address"), row.get("game_port"), row.get("player_count")]
 		if signature != _last_rooms:
 			_last_rooms = signature
 			_room_rows = rows
