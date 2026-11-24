@@ -133,14 +133,17 @@ func _permit() -> bool:
 		return false
 	_permission_pending = true
 	var epoch := _permission_epoch
-	var result: String = await LanPermissionGate.new().request_and_wait(get_tree(), func() -> void:
+	var gate := LanPermissionGate.new()
+	var result: String = await gate.request_and_wait(get_tree(), func() -> void:
 		_status.text = "Android yerel ağ izni bekleniyor…"
 		_join.disabled = true
 		_scan.disabled = true
 		_resume.disabled = true
 	)
 	_permission_pending = false
-	_state_changed(_client.state())
+	_join.disabled = _client.state() not in [SessionClient.STATE_DISCONNECTED, SessionClient.STATE_REJECTED]
+	_scan.disabled = _join.disabled
+	_resume.disabled = not _client.can_resume()
 	if epoch != _permission_epoch:
 		return false
 	if result == LanPermissionGate.RESULT_ALLOWED:

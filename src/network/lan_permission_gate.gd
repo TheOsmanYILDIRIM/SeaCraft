@@ -19,17 +19,37 @@ static func evaluate(platform_name: String, granted_permissions: PackedStringArr
 
 
 static func android_sdk() -> int:
-	if not Engine.has_singleton("JavaClassWrapper"):
-		return 0
-	var wrapper = Engine.get_singleton("JavaClassWrapper")
-	var version = wrapper.wrap("android.os.Build$VERSION")
-	return int(version.SDK_INT) if version != null else 0
+	if Engine.has_singleton("JavaClassWrapper"):
+		var wrapper = Engine.get_singleton("JavaClassWrapper")
+		var version = wrapper.wrap("android.os.Build$VERSION")
+		if version != null:
+			var sdk := int(version.SDK_INT)
+			if sdk > 0:
+				return sdk
+	# Godot 4.7 documents Android's alias as e.g. "15 (SDK 35 build ...)".
+	var alias := OS.get_version_alias()
+	var marker := alias.find("SDK ")
+	if marker >= 0:
+		var number := alias.substr(marker + 4).get_slice(" ", 0).trim_suffix(")")
+		if number.is_valid_int():
+			return int(number)
+	return 0
 
 
 func status() -> String:
 	if OS.get_name() != "Android":
 		return RESULT_ALLOWED
-	return evaluate("Android", OS.get_granted_permissions(), android_sdk())
+	var sdk := android_sdk()
+	if sdk > 0 and sdk < LOCAL_NETWORK_SDK:
+		return RESULT_ALLOWED
+	# Read Android's PackageManager directly when available, including custom
+	# permissions not known to an older engine permission enumeration.
+	if Engine.has_singleton("AndroidRuntime"):
+		var runtime = Engine.get_singleton("AndroidRuntime")
+		var context = runtime.getApplicationContext()
+		if context != null:
+			return RESULT_ALLOWED if int(context.checkSelfPermission(PERMISSION)) == 0 else RESULT_REQUEST_REQUIRED
+	return evaluate("Android", OS.get_granted_permissions(), sdk)
 
 
 func can_open_lan_socket() -> bool:

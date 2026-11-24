@@ -9,6 +9,35 @@ const REGISTRY := preload("res://src/network/network_entity_registry.gd")
 const PROXY := preload("res://src/network/network_entity_proxy.gd")
 
 
+# Exercise the real permission wait/callback machinery without requiring Android.
+class FakePermissionGate extends LanPermissionGate:
+	var tree: SceneTree
+	var reply := ""
+	var granted := false
+	var requests := 0
+
+	func status() -> String:
+		return RESULT_ALLOWED if granted else RESULT_REQUEST_REQUIRED
+
+	func request_from_user_action() -> String:
+		requests += 1
+		if not reply.is_empty():
+			call_deferred("_deliver")
+		return RESULT_REQUESTED
+
+	func _deliver() -> void:
+		match reply:
+			"grant":
+				granted = true
+				tree.on_request_permissions_result.emit(PERMISSION, true)
+			"deny":
+				tree.on_request_permissions_result.emit(PERMISSION, false)
+			"false_grant":
+				tree.on_request_permissions_result.emit(PERMISSION, true)
+			"unrelated":
+				tree.on_request_permissions_result.emit("android.permission.CAMERA", true)
+
+
 func _beacon(session_id: String = "session.r0123456789abcdef0123456789abcdef") -> Dictionary:
 	return D.make_beacon(session_id, "CI Host", 24680, 1, 4)
 
@@ -203,8 +232,33 @@ func test_net04_permission_fallback_and_runtime_api() -> void:
 	assert_true(source.contains("OS.get_granted_permissions()"))
 	assert_true(source.contains("on_request_permissions_result.connect"))
 	assert_true(source.contains("on_request_permissions_result.disconnect"))
-	assert_eq(await PG.new().request_and_wait(get_tree()), PG.RESULT_ALLOWED)
+	var desktop_gate := PG.new()
+	assert_eq(await desktop_gate.request_and_wait(get_tree()), PG.RESULT_ALLOWED)
 	print("NET04_PERMISSION_FALLBACK_OK permission=%s" % PG.PERMISSION)
+
+
+func test_net04_permission_callback_grant_denial_timeout_and_recheck() -> void:
+	var expected := {
+		"grant": PG.RESULT_ALLOWED,
+		"deny": PG.RESULT_DENIED,
+		"false_grant": PG.RESULT_DENIED,
+		"unrelated": PG.RESULT_TIMEOUT,
+		"": PG.RESULT_TIMEOUT,
+	}
+	for reply in expected:
+		var gate := FakePermissionGate.new()
+		gate.tree = get_tree()
+		gate.reply = reply
+		var pending: Array[bool] = []
+		var result: String = await gate.request_and_wait(get_tree(), func() -> void: pending.append(true), 20)
+		assert_eq(result, expected[reply], "permission reply: " + reply)
+		assert_eq(gate.requests, 1)
+		assert_eq(pending.size(), 1)
+		assert_eq(gate.can_open_lan_socket(), reply == "grant")
+	var pregranted := FakePermissionGate.new()
+	pregranted.granted = true
+	assert_eq(await pregranted.request_and_wait(get_tree()), PG.RESULT_ALLOWED)
+	assert_eq(pregranted.requests, 0)
 
 
 func test_net04_offline_boot_and_manual_ipv4_remain_default() -> void:

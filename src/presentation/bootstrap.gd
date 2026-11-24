@@ -1195,7 +1195,8 @@ func _lan_start_pressed() -> void:
 	_lan_route.clear()
 	_lan_permission_pending = true
 	var epoch := _lan_permission_epoch
-	var permission: String = await LanPermissionGate.new().request_and_wait(get_tree(), func() -> void:
+	var gate := LanPermissionGate.new()
+	var permission: String = await gate.request_and_wait(get_tree(), func() -> void:
 		_lan_status.text = "Android yerel ağ izni bekleniyor…"
 		_lan_status.set_meta("error", true)
 		_refresh_lan_ui()
