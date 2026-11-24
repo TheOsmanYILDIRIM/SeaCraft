@@ -294,7 +294,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		if not _combat.register(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, cannon, 4.0, 0.05):
 			push_error("VS-02 combat roster setup failed")
 			return
-	elif not _combat.register_dormant(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id, (PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, FoundationSector.ID, PRACTICE_POSITION):
+	elif not _combat.register_dormant(PRACTICE_TARGET, (PRACTICE_SHIP_DEF as ShipDefinition).faction_id,
+			(PRACTICE_SHIP_DEF as ShipDefinition).base_hull_hp, FoundationSector.ID, PRACTICE_POSITION,
+			TargetingService.SHIP, cannon, 4.0, 0.05):
 		push_error("VS-02 dormant combat roster setup failed")
 		return
 
