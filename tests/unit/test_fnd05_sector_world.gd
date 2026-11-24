@@ -344,6 +344,32 @@ func test_play01_bootstrap_routes_tap_around_fixture_coast() -> void:
 	print("PLAY01_COAST_ROUTE_OK")
 
 
+func test_play01_stuck_recovery_replans_then_bounded_abort() -> void:
+	var boot := BOOT.instantiate()
+	boot.set("_save_service", SaveService.new("user://play01-stuck-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
+	add_child_autofree(boot)
+	boot.set_process(false)
+	boot.set_physics_process(false)
+	var ship := boot.get_node("ShipMotor") as ShipMotor
+	ship.set_physics_process(false)
+	await get_tree().physics_frame
+	var goal := Vector2(240, 0)
+	boot._on_gameplay_command(GameplayCommand.move_to_world_position(goal))
+	assert_true(ship.has_target())
+	assert_false((boot.get("_helm_route") as PackedVector2Array).is_empty())
+	boot._recover_helm_route()
+	assert_eq(int(boot.get("_helm_route_replans")), 1)
+	assert_true(ship.has_target())
+	boot._recover_helm_route()
+	assert_eq(int(boot.get("_helm_route_replans")), 2)
+	assert_true(ship.has_target())
+	boot._recover_helm_route()
+	assert_true((boot.get("_helm_route") as PackedVector2Array).is_empty())
+	assert_false(ship.has_target())
+	print("PLAY01_STUCK_RECOVERY_OK")
+
+
+
 func _fixture() -> SectorDefinition:
 	var definition := ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
 	definition.spawn_anchors = [definition.spawn_anchors[0]]

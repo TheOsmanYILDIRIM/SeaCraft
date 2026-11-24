@@ -151,6 +151,7 @@ jobs:
           grep -Fq "PLAY01_PACKED_HELM_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PLAY01_NEAR_REVERSE_ARRIVAL_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PLAY01_COAST_ROUTE_OK" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PLAY01_STUCK_RECOVERY_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg06_mode.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "PRG06_MODE_GATE_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PRG06_SHARED_SAVE_OK" "$RUNNER_TEMP/gut.log"
