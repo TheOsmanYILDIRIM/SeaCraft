@@ -201,6 +201,14 @@ jobs:
         shell: bash
         run: python3 tools/ci/verify_net04_suite.py "$RUNNER_TEMP/gut.log" "$RUNNER_TEMP/net04-process.log"
 
+      - name: PRG-05 production bootstrap LAN host economy persistence integration
+        shell: bash
+        run: bash tools/ci/run_prg05_production_lan_integration.sh "$RUNNER_TEMP/prg05-production-lan.log"
+
+      - name: Verify PRG-05 production LAN composition save reload and transaction replay
+        shell: bash
+        run: python3 tools/ci/verify_prg05_production_lan.py "$RUNNER_TEMP/prg05-production-lan.log"
+
       - name: Verify VS-04 full integration execution
         shell: bash
         run: grep -Fq "VS04_SCENARIO_COMPLETE" "$RUNNER_TEMP/gut.log"
