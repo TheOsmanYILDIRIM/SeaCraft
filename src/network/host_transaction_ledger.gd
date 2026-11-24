@@ -63,10 +63,10 @@ func restore_state(value: Variant) -> bool:
 	if not value is Dictionary or not SessionProtocol.primitive_safe(value):
 		return false
 	var state: Dictionary = value
-	if state.size() != 3 or int(state.get("version", 0)) != 1 or not state.get("entries") is Array:
+	if state.size() != 3 or not _integer_number(state.get("version")) or int(state["version"]) != 1 or not state.get("entries") is Array:
 		return false
 	var sequence_value: Variant = state.get("commit_sequence")
-	if not sequence_value is int or int(sequence_value) < 0 or int(sequence_value) > SessionProtocol.MAX_SEQUENCE:
+	if not _integer_number(sequence_value) or int(sequence_value) < 0 or int(sequence_value) > SessionProtocol.MAX_SEQUENCE:
 		return false
 	var rows: Array = state["entries"]
 	if rows.size() > MAX_ENTRIES:
@@ -81,7 +81,7 @@ func restore_state(value: Variant) -> bool:
 			return false
 		if not row.get("operation") is String or str(row["operation"]).is_empty() or not row.get("fingerprint") is String or str(row["fingerprint"]).length() != 64:
 			return false
-		if not row.get("result") is Dictionary or not row.get("commit_sequence") is int:
+		if not row.get("result") is Dictionary or not _integer_number(row.get("commit_sequence")):
 			return false
 		var seq := int(row["commit_sequence"])
 		if seq <= 0 or seq > int(sequence_value):
@@ -89,13 +89,22 @@ func restore_state(value: Variant) -> bool:
 		var key := _key(str(row["actor_id"]), str(row["transaction_id"]))
 		if next.has(key):
 			return false
-		next[key] = row.duplicate(true)
+		var normalized := row.duplicate(true)
+		normalized["commit_sequence"] = seq
+		next[key] = normalized
 		max_sequence = maxi(max_sequence, seq)
 	if max_sequence > int(sequence_value):
 		return false
 	_entries = next
 	_commit_sequence = int(sequence_value)
 	return true
+
+
+static func _integer_number(value: Variant) -> bool:
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var number := float(value)
+	return is_finite(number) and number == floorf(number) and number >= 0.0 and number <= float(SessionProtocol.MAX_SEQUENCE)
 
 
 func commit_sequence() -> int:
