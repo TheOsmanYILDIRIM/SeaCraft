@@ -112,6 +112,7 @@ func _ready() -> void:
 				_block_boot({"status": "unsupported_owner"})
 				return
 			_save_owner_kind = owner_kind
+			_session_id = str(dto["ownership"]["session_id"])
 			var error := SaveSnapshot.restore(dto, _world, _authority, FoundationSector.PLAYER, _ship_motor, _streams)
 			if not error.is_empty():
 				_block_boot({"status": error})
