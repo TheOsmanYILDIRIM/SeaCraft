@@ -64,6 +64,16 @@ var _surface_sprite: Sprite2D
 var _helm_stop: CombatFireButton
 var _helm_center: CombatFireButton
 var _destination_marker: Line2D
+var _helm_route_line: Line2D
+var _helm_route := PackedVector2Array()
+var _helm_route_index := 0
+var _helm_route_sector := ""
+var _helm_route_goal := Vector2.ZERO
+var _helm_route_collision_ticks := 0
+var _helm_route_replans := 0
+var _helm_last_accessible_position := Vector2.INF
+const HELM_STUCK_COLLISION_TICKS := 6
+const HELM_MAX_REPLANS := 2
 var _lan_host: ProductionLanHost
 var _lan_remote_motor: ShipMotor
 var _lan_saved_state: Dictionary = {}
@@ -240,6 +250,7 @@ func _physics_process(_delta: float) -> void:
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
 	_refresh_market_access()
 	_refresh_mode_button()
+	_advance_helm_route()
 	_advance_lan_route()
 	_refresh_helm()
 	if _map_overlay != null:
@@ -264,10 +275,13 @@ func _on_gameplay_command(command: Dictionary) -> void:
 		if active_sector() == null:
 			ANDROID_TRACE.record("bootstrap", "command blocked: no active sector")
 		return
-	if command.get("type") in [GameplayCommand.MOVE_TO_WORLD_POSITION, GameplayCommand.CANCEL]:
+	var command_type := str(command.get("type", ""))
+	if command_type in [GameplayCommand.MOVE_TO_WORLD_POSITION, GameplayCommand.CANCEL]:
 		_lan_route.clear()
+	if command_type == GameplayCommand.CANCEL:
+		_clear_helm_route(false)
 	if _combat != null:
-		match command.get("type"):
+		match command_type:
 			CombatAuthority.SELECT:
 				var target_id: String = command["target_id"]
 				if target_id.is_empty():
@@ -292,16 +306,126 @@ func _on_gameplay_command(command: Dictionary) -> void:
 			GameplayCommand.CANCEL:
 				_combat.clear_target(FoundationSector.PLAYER)
 				_refresh_combat_indicator()
-	var accepted := _ship_motor.apply_authoritative_command(command)
-	if ANDROID_TRACE.enabled() and command.get("type") == GameplayCommand.MOVE_TO_WORLD_POSITION:
+	var accepted := _start_helm_route_from_command(command) if command_type == GameplayCommand.MOVE_TO_WORLD_POSITION else _ship_motor.apply_authoritative_command(command)
+	if ANDROID_TRACE.enabled() and command_type == GameplayCommand.MOVE_TO_WORLD_POSITION:
 		_diag_physics_origin = _ship_motor.global_position
-		ANDROID_TRACE.record("ShipMotor", "accepted=%s authority=%s physics_enabled=%s pos=%s target=%s" % [
+		ANDROID_TRACE.record("ShipMotor", "accepted=%s authority=%s physics_enabled=%s pos=%s target=%s route_points=%s" % [
 			accepted, _ship_motor.authority_enabled, _ship_motor.is_physics_processing(),
-			_diag_physics_origin, _ship_motor.has_target()])
+			_diag_physics_origin, _ship_motor.has_target(), _helm_route.size()])
 		_diag_physics_left = 12
 	if accepted:
 		_save_service.mark_dirty()
 		_refresh_helm()
+
+
+func _start_helm_route_from_command(command: Dictionary) -> bool:
+	var raw_x: Variant = command.get("world_x")
+	var raw_y: Variant = command.get("world_y")
+	if typeof(raw_x) not in [TYPE_INT, TYPE_FLOAT] or typeof(raw_y) not in [TYPE_INT, TYPE_FLOAT]:
+		return false
+	var goal := Vector2(float(raw_x), float(raw_y))
+	return _start_helm_route(goal) if goal.is_finite() else false
+
+
+func _start_helm_route(goal: Vector2) -> bool:
+	var sector := active_sector()
+	if sector == null or not goal.is_finite():
+		return false
+	var route := sector.navigation.path(_ship_motor.global_position, goal)
+	if route.size() < 2:
+		ANDROID_TRACE.record("navigation", "route rejected sector=%s from=%s goal=%s" % [sector.sector_id, _ship_motor.global_position, goal])
+		return false
+	_helm_route = route
+	_helm_route_index = 1
+	_helm_route_sector = sector.sector_id
+	_helm_route_goal = goal
+	_helm_route_collision_ticks = 0
+	_helm_route_replans = 0
+	_helm_last_accessible_position = _ship_motor.global_position
+	if not _issue_helm_route_leg():
+		_clear_helm_route(false)
+		return false
+	return true
+
+
+func _issue_helm_route_leg() -> bool:
+	if _helm_route_index <= 0 or _helm_route_index >= _helm_route.size():
+		return false
+	_helm_route_collision_ticks = 0
+	return _ship_motor.apply_authoritative_command(GameplayCommand.move_to_world_position(_helm_route[_helm_route_index]))
+
+
+func _advance_helm_route() -> void:
+	if _helm_route.is_empty():
+		return
+	var sector := active_sector()
+	if sector == null or sector.sector_id != _helm_route_sector:
+		_abort_helm_route("sector_changed")
+		return
+	var position_now := _ship_motor.global_position
+	if sector.navigation.accessible(position_now):
+		_helm_last_accessible_position = position_now
+	if _ship_motor.has_target():
+		if _ship_motor.get_slide_collision_count() > 0:
+			_helm_route_collision_ticks += 1
+			if _helm_route_collision_ticks >= HELM_STUCK_COLLISION_TICKS:
+				_recover_helm_route()
+		else:
+			_helm_route_collision_ticks = 0
+		return
+	_helm_route_index += 1
+	if _helm_route_index >= _helm_route.size():
+		_clear_helm_route(false)
+		return
+	if not _issue_helm_route_leg():
+		_abort_helm_route("leg_rejected")
+
+
+func _recover_helm_route() -> void:
+	var sector := active_sector()
+	if sector == null or _helm_route_replans >= HELM_MAX_REPLANS:
+		_abort_helm_route("stuck")
+		return
+	var start := _ship_motor.global_position
+	if not sector.navigation.accessible(start):
+		start = _helm_last_accessible_position
+	if not start.is_finite() or not sector.navigation.accessible(start):
+		_abort_helm_route("no_accessible_replan_origin")
+		return
+	var route := sector.navigation.path(start, _helm_route_goal)
+	if route.size() < 2:
+		_abort_helm_route("replan_failed")
+		return
+	_helm_route = route
+	_helm_route_index = 1
+	_helm_route_collision_ticks = 0
+	_helm_route_replans += 1
+	ANDROID_TRACE.record("navigation", "replan=%s sector=%s from=%s goal=%s points=%s" % [
+		_helm_route_replans, sector.sector_id, start, _helm_route_goal, route.size()])
+	if not _issue_helm_route_leg():
+		_abort_helm_route("replan_leg_rejected")
+
+
+func _abort_helm_route(reason: String) -> void:
+	ANDROID_TRACE.record("navigation", "route aborted reason=%s sector=%s pos=%s goal=%s" % [
+		reason, _helm_route_sector, _ship_motor.global_position, _helm_route_goal])
+	_ship_motor.cancel_target()
+	_clear_helm_route(false)
+
+
+func _clear_helm_route(cancel_motor: bool) -> void:
+	if cancel_motor:
+		_ship_motor.cancel_target()
+	_helm_route = PackedVector2Array()
+	_helm_route_index = 0
+	_helm_route_sector = ""
+	_helm_route_goal = Vector2.ZERO
+	_helm_route_collision_ticks = 0
+	_helm_route_replans = 0
+	_helm_last_accessible_position = Vector2.INF
+	if is_instance_valid(_helm_route_line):
+		_helm_route_line.clear_points()
+		_helm_route_line.hide()
 
 
 func _setup_combat(sector: SectorRuntime) -> void:
@@ -838,6 +962,7 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 	if not result["accepted"]:
 		return result
 	_lan_route.clear()
+	_clear_helm_route(false)
 	_ship_motor.global_position = _world.active().entity_position(FoundationSector.PLAYER)
 	_ship_motor.cancel_target()
 	_build_sector_geometry(_world.active())
@@ -1178,6 +1303,7 @@ func _lan_travel_pressed() -> void:
 		_lan_status.text = "Güvenli rota bulunamadı. Açık denize çıkıp yeniden deneyin."
 		_lan_status.set_meta("error", true)
 		return
+	_clear_helm_route(false)
 	_lan_route = route
 	_lan_route_index = 1
 	_lan_route_sector = sector.sector_id
@@ -1276,6 +1402,12 @@ func _setup_helm_ui() -> void:
 	var camera := $GameplayCamera as GameplayCamera
 	camera.set_world_limits(active_sector().bounds)
 	_recenter_helm_camera()
+	_helm_route_line = Line2D.new()
+	_helm_route_line.name = "Play01Route"
+	_helm_route_line.width = 2.0
+	_helm_route_line.default_color = Color(0.35, 0.9, 0.85, 0.5)
+	_helm_route_line.hide()
+	add_child(_helm_route_line)
 	_destination_marker = Line2D.new()
 	_destination_marker.name = "Play01Destination"
 	_destination_marker.width = 2.5
@@ -1328,12 +1460,27 @@ func _refresh_helm() -> void:
 	if not is_instance_valid(_helm_stop):
 		return
 	var modal := _world_map_open or _market_open or (_lan_menu != null and _lan_menu.visible)
+	var navigating := not _helm_route.is_empty()
 	_helm_stop.visible = not modal
 	_helm_center.visible = not modal
-	_helm_stop.disabled = not _ship_motor.has_target() and _ship_motor.velocity.length() <= 0.5
-	_destination_marker.visible = _ship_motor.has_target() and not modal
+	_helm_stop.disabled = not _ship_motor.has_target() and not navigating and _ship_motor.velocity.length() <= 0.5
+	_destination_marker.visible = (_ship_motor.has_target() or navigating) and not modal
 	if _destination_marker.visible:
-		_destination_marker.global_position = _ship_motor.target_world_position()
+		_destination_marker.global_position = _helm_route_goal if navigating else _ship_motor.target_world_position()
+	_refresh_helm_route_line(modal)
+
+
+func _refresh_helm_route_line(modal: bool) -> void:
+	if not is_instance_valid(_helm_route_line):
+		return
+	_helm_route_line.clear_points()
+	if modal or _helm_route.is_empty() or _helm_route_index >= _helm_route.size():
+		_helm_route_line.hide()
+		return
+	_helm_route_line.show()
+	_helm_route_line.add_point(_ship_motor.global_position)
+	for index in range(_helm_route_index, _helm_route.size()):
+		_helm_route_line.add_point(_helm_route[index])
 
 
 func _setup_mode_ui() -> void:

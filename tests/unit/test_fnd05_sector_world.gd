@@ -304,6 +304,46 @@ func test_ship_motor_cannot_cross_fixture_coast() -> void:
 	assert_true(ship.position.is_finite())
 
 
+func test_play01_bootstrap_routes_tap_around_fixture_coast() -> void:
+	var boot := BOOT.instantiate()
+	boot.set("_save_service", SaveService.new("user://play01-coast-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
+	add_child_autofree(boot)
+	boot.set_process(false)
+	boot.set_physics_process(false)
+	var ship := boot.get_node("ShipMotor") as ShipMotor
+	ship.set_physics_process(false)
+	await get_tree().physics_frame
+	var marker := boot.get_node("Play01Destination") as Line2D
+	var route_line := boot.get_node("Play01Route") as Line2D
+	var goal := Vector2(240, 0)
+	boot._on_gameplay_command(GameplayCommand.move_to_world_position(Vector2.ZERO))
+	assert_false(ship.has_target())
+	boot._on_gameplay_command(GameplayCommand.move_to_world_position(goal))
+	var planned: PackedVector2Array = boot.get("_helm_route")
+	assert_gte(planned.size(), 4)
+	if planned.size() < 4:
+		return
+	assert_eq(planned[0], Vector2(-240, 0))
+	assert_eq(planned[-1], goal)
+	assert_ne(ship.target_world_position(), goal)
+	assert_eq(marker.global_position, goal)
+	assert_true(route_line.visible)
+	var max_collisions := 0
+	for _i in 2400:
+		ship.step_authoritative(1.0 / 60.0)
+		max_collisions = maxi(max_collisions, ship.get_slide_collision_count())
+		boot._advance_helm_route()
+		if (boot.get("_helm_route") as PackedVector2Array).is_empty() and not ship.has_target():
+			break
+	boot._refresh_helm()
+	assert_lte(ship.global_position.distance_to(goal), 18.1)
+	assert_eq(max_collisions, 0)
+	assert_true((boot.get("_helm_route") as PackedVector2Array).is_empty())
+	assert_false(marker.visible)
+	assert_false(route_line.visible)
+	print("PLAY01_COAST_ROUTE_OK")
+
+
 func _fixture() -> SectorDefinition:
 	var definition := ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
 	definition.spawn_anchors = [definition.spawn_anchors[0]]

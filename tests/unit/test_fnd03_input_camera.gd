@@ -428,7 +428,9 @@ func test_play01_packed_helm_controls_and_destination() -> void:
 	var stop := scene.get_node("UI/Play01Stop") as Button
 	var center := scene.get_node("UI/Play01Center") as Button
 	var marker := scene.get_node("Play01Destination") as Line2D
+	var route_line := scene.get_node("Play01Route") as Line2D
 	assert_false(marker.visible)
+	assert_false(route_line.visible)
 	assert_true(stop.disabled)
 	camera.pan_world_delta(Vector2(100, 0))
 	assert_false(camera.is_follow_mode())
@@ -442,10 +444,13 @@ func test_play01_packed_helm_controls_and_destination() -> void:
 	assert_true(motor.has_target())
 	assert_true(marker.visible)
 	assert_eq(marker.global_position, target)
+	assert_true(route_line.visible)
+	assert_eq(route_line.points[-1], target)
 	assert_false(stop.disabled)
 	assert_true(scene._ui_captures_touch(stop.get_global_rect().get_center()))
 	stop.pressed.emit()
 	assert_false(motor.has_target())
 	assert_false(marker.visible)
+	assert_false(route_line.visible)
 	assert_true(stop.disabled)
 	print("PLAY01_PACKED_HELM_OK")
