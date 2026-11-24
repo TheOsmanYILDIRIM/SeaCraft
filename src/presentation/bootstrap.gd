@@ -24,6 +24,9 @@ const PILOT_CONVOY_ID := "entity.haven.supply_convoy"
 const PILOT_CONVOY_FLEET := "fleet.haven.supply_convoy"
 const PILOT_CONVOY_JOB := "job.haven.supply_convoy.v1"
 const PILOT_CONVOY_CARGO := 4
+const LAN_REMOTE_PLAYER_ID := "player.lan.guest"
+const LAN_GUEST_MAX_SLOTS := 64
+const LAN_GUEST_MAX_WEIGHT := 1000000.0
 
 var _combat: CombatAuthority
 var _relations := FactionRelationResolver.new(true)
@@ -56,6 +59,9 @@ var _bounty_bridge: Prg05BountyCombatBridge
 var _economy_world: WorldSimulationAuthority
 var _economy_runner: Prg05EconomyWorldRunner
 var _market_anchor: SectorAnchor
+var _lan_host: ProductionLanHost
+var _lan_remote_motor: ShipMotor
+var _lan_saved_state: Dictionary = {}
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -67,6 +73,7 @@ var _world: SectorWorld
 var _streams := SeedStreams.new()
 var _save_service := SaveService.new()
 var _session_id := ""
+var _save_owner_kind := SaveSnapshot.LOCAL
 var _last_attempt_ms := 0
 var _last_position := Vector2.ZERO
 var _last_velocity := Vector2.ZERO
@@ -100,9 +107,11 @@ func _ready() -> void:
 			_ship_motor.cancel_target()
 		SaveService.OK_STATUS, SaveService.RECOVERED:
 			var dto: Dictionary = save_status["snapshot"]
-			if dto["ownership"]["kind"] != SaveSnapshot.LOCAL:
+			var owner_kind := str(dto["ownership"]["kind"])
+			if owner_kind not in [SaveSnapshot.LOCAL, SaveSnapshot.HOST]:
 				_block_boot({"status": "unsupported_owner"})
 				return
+			_save_owner_kind = owner_kind
 			var error := SaveSnapshot.restore(dto, _world, _authority, FoundationSector.PLAYER, _ship_motor, _streams)
 			if not error.is_empty():
 				_block_boot({"status": error})
@@ -335,6 +344,10 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if not _loot.inventory_state().configure_prg05():
 		push_error("PRG-05 economy setup failed")
 		return
+	if _saved_lan_guest_required() and not _loot.inventory_state().has_owner(LAN_REMOTE_PLAYER_ID):
+		if not _loot.inventory_state().bind_owner(LAN_REMOTE_PLAYER_ID, LAN_GUEST_MAX_SLOTS, LAN_GUEST_MAX_WEIGHT):
+			push_error("PRG-05 LAN guest owner restore setup failed")
+			return
 	# Register the canonical pilot factions before restoring reputation saves.
 	if not _loot.inventory_state().register_economy_faction((PLAYER_SHIP_DEF as ShipDefinition).faction_id) or not _loot.inventory_state().register_economy_faction((PRACTICE_SHIP_DEF as ShipDefinition).faction_id):
 		push_error("PRG-05 faction registration failed")
@@ -352,6 +365,9 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		return
 	if _pending_combat.has("progression") and not _loot.inventory_state().restore_progression(_pending_combat["progression"]):
 		push_error("Progression restore failed")
+		return
+	if not _restore_lan_guest_inventory(_loot.inventory_state()):
+		push_error("PRG-05 LAN guest restore failed")
 		return
 	_loot.initialize_missing_stock(CORE_STOCK)
 	_loot.initialize_missing_stock(NPC_STOCK)
@@ -727,6 +743,9 @@ func _flush_checkpoint() -> void:
 	var authority_state: Dictionary = {"sector_world": _world.snapshot_state(FoundationSector.PLAYER)}
 	if _loot != null:
 		authority_state["progression"] = _loot.inventory_state().progression_snapshot()
+		var lan_state := _capture_lan_state()
+		if not lan_state.is_empty():
+			authority_state["lan"] = lan_state
 	if _economy_world != null:
 		var economy_world_state := _economy_world.snapshot_state()
 		if economy_world_state.is_empty():
@@ -751,12 +770,14 @@ func _flush_checkpoint() -> void:
 			save_status = {"status": "entity_index_failed"}
 			return
 		authority_state["entity_index"] = entity_index
-	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, SaveSnapshot.LOCAL, _session_id, loot_state, authority_state)
+	var dto := _save_service.create_snapshot(sector, FoundationSector.PLAYER, _ship_motor, _streams, _save_owner_kind, _session_id, loot_state, authority_state)
 	save_status = _save_service.save_if_dirty(dto)
 
 
 
 func request_sector_transition(gate_id: String) -> Dictionary:
+	if _lan_host != null and _lan_host.is_running():
+		return {"accepted": false, "reason": "lan_host_sector_locked", "from_sector": active_sector().sector_id if active_sector() != null else "", "to_sector": "", "gate_id": gate_id, "entry_anchor": ""}
 	if _world == null or active_sector() == null:
 		return {"accepted": false, "reason": "no_active_sector", "from_sector": "", "to_sector": "", "gate_id": gate_id, "entry_anchor": ""}
 	_world.active().move_entity(FoundationSector.PLAYER, _ship_motor.global_position)
@@ -790,6 +811,186 @@ func _sync_sector_local_presentation() -> void:
 		_practice_marker.hide()
 		_npc_presenter.hide()
 
+
+
+func _saved_lan_guest_required() -> bool:
+	var lan: Variant = _pending_combat.get("lan", {})
+	if lan is Dictionary and not (lan as Dictionary).is_empty():
+		return true
+	var progression: Variant = _pending_combat.get("progression", {})
+	if not progression is Dictionary:
+		return false
+	var equipment: Variant = (progression as Dictionary).get("equipment", {})
+	if equipment is Dictionary and (equipment as Dictionary).has(LAN_REMOTE_PLAYER_ID):
+		return true
+	var prg05: Variant = (progression as Dictionary).get("prg05", {})
+	var owners: Variant = (prg05 as Dictionary).get("owners", {}) if prg05 is Dictionary else {}
+	return owners is Dictionary and (owners as Dictionary).has(LAN_REMOTE_PLAYER_ID)
+
+
+static func _valid_lan_save_state(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	var state: Dictionary = value
+	if state.size() != 6:
+		return false
+	var raw_version: Variant = state.get("version")
+	if typeof(raw_version) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(raw_version)) \
+			or float(raw_version) != floorf(float(raw_version)) or int(raw_version) != 1:
+		return false
+	if state.get("guest_id") != LAN_REMOTE_PLAYER_ID or not state.get("sector_id") is String \
+			or not SectorIds.valid(str(state["sector_id"])):
+		return false
+	if not ShipMotor.valid_save_motion(state.get("motion")) or not state.get("quantities") is Dictionary \
+			or not state.get("transaction_ledger") is Dictionary:
+		return false
+	return true
+
+
+func _restore_lan_guest_inventory(inventory: InventoryState) -> bool:
+	var raw: Variant = _pending_combat.get("lan", {})
+	if raw is Dictionary and (raw as Dictionary).is_empty():
+		return true
+	if not _valid_lan_save_state(raw):
+		return false
+	var state: Dictionary = raw
+	if not inventory.has_owner(LAN_REMOTE_PLAYER_ID):
+		if not inventory.bind_owner(LAN_REMOTE_PLAYER_ID, LAN_GUEST_MAX_SLOTS, LAN_GUEST_MAX_WEIGHT):
+			return false
+	if not inventory.restore_quantities(LAN_REMOTE_PLAYER_ID, state["quantities"]):
+		return false
+	_lan_saved_state = state.duplicate(true)
+	return true
+
+
+func _capture_lan_state() -> Dictionary:
+	if _loot == null:
+		return {}
+	var inventory := _loot.inventory_state()
+	if not inventory.has_owner(LAN_REMOTE_PLAYER_ID):
+		return {}
+	var motion: Dictionary = {}
+	var sector_id := ""
+	if _lan_remote_motor != null and is_instance_valid(_lan_remote_motor):
+		motion = _lan_remote_motor.capture_save_motion()
+		sector_id = active_sector().sector_id if active_sector() != null else ""
+	elif _valid_lan_save_state(_lan_saved_state):
+		motion = (_lan_saved_state["motion"] as Dictionary).duplicate(true)
+		sector_id = str(_lan_saved_state["sector_id"])
+	else:
+		return {}
+	var ledger := {"version": 1, "commit_sequence": 0, "entries": []}
+	if _lan_host != null and _lan_host.is_running():
+		ledger = _lan_host.transaction_ledger_snapshot()
+	elif _valid_lan_save_state(_lan_saved_state):
+		ledger = (_lan_saved_state["transaction_ledger"] as Dictionary).duplicate(true)
+	return {
+		"version": 1,
+		"guest_id": LAN_REMOTE_PLAYER_ID,
+		"sector_id": sector_id,
+		"motion": motion,
+		"quantities": inventory.quantities_snapshot(LAN_REMOTE_PLAYER_ID),
+		"transaction_ledger": ledger,
+	}
+
+
+func _ensure_lan_remote_motor() -> bool:
+	if _lan_remote_motor != null and is_instance_valid(_lan_remote_motor):
+		return true
+	var sector := active_sector()
+	if sector == null or sector.sector_id != FoundationSector.HAVEN_ID or _market_anchor == null or _loot == null:
+		return false
+	var inventory := _loot.inventory_state()
+	if not inventory.has_owner(LAN_REMOTE_PLAYER_ID) \
+			and not inventory.bind_owner(LAN_REMOTE_PLAYER_ID, LAN_GUEST_MAX_SLOTS, LAN_GUEST_MAX_WEIGHT):
+		return false
+	var spawn_position := _market_anchor.position + Vector2(48.0, 0.0)
+	var saved_motion: Dictionary = {}
+	if _valid_lan_save_state(_lan_saved_state) and str(_lan_saved_state["sector_id"]) == sector.sector_id:
+		saved_motion = (_lan_saved_state["motion"] as Dictionary).duplicate(true)
+		spawn_position = Vector2(float(saved_motion["x"]), float(saved_motion["y"]))
+	if not spawn_position.is_finite() or not sector.bounds.has_point(spawn_position) or not sector.navigation.accessible(spawn_position):
+		spawn_position = _market_anchor.position
+	var indexed := sector.entity_position(LAN_REMOTE_PLAYER_ID)
+	if indexed.is_finite():
+		if not sector.move_entity(LAN_REMOTE_PLAYER_ID, spawn_position):
+			return false
+	elif not sector.register_entity(LAN_REMOTE_PLAYER_ID, spawn_position):
+		return false
+	var motor := ShipMotor.new()
+	motor.name = "LanGuestMotor"
+	motor.movement_profile = _ship_motor.movement_profile
+	motor.authority_enabled = true
+	motor.collision_layer = FoundationSector.SHIP_LAYER
+	motor.collision_mask = FoundationSector.COAST_LAYER
+	motor.process_physics_priority = -1
+	add_child(motor)
+	motor.global_position = spawn_position
+	if not saved_motion.is_empty() and not motor.restore_save_motion(saved_motion):
+		motor.queue_free()
+		return false
+	if not sector.move_entity(LAN_REMOTE_PLAYER_ID, motor.global_position):
+		motor.queue_free()
+		return false
+	_lan_remote_motor = motor
+	return true
+
+
+func start_lan_host(game_port: int, discovery_port: int = 0, advertised_address: String = "255.255.255.255") -> Dictionary:
+	if _lan_host != null and _lan_host.is_running():
+		return {"accepted": false, "reason": "already_running"}
+	if active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID or _market_anchor == null:
+		return {"accepted": false, "reason": "market_sector_required"}
+	if not _ensure_lan_remote_motor():
+		return {"accepted": false, "reason": "guest_authority_setup_failed"}
+	var inventory := _loot.inventory_state()
+	if not inventory.enable_economy_diplomacy(LAN_REMOTE_PLAYER_ID):
+		return {"accepted": false, "reason": "guest_diplomacy_setup_failed"}
+	var host := ProductionLanHost.new()
+	host.name = "ProductionLanHost"
+	host.authority_mutated.connect(_on_lan_authority_mutated)
+	add_child(host)
+	var saved_ledger: Dictionary = {}
+	if _valid_lan_save_state(_lan_saved_state):
+		saved_ledger = (_lan_saved_state["transaction_ledger"] as Dictionary).duplicate(true)
+	var result := host.start_host(game_port, discovery_port, advertised_address,
+		FoundationSector.PLAYER, _ship_motor, LAN_REMOTE_PLAYER_ID, _lan_remote_motor,
+		active_sector(), _combat, _loot, inventory, PILOT_MARKET_ID, _market_anchor.position,
+		PILOT_MARKET_RADIUS, saved_ledger, (PLAYER_SHIP_DEF as ShipDefinition).stable_id)
+	if not bool(result.get("accepted", false)):
+		host.queue_free()
+		return result
+	_lan_host = host
+	_save_owner_kind = SaveSnapshot.HOST
+	_session_id = str(result["session_id"])
+	_lan_saved_state = _capture_lan_state()
+	_save_service.mark_dirty()
+	return result
+
+
+func stop_lan_host() -> bool:
+	if _lan_host == null or not _lan_host.is_running():
+		return false
+	_lan_saved_state = _capture_lan_state()
+	_lan_host.stop_host()
+	_lan_host.queue_free()
+	_lan_host = null
+	_save_service.mark_dirty()
+	return true
+
+
+func lan_host_snapshot() -> Dictionary:
+	return _lan_host.snapshot() if _lan_host != null else {"running": false}
+
+
+func lan_remote_player_id() -> String:
+	return LAN_REMOTE_PLAYER_ID
+
+
+func _on_lan_authority_mutated(_intent_type: String) -> void:
+	_save_service.mark_dirty()
+	if _market_open:
+		_refresh_market_quote()
 
 
 func _setup_market_ui() -> void:
