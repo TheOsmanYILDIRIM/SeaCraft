@@ -29,7 +29,7 @@ func _run() -> void:
 		_abort("bootstrap haven composition")
 		return
 	var motor := _scene.get_node("ShipMotor") as ShipMotor
-	var center := _scene.active_sector().anchor("anchor.haven_center").position
+	var center: Vector2 = _scene.active_sector().anchor("anchor.haven_center").position
 	motor.global_position = center
 	if not _scene.active_sector().move_entity(PLAYER, center):
 		_abort("host market placement")
