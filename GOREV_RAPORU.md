@@ -1023,3 +1023,17 @@ SC-02 oyuncu: onaylı 4×2 master atlastan **160 px** hücre; SC-03 NPC: AUTO FI
 
 
 **PRG-05 checkpoint 5 — 2026-11-24:** shipped offline Bootstrap bounty (80 currency), AI-04 FAR pilot supply convoy (+4 stock), market UI read-only status and authoritative trade; packed-scene combat → mid-route save/reload → delivery → real sector gates → market buy and out-of-range rejection verified. Exact code SHA `fb11a171c53a9974e5009adcf66b4dd836a69bf3`; [CI 45357962822](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45357962822) **success**, GUT **414/414**, 29,884 asserts, PRG-05 **19/19** (18 explicit verifier markers); NET04 real-process, Android/Linux export and authenticated artifact readback success. Fixed legacy full-width RNG seed derivation, empty exported registry / source-pack content manifest parity (23 entries, Android byte-exact definitions), random transaction ID invalid numeric prefix (all 16 prefixes tested). Android artifact `14903422223`, ZIP SHA-256 `ad4287d027b53ad671e54854290f13aece1ba8d7851b8fa643e8ddb360c6ff68`; Linux artifact `14903252987`, ZIP SHA-256 `817df7b595d26c0bf5a3af04b08760b6db1a90af51e72d45017dbce7eb37fb52`. Actual physical Android touch/long two-device LAN drift `not_run`; full production LAN host composition and UI device acceptance remain open; PRG-05 active, PRG-06 not started.
+---
+
+## PRG-05 — Checkpoint 6 / Production LAN host composition + durable save/replay (2026-11-24)
+
+**Durum:** `verified_checkpoint`; PRG-05 kanonik görevi hâlâ **active**, PRG-06 `not_started`. Bu kayıt fiziksel Android/two-device LAN kabulü veya PRG-05 kapanışı değildir.
+
+- Exact code SHA: **`ef470b821332d85846b345d20e09c5b22f2d50ea`**. [CI 45365494569](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45365494569): **completed/success**, GUT **416/416**, **29.910 assert**; NET-01/02/03/04 gerçek süreç doğrulamaları, VS/CORE/AI regresyonları, Linux/Android export başarılı.
+- Production LAN: shipped `bootstrap.tscn` üzerinden Safe Haven'a gerçek sector transition, `ProductionLanHost` ile gerçek `SessionHost`/UDP discovery/manual-IP path, authoritative guest ShipMotor + inventory/progression + market access guard, entity replication ve market buy. Process verifier sonucu: `PRG05_PRODUCTION_LAN_VERIFIER_OK host_bootstrap=1 save_reload=1 cached_replay=1`.
+- Persistence/replay: host save `owner=host stock=7 guest_quantity=1 ledger=1`; Bootstrap free/reload sonrası guest motion/inventory + transaction ledger restore; aynı transaction ID yeniden gönderildiğinde cached response dönüp stock/balance/inventory ikinci kez değişmedi (`stock=7 balance=988 quantity=1 ledger=1`).
+- Uçtan-uca testin ortaya çıkardığı non-home-sector save boot hataları düzeltildi: dormant NPC brain current sector dışında güvenli configure/rebind ediliyor; dormant practice ship combat registration saved weapon battery shape'ını koruyor. İki ayrı regresyon testi eklendi.
+- Android artifact `14905973534`: authenticated readback **OK**, ZIP SHA-256 `846a2848b8278e5a87b2ea0207c34de72c162f93ee571c32c7903c8bd1e7ef22`, provenance exact SHA ile eşleşiyor.
+- Linux artifact `14907086350`: authenticated readback **OK**, ZIP SHA-256 `f9d1c66b5aa06331c34c0983ca18a3a56378159fac2b654ac8b86e9016a48001`, executable/PCK checksum ve provenance readback geçti.
+- **Açık:** gerçek Android dokunmatik pazar smoke, fiziksel host/join/pazar UX kabulü ve uzun iki-cihaz LAN ekonomi state-drift testi `not_run`. Production composition kod/CI düzeyinde artık açık değildir; cihaz kabulü ayrı kapıdır. PRG-05 `active`; PRG-06 başlamaz.
+

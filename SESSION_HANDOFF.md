@@ -15,7 +15,7 @@
 - Kaynak sprite ZIP arşivleri exporttan çıkarıldı; APK içinde bulunmuyor.
 - APK boyutunun ana bileşeni Godot debug engine: `libgodot_android.so` = `76181608` byte.
 - Fiziksel Android yeni-build doğrulaması: **awaiting_retest / not_run**
-- PRG-05: **active**; 400/400 CI-doğrulanmış ilk ekonomi/diplomasi dilimi (`6140a383ff47b354968cf2966bec2686f5d6d28d`)
+- PRG-05: **active**; son doğrulanmış production LAN composition checkpoint'i exact SHA `ef470b821332d85846b345d20e09c5b22f2d50ea`, CI `45365494569` success, GUT 416/416
 
 ## Android smoke hotfix
 
@@ -25,7 +25,7 @@ Exact SHA üzerinde full GUT ve mevcut VS/CORE/AI/NET regresyonları, Linux expo
 
 ## Sonraki kapı
 
-Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi tekrar yapılmalıdır. Bu cihaz kanıtı tamamlanana kadar yalnız cihaz sonucu `awaiting_retest / not_run` kalır. PRG-05 kanonik Beyin görevi `tasks/seacraft-prg05-faction-economy-trade-20261123.md` resmî motorla açıldı; dünya olayı entegrasyonu, company/crew ve gerçek Android LAN ekonomi drift ölçümü açık. PRG-06 başlamadı.
+PRG-05 production LAN host composition kod+gerçek süreç+save/replay düzeyinde doğrulandı. Son açık kapı gerçek Android dokunmatik pazar/host-join UX smoke ve uzun iki-cihaz LAN ekonomi state-drift ölçümüdür; bunlar `not_run`. CI bu fiziksel cihaz kanıtının yerine geçmez. PRG-05 `active`, PRG-06 başlamadı. Android gameplay smoke hotfix için ayrı fiziksel retest kaydı da `awaiting_retest / not_run` kalır.
 
 
 ## Sprite üretim handoff — SC-07 / radial kaynak standardı
@@ -57,3 +57,12 @@ Yeni Android artifact fiziksel telefona kurulup hareket/buton/etiket smoke testi
 
 
 **PRG-05 checkpoint 5 — 2026-11-24:** shipped offline Bootstrap bounty (80 currency), AI-04 FAR pilot supply convoy (+4 stock), market UI read-only status and authoritative trade; packed-scene combat → mid-route save/reload → delivery → real sector gates → market buy and out-of-range rejection verified. Exact code SHA `fb11a171c53a9974e5009adcf66b4dd836a69bf3`; [CI 45357962822](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45357962822) **success**, GUT **414/414**, 29,884 asserts, PRG-05 **19/19** (18 explicit verifier markers); NET04 real-process, Android/Linux export and authenticated artifact readback success. Fixed legacy full-width RNG seed derivation, empty exported registry / source-pack content manifest parity (23 entries, Android byte-exact definitions), random transaction ID invalid numeric prefix (all 16 prefixes tested). Android artifact `14903422223`, ZIP SHA-256 `ad4287d027b53ad671e54854290f13aece1ba8d7851b8fa643e8ddb360c6ff68`; Linux artifact `14903252987`, ZIP SHA-256 `817df7b595d26c0bf5a3af04b08760b6db1a90af51e72d45017dbce7eb37fb52`. Actual physical Android touch/long two-device LAN drift `not_run`; full production LAN host composition and UI device acceptance remain open; PRG-05 active, PRG-06 not started.
+
+## PRG-05 production LAN checkpoint 6 — 2026-11-24
+
+- Exact code SHA: `ef470b821332d85846b345d20e09c5b22f2d50ea`; [CI 45365494569](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45365494569) **success**, GUT **416/416**, **29.910 assert**.
+- Shipped Bootstrap üzerinde gerçek production LAN host composition doğrulandı: Safe Haven authority, UDP discovery/manual join, authoritative remote guest movement/replication, market buy, HOST save, reload ve transaction-ledger cached replay. Verifier: `host_bootstrap=1 save_reload=1 cached_replay=1`.
+- Reload testinin açığa çıkardığı non-home-sector dormant NPC AI/combat restore hataları kökten düzeltildi; dormant brain rebind ve dormant weapon-battery state shape için regresyonlar eklendi.
+- Android artifact `14905973534`, ZIP SHA-256 `846a2848b8278e5a87b2ea0207c34de72c162f93ee571c32c7903c8bd1e7ef22`; Linux artifact `14907086350`, ZIP SHA-256 `f9d1c66b5aa06331c34c0983ca18a3a56378159fac2b654ac8b86e9016a48001`; authenticated readback başarılı.
+- Fiziksel Android dokunmatik pazar/host-join UX ve uzun iki cihaz LAN economy drift `not_run`; bunlar tamamlanmadan PRG-05 kapanmaz ve PRG-06 başlamaz.
+
