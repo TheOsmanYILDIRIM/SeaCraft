@@ -262,3 +262,25 @@ func _make_wall(position: Vector2) -> StaticBody2D:
 	shape_node.shape = shape
 	wall.add_child(shape_node)
 	return wall
+
+
+func test_play01_near_and_reverse_targets_settle_without_orbit() -> void:
+	# Use the shipped player profile, not the smaller isolated test fixture.
+	for distance in [19.0, 25.0, 40.0, 75.0, 200.0]:
+		for heading in [0.0, PI * 0.5, PI * 0.75, PI]:
+			var motor := ShipMotor.new()
+			motor.movement_profile = ShipMotor.DEFAULT_PROFILE
+			motor.rotation = heading
+			var target := Vector2(distance, 0.0)
+			assert_true(motor.set_target_world_position(target))
+			for tick in range(600):
+				var previous_heading := motor.rotation
+				motor.step_authoritative(FIXED_DELTA, false)
+				assert_lte(absf(ShipMotor.signed_angular_difference(previous_heading, motor.rotation)), deg_to_rad(motor.movement_profile.turn_rate_degrees_per_second) * FIXED_DELTA + EPSILON)
+				if not motor.has_target():
+					break
+			assert_false(motor.has_target(), "distance=%s heading=%s" % [distance, heading])
+			assert_lte(motor.global_position.distance_to(target), motor.movement_profile.arrival_radius + 0.02)
+			assert_lte(motor.velocity.length(), motor.movement_profile.stop_speed_epsilon)
+			motor.free()
+	print("PLAY01_NEAR_REVERSE_ARRIVAL_OK")

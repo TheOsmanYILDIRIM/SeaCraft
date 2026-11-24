@@ -10,6 +10,8 @@ const SIDE_ALIGNED := 0
 const SIDE_STARBOARD := 1
 const SIDE_EPSILON := 0.0001
 const MIN_POSITIVE := 0.000001
+# Tolerance for a fully stopped motor just outside the arrival boundary.
+const ARRIVAL_SETTLE_EPSILON := 0.01
 
 @export var movement_profile: ShipMovementProfile
 @export var authority_enabled: bool = true
@@ -107,6 +109,14 @@ func step_authoritative(delta: float, apply_collision: bool = true) -> void:
 			var turn_error: float = absf(angular_difference_to_desired())
 			var alignment: float = clampf(1.0 - (turn_error / PI) * 0.65, 0.35, 1.0)
 			target_speed *= alignment
+			# A nearby target behind the bow can otherwise produce a permanent orbit:
+			# the ship accelerates faster than its available turn radius permits.
+			# Retain bounded forward motion (no pivot-in-place or reverse thrust).
+			if turn_error > PI / 6.0:
+				var turn_rate := deg_to_rad(_positive_or_zero(profile.turn_rate_degrees_per_second))
+				if turn_rate > MIN_POSITIVE:
+					var turning_speed := maxf(_positive_or_zero(profile.minimum_maneuvering_speed), distance_to_target * turn_rate * 0.5)
+					target_speed = minf(target_speed, turning_speed)
 	else:
 		_desired_heading = rotation
 
@@ -130,7 +140,7 @@ func step_authoritative(delta: float, apply_collision: bool = true) -> void:
 
 	if _has_target:
 		var remaining: float = global_position.distance_to(_target_position)
-		if remaining <= _positive_or_zero(profile.arrival_radius) and velocity.length() <= _positive_or_zero(profile.stop_speed_epsilon):
+		if remaining <= _positive_or_zero(profile.arrival_radius) + ARRIVAL_SETTLE_EPSILON and velocity.length() <= _positive_or_zero(profile.stop_speed_epsilon):
 			velocity = Vector2.ZERO
 			_has_target = false
 			_desired_heading = rotation
