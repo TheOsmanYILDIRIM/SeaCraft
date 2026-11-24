@@ -502,6 +502,7 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.1/aapt" dump permissions build/android/SeaCraft-debug.apk | tee "$RUNNER_TEMP/apk-permissions.txt"
           grep -Fq "uses-permission: name='android.permission.INTERNET'" "$RUNNER_TEMP/apk-permissions.txt"
           grep -Fq "uses-permission: name='android.permission.ACCESS_LOCAL_NETWORK'" "$RUNNER_TEMP/apk-permissions.txt"
+          grep -Fq "uses-permission: name='android.permission.CHANGE_WIFI_MULTICAST_STATE'" "$RUNNER_TEMP/apk-permissions.txt"
 
       - name: Record platform artifact provenance
         shell: bash

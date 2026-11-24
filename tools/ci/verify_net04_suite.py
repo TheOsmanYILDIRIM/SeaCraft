@@ -21,6 +21,7 @@ tests = [
     "test_net04_transaction_idempotency_and_conflict",
     "test_net04_transaction_persistence_round_trip",
     "test_net04_permission_fallback_and_runtime_api",
+    "test_net04_permission_callback_grant_denial_timeout_and_recheck",
     "test_net04_offline_boot_and_manual_ipv4_remain_default",
     "test_net04_static_security_and_network_boundary",
     "test_net04_protocol_mismatch_stays_deterministic_after_version_bump",
@@ -36,6 +37,7 @@ markers = [
     "NET04_TRANSACTION_IDEMPOTENCY_OK",
     "NET04_TRANSACTION_PERSISTENCE_OK",
     "NET04_PERMISSION_FALLBACK_OK",
+    "NET04_PERMISSION_CALLBACK_OK grant=1 denied=1 false_grant=1 unrelated=1 timeout=1 broadcast=1",
     "NET04_OFFLINE_BOOT_OK",
     "NET04_PROTOCOL_MISMATCH_OK",
 ]
@@ -66,4 +68,4 @@ for marker in [
         raise SystemExit(f"missing NET04 process marker: {marker}")
 if re.search(r"SCRIPT ERROR:|Parse Error:|NET04_PROCESS_FAILURE", gut + process):
     raise SystemExit("NET04 parse/process failure")
-print("NET04_VERIFIER_OK unit=13 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1")
+print("NET04_VERIFIER_OK unit=14 fuzz=2000 discovery_process=1 reconnect=1 late_join=1 lost_ack=1")

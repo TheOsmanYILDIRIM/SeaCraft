@@ -21,6 +21,8 @@ func start(discovery_port: int, bind_address: String = "0.0.0.0") -> Error:
 	if not _permission.can_open_lan_socket():
 		return ERR_UNAUTHORIZED
 	_socket = PacketPeerUDP.new()
+	# Godot documents that some Android Wi-Fi stacks require this option even for receiving broadcasts.
+	_socket.set_broadcast_enabled(true)
 	var error := _socket.bind(discovery_port, bind_address)
 	if error != OK:
 		_socket = null

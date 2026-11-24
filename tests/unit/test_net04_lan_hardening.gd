@@ -259,6 +259,11 @@ func test_net04_permission_callback_grant_denial_timeout_and_recheck() -> void:
 	pregranted.granted = true
 	assert_eq(await pregranted.request_and_wait(get_tree()), PG.RESULT_ALLOWED)
 	assert_eq(pregranted.requests, 0)
+	var client_source := FileAccess.get_file_as_string("res://src/network/lan_discovery_client.gd")
+	assert_true(client_source.contains("_socket.set_broadcast_enabled(true)"))
+	var presets := FileAccess.get_file_as_string("res://export_presets.cfg")
+	assert_true(presets.contains("permissions/change_wifi_multicast_state=true"))
+	print("NET04_PERMISSION_CALLBACK_OK grant=1 denied=1 false_grant=1 unrelated=1 timeout=1 broadcast=1")
 
 
 func test_net04_offline_boot_and_manual_ipv4_remain_default() -> void:
