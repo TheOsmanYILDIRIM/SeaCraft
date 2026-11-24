@@ -73,11 +73,11 @@ Rol: ileri sualtı çok fazlı boss. L/B 2,4:1; geniş kama çene, uzun kalın t
 
 ## 4. Ölçek ve tek yön standardı
 
-SC-01 gemi E/W 60 dünya birimi = 60 final px (referans 1,00); canavar L değeri aynı dünyada ölçülür. Her tür kendi nötr pozunda aynı projeksiyon ölçeğine sahip; baş/kıç görüntüsü doğal kısalır. Çok uzuvlu türde genişlik/eklem işaretleri ayrıca ölçülür; bütün yönlerde anatomi ve gövde ölçeği değişmez. Her tür için gerçek metre eşdeğeri yalnız sanat referansıdır (60 birim ≈ 12 m); hitbox veya hasar ölçüsü değildir.
+SC-01 gemi E/W 60 dünya birimi = 60 ekran px (1× referans) (referans 1,00); canavar L değeri aynı dünyada ölçülür. Her tür kendi nötr pozunda aynı projeksiyon ölçeğine sahip; baş/kıç görüntüsü doğal kısalır. Çok uzuvlu türde genişlik/eklem işaretleri ayrıca ölçülür; bütün yönlerde anatomi ve gövde ölçeği değişmez. Her tür için gerçek metre eşdeğeri yalnız sanat referansıdır (60 birim ≈ 12 m); hitbox veya hasar ölçüsü değildir.
 
-| ID | Birincil rol | L/B | E/W nötr L px | Relative L/60 | Final C | Paket |
+| ID | Birincil rol | L/B | E/W dünya L (1× ekran px) | Relative L/60 | Başlangıç gövde hedefi / hücre bütçesi | Paket |
 |---|---|---:|---:|---:|---:|---|
-| M01 | Küçük kıyı avcısı | 3,2 | 48 | 0,80 | 160 | Minimum |
+| M01 | Küçük kıyı avcısı | 3,2 | 48 | 0,80 | 160 / 224 | Minimum |
 | M02 | Zırhlı resif | 0,9 | 66 | 1,10 | 160 | Minimum |
 | M03 | Hızlı açık deniz | 4,5 | 72 | 1,20 | 160 | Minimum |
 | M04 | Deniz yılanı | 3,4 | 120 | 2,00 | 224 | Minimum |
@@ -95,11 +95,22 @@ SC-01 gemi E/W 60 dünya birimi = 60 final px (referans 1,00); canavar L değeri
 
 C ilk bütçedir, 8 px padding sığmazsa tüm yönlerde aynı üst sınıfa geç; tek yönde fit yasak. M02/M07 için genişlik ayrıca kılavuzdan kalibre edilir. M08/M15 nötr anatomisi yüksekse tam atlas bütçesi yeniden hesaplanır; kırpılmaz.
 
+### Efektif sprite çözünürlüğü — zorunlu kabul kapısı (M01 dersi)
+
+Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final görünür gövde çözünürlüğü ve şeffaf hücre boyutu farklı ölçülerdir. Dünya boyu tablosu fizik/sunum oranını korur; final PNG'nin piksel yoğunluğunu sınırlamaz. **160 px veya 224 px doku hedefi, hücre etiketi değil görünür ana gövde/hull uzunluğu hedefidir.** Eski hücre sınıflarının sayısal değeri (160/224/320/384 px) yeni üretimde başlangıç gövde çözünürlüğü hedefidir; paketleme hücresi sonradan hesaplanır. M01 örneğinde 48 dünya birimi korunur; E/W görünür gövde 160 px hedeflenir, 224×224 hücre ve 896×448 atlas kullanılır. 160×160 hücre içinde 48 px gövde bu hedef için reddedilir.
+
+- Her yeni asset için önce hedef gerçek E/W gövde/hull piksel uzunluğu belirle. E/W anatomik uçları ölç; diğer yönlerin doğal projeksiyon kısalmasını koru. Alfa≥128 bbox genişlik/yükseklik ve gerçek landmark uzunluğunu ayrı raporla; kopuk piksel veya direk yüksekliğini gövde uzunluğu sayma.
+- Kaynak nesneleri gerçek alfa sınırından ayır, gereksiz boşluğu kaldır; yüksek çözünürlüklü temiz master'ı koru. Manuel hizalama JSON'u varsa onaylı göreli yön ölçeği ve pivot ofsetleri korunur. Son paketleme için sekiz yöne tek ortak uniform katsayı ve aynı pivot dönüşümü uygula; yön başına yeniden fit, x/y ayrı stretch veya merkez sıfırlama yok.
+- Final hücreyi hedef gövde yoğunluğundan SONRA seç: tüm yönlerin ortak pivot etrafındaki alfa>0 sınırları + dört kenarda en az 8 px alpha-0. Gerekirse tüm seti daha büyük ortak hücreye geçir; hedefi sessizce küçültme. Gemi hasar/maskeleri varsa aynı dönüşüm ve hücre. Dünya boyunu korumak için runtime sunum ölçeği = dünya gövde uzunluğu / final referans gövde px; pivot-relative socket'lere de aynı dönüşüm uygulanır. Fizik/hitbox değişmez.
+- Hedef E/W uzunluğu ±%3 ve diğer yönlerin kılavuz projeksiyon oranları kontrol edilir; final bbox, kaynak gerçek detay yoğunluğu, padding, atlas hücre eşitliği ve dönüş QA ölçülmeden teslim yok. Kaynak yetersizse kullanıcıya AI upscale gerekli bildir; interpolasyon veya boş tuval büyütme yeni detay değildir.
+- HTML'de düşük çözünürlüklü (örn. 256²) gömülü önizleme serbest; aynı sanal 1024 koordinatı ve aynı çerçeve dönüşümü korunur. JSON final yüksek çözünürlüklü kaynaklara uygulanır; preview PNG final kaynak değildir. Final GIF final PNG'lerden, ayrı HD GIF temiz yüksek çözünürlüklü hizalanmış kaynaklardan yapılır. HD incelemede tüm karelere ortak sıkı güvenli tuval kullanılır; dev boş canvas yasak.
+- Manifestte dünya uzunluğu, target_body_px, measured_body_px_per_direction, source_bbox_per_direction, final_bbox_per_direction, effective_fill_ratio (bbox genişlik/hücre, yükseklik/hücre), cell_px, atlas_px, ortak katsayı, pivot, runtime_world_per_texel ve varsa upgrade_reason kaydedilir. 12 dosya ZIP standardı değişmez. Eski paketler bu kapı yeniden ölçülmeden geçmiş sayılmaz.
+
 ## 5. Hücre, alfa, pivot ve Godot
 
 - N=0°, NE=45°, E=90°, SE=135°, S=180°, SW=225°, W=270°, NW=315°; 4×2 atlas üst N NE E SE / alt S SW W NW. Sprite görünüşü en yakın sektör ±22,5°, 3° histerezis; hareket 360°. Yönler arasında gerçek fizik rotasyonu ile sprite rotasyonunu karıştırma.
 - 1024² normalize yön master, 2048² konsept arşivi hedefi; ham üretim çözünürlüğü değildir. 160²/224²/320²/384² final hücre → 640×320/896×448/1280×640/1536×768 atlas. 8 bit sRGB straight RGBA, kenarlarda ≥8 px gerçek alpha-0; premultiplied filtrele ve straight döndür. Kenar halo/komşu piksel/ince uzuv testi.
-- Pivot bütün yönlerde **aynı anatomik referans**: yüzeyde gövdenin ağırlık merkezinin su düzlemine izdüşümü (yılanda sabit orta omurga; kabukluda kabuk merkezi; krakende manto tabanı); sualtında ana gövdenin hareket kökü. Normalize (512,512), final (C/2,C/2). Bbox merkezi değil; 3D referans, eklem, göz ve su düzlemi işaretleriyle kilitle. Tolerans ≤1 final px pivot, nötr L ±%3, ana landmark ±2 final px ve yön ±2°; uzuv adedi/tarafı sıfır tolerans.
+- Pivot bütün yönlerde **aynı anatomik referans**: yüzeyde gövdenin ağırlık merkezinin su düzlemine izdüşümü (yılanda sabit orta omurga; kabukluda kabuk merkezi; krakende manto tabanı); sualtında ana gövdenin hareket kökü. Normalize (512,512), final (C/2,C/2). Bbox merkezi değil; 3D referans, eklem, göz ve su düzlemi işaretleriyle kilitle. Tolerans ≤1 final px pivot, hedef doku L ±%3, ana landmark ±2 final px ve yön ±2°; uzuv adedi/tarafı sıfır tolerans.
 - Socket fişi: ağız/çene, sol/sağ saldırı noktası, harpoon hit gösterimi, wake kökü, loot görseli ve varsa zayıf nokta; görünürlük ve occlusion yön bazlı. Simülasyon hitbox'ı ayrı, resimden türetilmez.
 - Godot sunumda AtlasTexture, filter_clip, repeat kapalı, merkez pivot, lineer filtre, ilk lossless/mip kapalı; tek 4×2 yön atlası, her yön için bir statik kare; animasyon frame zinciri yok. 384² ×8 RGBA8 atlas ~4,5 MiB; GPU belleği PNG boyutu değildir. Marker LOD, çoklu canavar + gemi + su/VFX Android profili ayrı kabul. Stable ID/HP/loot/harpoon/AI host authority değişmez; sunum eşlemesi ileride registry üzerinden açıkça tasarlanır.
 
@@ -119,7 +130,7 @@ Her satır 1 konsept + 8 nötr statik yön + 1 atlas; başka poz veya katman yok
 
 | ID | C | 4×2 atlas | Tam yön PNG | Tam atlas | Tam concept dahil | Min concept dahil |
 |---|---:|---|---:|---:|---:|---:|
-| M01 | 160 | 640×320 | 8 | 1 | 9 | 9 |
+| M01 | 224 | 896×448 | 8 | 1 | 9 | 9 |
 | M02 | 160 | 640×320 | 8 | 1 | 9 | 9 |
 | M03 | 160 | 640×320 | 8 | 1 | 9 | 9 |
 | M04 | 224 | 896×448 | 8 | 1 | 9 | 9 |

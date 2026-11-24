@@ -153,7 +153,18 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 **Hareket 360°**, görsel sektör N=0°, NE=45°, E=90°, SE=135°, S=180°, SW=225°, W=270°, NW=315°. En yakın sektör, ±22,5° sınır; titreşim için mevcut sektörden çıkışta 3° görsel histerezis. Yön atlasını gerçek açıda tekrar döndürme veya iki görüntüyü crossfade etme. Wake, mermi, gerçek atış ve fizik sprite açısına kilitlenmez.
 
-**Dünya boyu:** SC-01 L=1,00; E/W taban **60 dünya birimi = 60 final px**. Tablodaki göreli boy ×60, 1× oturumda E/W su hattı boyu; en ≈ L/LB. Sanat referansı 1,00 için yaklaşık 12 m, 4,10 için 49,2 m; denge veya isabet ölçüsü değildir. Çarpışma ayrı su hattı planından. Bir gemide aynı ortak px/dünya oranı; yönler/hasar için ayrı “fit” yok. Baş/kıçta doğal projeksiyon kısalmasını koru.
+**Dünya boyu:** SC-01 L=1,00; E/W taban **60 dünya birimi = 60 ekran px (1× referans)**. Tablodaki göreli boy ×60, 1× oturumda E/W su hattı boyu; en ≈ L/LB. Sanat referansı 1,00 için yaklaşık 12 m, 4,10 için 49,2 m; denge veya isabet ölçüsü değildir. Çarpışma ayrı su hattı planından. Bir gemide aynı ortak px/dünya oranı; yönler/hasar için ayrı “fit” yok. Baş/kıçta doğal projeksiyon kısalmasını koru.
+
+### Efektif sprite çözünürlüğü — zorunlu kabul kapısı (M01 dersi)
+
+Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final görünür gövde çözünürlüğü ve şeffaf hücre boyutu farklı ölçülerdir. Dünya boyu tablosu fizik/sunum oranını korur; final PNG'nin piksel yoğunluğunu sınırlamaz. **160 px veya 224 px doku hedefi, hücre etiketi değil görünür ana gövde/hull uzunluğu hedefidir.** Eski hücre sınıflarının sayısal değeri (160/224/320/384 px) yeni üretimde başlangıç gövde çözünürlüğü hedefidir; paketleme hücresi sonradan hesaplanır. M01 örneğinde 48 dünya birimi korunur; E/W görünür gövde 160 px hedeflenir, 224×224 hücre ve 896×448 atlas kullanılır. 160×160 hücre içinde 48 px gövde bu hedef için reddedilir.
+
+- Her yeni asset için önce hedef gerçek E/W gövde/hull piksel uzunluğu belirle. E/W anatomik uçları ölç; diğer yönlerin doğal projeksiyon kısalmasını koru. Alfa≥128 bbox genişlik/yükseklik ve gerçek landmark uzunluğunu ayrı raporla; kopuk piksel veya direk yüksekliğini gövde uzunluğu sayma.
+- Kaynak nesneleri gerçek alfa sınırından ayır, gereksiz boşluğu kaldır; yüksek çözünürlüklü temiz master'ı koru. Manuel hizalama JSON'u varsa onaylı göreli yön ölçeği ve pivot ofsetleri korunur. Son paketleme için sekiz yöne tek ortak uniform katsayı ve aynı pivot dönüşümü uygula; yön başına yeniden fit, x/y ayrı stretch veya merkez sıfırlama yok.
+- Final hücreyi hedef gövde yoğunluğundan SONRA seç: tüm yönlerin ortak pivot etrafındaki alfa>0 sınırları + dört kenarda en az 8 px alpha-0. Gerekirse tüm seti daha büyük ortak hücreye geçir; hedefi sessizce küçültme. Gemi hasar/maskeleri varsa aynı dönüşüm ve hücre. Dünya boyunu korumak için runtime sunum ölçeği = dünya gövde uzunluğu / final referans gövde px; pivot-relative socket'lere de aynı dönüşüm uygulanır. Fizik/hitbox değişmez.
+- Hedef E/W uzunluğu ±%3 ve diğer yönlerin kılavuz projeksiyon oranları kontrol edilir; final bbox, kaynak gerçek detay yoğunluğu, padding, atlas hücre eşitliği ve dönüş QA ölçülmeden teslim yok. Kaynak yetersizse kullanıcıya AI upscale gerekli bildir; interpolasyon veya boş tuval büyütme yeni detay değildir.
+- HTML'de düşük çözünürlüklü (örn. 256²) gömülü önizleme serbest; aynı sanal 1024 koordinatı ve aynı çerçeve dönüşümü korunur. JSON final yüksek çözünürlüklü kaynaklara uygulanır; preview PNG final kaynak değildir. Final GIF final PNG'lerden, ayrı HD GIF temiz yüksek çözünürlüklü hizalanmış kaynaklardan yapılır. HD incelemede tüm karelere ortak sıkı güvenli tuval kullanılır; dev boş canvas yasak.
+- Manifestte dünya uzunluğu, target_body_px, measured_body_px_per_direction, source_bbox_per_direction, final_bbox_per_direction, effective_fill_ratio (bbox genişlik/hücre, yükseklik/hücre), cell_px, atlas_px, ortak katsayı, pivot, runtime_world_per_texel ve varsa upgrade_reason kaydedilir. 12 dosya ZIP standardı değişmez. Eski paketler bu kapı yeniden ölçülmeden geçmiş sayılmaz.
 
 ## 5. Hücre, alfa ve Godot 4.7
 
@@ -162,7 +173,7 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 | Satır 0 | N | NE | E | SE |
 | Satır 1 | S | SW | W | NW |
 
-4×2, standardı tek gridde tutar ve 8×1’e göre en uzun kenarı yarıya indirir. Her onaylı yön/base/H/S **1024×1024 normalize master RGBA PNG**; bu ham model çıktısı boyutunun garantisi değildir. Ortografik konsept/ref **2048²** arşiv. 1× oyun hücreleri gövdeye göre **160²/224²/320²/384²**, atlaslar **640×320/896×448/1280×640/1536×768**. Her gövde kendi sınıfında; >0 alfa sınırı padding’e girerse tek kareyi küçültme, kılavuzu ve gerekirse tüm gövde hücre sınıfını düzelt.
+4×2, standardı tek gridde tutar ve 8×1’e göre en uzun kenarı yarıya indirir. Her onaylı yön/base/H/S **1024×1024 normalize master RGBA PNG**; bu ham model çıktısı boyutunun garantisi değildir. Ortografik konsept/ref **2048²** arşiv. İlk paketleme bütçeleri gövdeye göre **160²/224²/320²/384²**, atlaslar **640×320/896×448/1280×640/1536×768**. Her gövde kendi sınıfında; >0 alfa sınırı padding’e girerse tek kareyi küçültme, kılavuzu ve gerekirse tüm gövde hücre sınıfını düzelt.
 
 **Alfa:** 8 bit/kanal, sRGB straight RGBA PNG; dış alan alpha 0, kumaş opak, alfa yalnız doğal kenar ve deliklerde, hayalet gövde de opak. Final hücrenin dört kenarında en az **8 px** gerçek alpha-0 padding (komşular arası ≥16 px). Alfa>0 bbox clipping, alfa≥128 bbox siluet ölçümü için yön başına kayıt; trim veya bbox orta noktasına göre hizalama yok. Premultiplied uzayda filtrele, straight RGBA dön; 2 px yakın RGB edge bleed yalnız alpha-0 bölgede. Gri/siyah üstüne compositing ile matte, halo, beyaz fringe, kopuk piksel ve kırpılmış donanım kontrolü. Deniz, gökyüzü, iz, gölge, sis, yazı ve modelin boyadığı dama deseni yasak.
 
@@ -281,7 +292,7 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 
 8 px iç padding ve 4×2 aynı yön sırası. H ve S de 8 yön ve ana hücre ölçüsünde. Toplamlar concept dâhil kabul görselidir; maskeler ve ortak efekt atlasları ayrı muhasebedir.
 
-| Gemi | Ana yön | Source / kare | Final / kare | 4×2 sheet px | Tam ekler | Tam gövde renderı | Tam concept dahil | Minimum concept dahil |
+| Gemi | Ana yön | Source / kare | Başlangıç hücre bütçesi | Başlangıç 4×2 sheet px | Tam ekler | Tam gövde renderı | Tam concept dahil | Minimum concept dahil |
 |---|---:|---|---|---|---|---:|---:|---:|
 | SC-02 · Kül Dikişi | 8 | 1024×1024 | 160×160 | 640×320 | 1 ref + 1 maske atlası | 8 | 9 | 9 |
 | SC-03 · Tuz Ambarı | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref + 1 maske atlası | 8 | 9 | 9 |
