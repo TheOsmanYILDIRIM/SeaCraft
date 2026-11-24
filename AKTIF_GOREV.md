@@ -1,3 +1,15 @@
+# AKTİF GÖREV — PRG-06 · Surface/submarine ve içerik genişletme
+
+Plan: `GELISTIRME_GOREV_PLANI.md` PRG-06; kanonik Beyin `tasks/seacraft-prg06-surface-submarine-20261124.md`; yalnız `main`, Godot 4.7.2. PRG-05 ekonomi persistence ve host transaction test gate geçti. Kullanıcı 2026-11-24 fiziksel cihaz testini üstlendi ve plana göre geliştirmeye devam edilmesini istedi. PRG-05 cihaz kabulü `not_run`, ayrı açık kalır.
+
+## PRG-06 checkpoint 1 — 2026-11-24
+
+- Authored sector mode (surface 0/submarine 1), validated cross-mode gates, Deep Haven and protected entry; surface FAR routing cannot cross into underwater mode. Bootstrap mobile gate button routes to anchor, dives and returns. Existing shared inventory, entity identity, world and persistence retained; predecessor manifest migration narrowly matches verified PRG-05 hash and count. LAN manifest mismatch rejected; underwater LAN host/join blocked, running room cannot transition. Placeholder submarine presentation only.
+- Exact code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`; [CI 45457089855](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45457089855) **success**, GUT **420/420**, **30,000 asserts**, `PRG06_MODE_GATE_OK`, `PRG06_SHARED_SAVE_OK`, `PRG06_LEGACY_CONTENT_OK`; NET01–04 real-process and PRG05 production save/replay passed. Manifest 25 entries, `2e2621f8506cf623ec41a93298aebbcaee94526f0cc244eb2ec86c0ab740a3a4`; Linux runtime manifest parity and Android source bytes verified. Android artifact `14951033193`, ZIP SHA-256 `d5ac2f48017f5b641bbdbfd7d0a6470805d8517b2ada8657372d1e72f6408774`; Linux artifact `14950518669`, ZIP SHA-256 `21549e8370211004243894cc76c4ed954e40db6656de104f58778ac6d9130741`; authenticated readback passed.
+- **Open:** submarine tier/loadout, launcher/torpedo/breach, mode-specific gems/progression, auto-fire, actual underwater host-authoritative combat and network composition; physical Android movement/memory/touch `not_run`. ADV-01 not started.
+
+---
+
 # AKTİF GÖREV — PRG-05 · faction ve ekonomi (devam ediyor)
 
 Başlangıç: a73633beb1dfec0d70c1b4e640bfd439ff823ede; yalnız `main`; Godot 4.7.2. Kaynak: `GELISTIRME_GOREV_PLANI.md` PRG-05. PRG-04 kapalı; Android smoke hotfix gerçek cihaz retesti ayrı `awaiting_retest`.
@@ -16,7 +28,7 @@ Başlangıç: a73633beb1dfec0d70c1b4e640bfd439ff823ede; yalnız `main`; Godot 4.
 
 **PRG-05 Android LAN izin hotfix — 2026-11-24:** Kullanıcının `415919e9c471` build'inde `requested` döngüsü: Android SDK <37 için gereksiz runtime gate kaldırıldı; SDK ≥37 gerçek izin grant'i, async callback + timeout/recheck, host/guest single-flight ve cancel; Android UDP broadcast receive ve `CHANGE_WIFI_MULTICAST_STATE` manifest doğrulaması eklendi. Exact code SHA `ecda2d69ea2d79cbc40bb73bc4fcfae12dd41bdf`; [CI 45440455081](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45440455081) **success**, GUT **417/417**, **29,960 asserts**, `NET04_PERMISSION_CALLBACK_OK grant=1 denied=1 false_grant=1 unrelated=1 timeout=1 broadcast=1`; NET01–04 ve PRG05 production integration, Android/Linux export ve authenticated artifact readback geçti. Android artifact `14944915113`, ZIP SHA-256 `73405fa9c09242e535b765eec5ee31bb71023d96f6faa9fd5102e47ba7b9569d`, APK SHA-256 `5ad80bd3a0feabe7b3ae8f802dc559efc8d372d83b5a129a537178e81e5bf996`; Linux artifact `14943621158`, ZIP SHA-256 `490d89cc9e0bdba3d58d1099d07c7846d0e5e03d0bf358779266b43a343914dc`. Fiziksel Android izin, host/join UX ve uzun iki-cihaz ekonomi drift retesti `not_run`; PRG-05 active; PRG-06 başlamadı.
 
-**Açık PRG-05 kapıları:** Gerçek Android dokunmatik pazar smoke + uzun iki-cihaz LAN ekonomi drift `not_run`; production host orchestration kod+gerçek süreç+save/replay düzeyinde doğrulandı, fakat fiziksel cihazda host/join/pazar UX kabulü ve uzun süreli iki cihaz state-drift gözlemi hâlâ gereklidir. CI fiziksel cihaz testi yerine geçmez. PRG-05 `active` tutulur; PRG-06'ya geçilmez.
+**Açık PRG-05 kapıları:** Gerçek Android dokunmatik pazar smoke + uzun iki-cihaz LAN ekonomi drift `not_run`; production host orchestration kod+gerçek süreç+save/replay düzeyinde doğrulandı, fakat fiziksel cihazda host/join/pazar UX kabulü ve uzun süreli iki cihaz state-drift gözlemi hâlâ gereklidir. CI fiziksel cihaz testi yerine geçmez. PRG-05 fiziksel kabul için `active` tutulur; 2026-11-24 kullanıcı cihaz testini üstlendi, planın teknik kapısı geçildiği için PRG-06 ayrıca başlatıldı.
 
 ---
 

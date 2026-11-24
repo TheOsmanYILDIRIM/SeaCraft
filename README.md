@@ -352,3 +352,8 @@ Host/offline-owned `Prg05EconomyState` uses the existing authoritative `Inventor
 - On a second device choose **LAN → Odaya katıl**, grant local-network permission if requested, and select **Odaları ara** or type the displayed host IPv4 address. Pilot defaults: ENet 17350 / UDP discovery 17351. Both devices must run the same protocol-8 build on a local network without peer isolation.
 - The guest scene has no local world save writer. Movement is sent as host intents; the scene renders replicated ship proxies and the market panel reads host-only quotes and balance. An authoritative market transaction uses a unique ID, and a pending trade can replay that ID after explicit reconnect. One guest slot, the existing Safe Haven sector lock, and an idempotent pilot starting credit of 1000 are intentional test-slice limits.
 - Physical Android input, Android permission dialogs, Wi-Fi discovery and prolonged two-device economy drift remain device acceptance gates; the real-process CI fixture exercises the shipped host and guest controls, not Android hardware.
+
+
+## PRG-06 pilot: Deep Haven
+
+Güvenli Liman'da `KAPIYA GİT` ile dalış noktasına yaklaşın, `DAL` ile Deep Haven'a geçin, giriş kapısında `YÜZEYE ÇIK` ile geri dönün. Aynı oyuncu kimliği, envanter ve kayıt sistemi korunur. Denizaltı görseli geçici; torpido savaş sistemi ve sualtı LAN henüz uygulanmadı. Eski PRG-05 içeriğinin doğrulanmış manifestinden kayıt geçişi desteklenir; LAN'da aynı içerik sürümü gerekir. Fiziksel cihaz kabulü açık.

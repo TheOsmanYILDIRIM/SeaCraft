@@ -17,6 +17,8 @@
 - Fiziksel Android yeni-build doğrulaması: **awaiting_retest / not_run**
 - PRG-05: **active**; son doğrulanmış Android LAN hotfix exact SHA `ecda2d69ea2d79cbc40bb73bc4fcfae12dd41bdf`, CI `45440455081` success, GUT 417/417
 
+- PRG-06: **active** — checkpoint 1 verified, code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`, CI `45457089855` success, GUT 420/420; physical tests not_run.
+
 ## Android smoke hotfix
 
 İlk gerçek cihaz smoke testinde raporlanan world-touch movement, kalıcı `✓/×` core-button feedback ve gemiyle dönen NPC etiketi düzeltildi. Android touch world/UI sahipliği parmak-ID bazında ayrıldı; UI touch world command üretmez, world touch state'i UI sınırı geçişinde takılı kalmaz. Core feedback 0.75 saniyede normal etikete döner. NPC presenter etiketi ekran-yukarı tutar.
@@ -25,8 +27,14 @@ Exact SHA üzerinde full GUT ve mevcut VS/CORE/AI/NET regresyonları, Linux expo
 
 ## Sonraki kapı
 
-PRG-05 production LAN host composition kod+gerçek süreç+save/replay düzeyinde doğrulandı. Son açık kapı gerçek Android dokunmatik pazar/host-join UX smoke ve uzun iki-cihaz LAN ekonomi state-drift ölçümüdür; bunlar `not_run`. CI bu fiziksel cihaz kanıtının yerine geçmez. PRG-05 `active`, PRG-06 başlamadı. Android gameplay smoke hotfix için ayrı fiziksel retest kaydı da `awaiting_retest / not_run` kalır.
+PRG-05 production LAN host composition kod+gerçek süreç+save/replay düzeyinde doğrulandı. Son açık kapı gerçek Android dokunmatik pazar/host-join UX smoke ve uzun iki-cihaz LAN ekonomi state-drift ölçümüdür; bunlar `not_run`. CI bu fiziksel cihaz kanıtının yerine geçmez. PRG-05 fiziksel kabul için `active`; kullanıcı cihaz testini üstlendi. PRG-06 teknik plan kapısı geçildiği için ayrı başladı. Android gameplay smoke hotfix için ayrı fiziksel retest kaydı da `awaiting_retest / not_run` kalır.
 
+
+## PRG-06 checkpoint 1 — 2026-11-24
+
+- Authored sector mode (surface 0/submarine 1), validated cross-mode gates, Deep Haven and protected entry; surface FAR routing cannot cross into underwater mode. Bootstrap mobile gate button routes to anchor, dives and returns. Existing shared inventory, entity identity, world and persistence retained; predecessor manifest migration narrowly matches verified PRG-05 hash and count. LAN manifest mismatch rejected; underwater LAN host/join blocked, running room cannot transition. Placeholder submarine presentation only.
+- Exact code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`; [CI 45457089855](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45457089855) **success**, GUT **420/420**, **30,000 asserts**, `PRG06_MODE_GATE_OK`, `PRG06_SHARED_SAVE_OK`, `PRG06_LEGACY_CONTENT_OK`; NET01–04 real-process and PRG05 production save/replay passed. Manifest 25 entries, `2e2621f8506cf623ec41a93298aebbcaee94526f0cc244eb2ec86c0ab740a3a4`; Linux runtime manifest parity and Android source bytes verified. Android artifact `14951033193`, ZIP SHA-256 `d5ac2f48017f5b641bbdbfd7d0a6470805d8517b2ada8657372d1e72f6408774`; Linux artifact `14950518669`, ZIP SHA-256 `21549e8370211004243894cc76c4ed954e40db6656de104f58778ac6d9130741`; authenticated readback passed.
+- **Open:** submarine tier/loadout, launcher/torpedo/breach, mode-specific gems/progression, auto-fire, actual underwater host-authoritative combat and network composition; physical Android movement/memory/touch `not_run`. ADV-01 not started.
 
 ## Sprite üretim handoff — SC-07 / radial kaynak standardı
 
