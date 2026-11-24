@@ -354,7 +354,7 @@ func test_prg02_progression_save_restore_legacy_migration_and_corrupt_rejection(
 	print("PRG02_PERSISTENCE_MIGRATION_OK")
 
 func test_prg02_protocol_host_authority_spoof_replay_and_malformed_guards() -> void:
-	assert_eq(SessionProtocol.PROTOCOL_VERSION, 7)
+	assert_eq(SessionProtocol.PROTOCOL_VERSION, 8)
 	var envelopes := [
 		SessionProtocol.make_envelope(1, SessionProtocol.PROGRESSION_CRAFT, {"transaction_id":"txn.net.craft","recipe_id":RECIPE,"count":1}),
 		SessionProtocol.make_envelope(2, SessionProtocol.PROGRESSION_SALVAGE, {"transaction_id":"txn.net.salvage","table_id":SALVAGE,"source_item_id":CORE}),

@@ -305,7 +305,7 @@ func test_prg04_timed_failure_save_load_v4_migration_and_corrupt_rejection() -> 
 	print("PRG04_TIMED_RELOAD_OK")
 
 func test_prg04_protocol_v7_host_authority_spoof_replay_malformed_and_client_outcome_guard() -> void:
-	assert_eq(SessionProtocol.PROTOCOL_VERSION, 7)
+	assert_eq(SessionProtocol.PROTOCOL_VERSION, 8)
 	var accept := SessionProtocol.make_envelope(1, SessionProtocol.QUEST_ACCEPT, {"transaction_id": "txn.net.quest.accept", "quest_id": "quest.net", "npc_id": NPC_START})
 	var turnin := SessionProtocol.make_envelope(2, SessionProtocol.QUEST_TURN_IN, {"transaction_id": "txn.net.quest.turnin", "quest_id": "quest.net", "npc_id": NPC_TURN})
 	assert_eq(SessionProtocol.validate_envelope(accept), "")
@@ -336,12 +336,12 @@ func test_prg04_detached_journal_mirror_reconnect_and_late_join_contract() -> vo
 	var client := SessionClient.new()
 	add_child_autofree(client)
 	client.set("_state", SessionClient.STATE_HANDSHAKING)
-	client.call("_on_handshake_accepted", {"protocol_version": 7, "player_id": PLAYER, "session_id": "session.prg04", "resume_token": "0123456789abcdef0123456789abcdef", "resume_sequence": 0, "quest_snapshot": active})
+	client.call("_on_handshake_accepted", {"protocol_version": 8, "player_id": PLAYER, "session_id": "session.prg04", "resume_token": "0123456789abcdef0123456789abcdef", "resume_sequence": 0, "quest_snapshot": active})
 	assert_eq(client.quest_journal_snapshot(), active)
 	var late := SessionClient.new()
 	add_child_autofree(late)
 	late.set("_state", SessionClient.STATE_HANDSHAKING)
-	late.call("_on_handshake_accepted", {"protocol_version": 7, "player_id": PLAYER, "session_id": "session.prg04.late", "resume_token": "abcdef0123456789abcdef0123456789", "resume_sequence": 0, "quest_snapshot": active})
+	late.call("_on_handshake_accepted", {"protocol_version": 8, "player_id": PLAYER, "session_id": "session.prg04.late", "resume_token": "abcdef0123456789abcdef0123456789", "resume_sequence": 0, "quest_snapshot": active})
 	assert_eq(late.quest_journal_snapshot(), active)
 	print("PRG04_JOURNAL_DTO_OK")
 	print("PRG04_RECONNECT_SNAPSHOT_OK")

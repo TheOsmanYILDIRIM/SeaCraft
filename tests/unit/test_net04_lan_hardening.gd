@@ -204,8 +204,28 @@ func test_net04_offline_boot_and_manual_ipv4_remain_default() -> void:
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	var bootstrap := FileAccess.get_file_as_string("res://src/presentation/bootstrap.gd")
 	assert_false(project.contains("[autoload]"))
-	for forbidden in ["LanDiscoveryHost", "LanDiscoveryClient", "PacketPeerUDP", "request_from_user_action"]:
+	for forbidden in ["LanDiscoveryHost", "LanDiscoveryClient", "PacketPeerUDP"]:
 		assert_false(bootstrap.contains(forbidden))
+	# User-initiated LAN is allowed; offline boot itself must never open sockets
+	# or request Android permission. Check the shipped scene before any clicks.
+	var ready_source := bootstrap.split("func _ready() -> void:", false, 1)[1].split("\nfunc ", false, 1)[0]
+	for forbidden in ["request_from_user_action", "start_lan_host", "change_scene_to_file"]:
+		assert_false(ready_source.contains(forbidden))
+	var host_action := bootstrap.split("func _lan_start_pressed() -> void:", false, 1)[1].split("\nfunc ", false, 1)[0]
+	assert_true(host_action.find("request_from_user_action()") >= 0)
+	assert_true(host_action.find("request_from_user_action()") < host_action.find("start_lan_host("))
+	var scene := load("res://src/presentation/bootstrap.tscn").instantiate() as Node
+	scene.set("_save_service", SaveService.new("user://net04-offline-lan-ui-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
+	add_child_autofree(scene)
+	assert_not_null(scene.get_node_or_null("UI/LanMenuButton"))
+	assert_null(scene.get("_lan_host"))
+	assert_false(bool(scene.call("lan_host_snapshot").get("running", true)))
+	assert_null(scene.get_node_or_null("LanSession"))
+	var guest := load("res://src/presentation/lan_guest.tscn").instantiate() as Node
+	add_child_autofree(guest)
+	assert_false(bool(guest.get("_discovery").is_active()))
+	assert_eq((guest.get("_client") as SessionClient).state(), SessionClient.STATE_DISCONNECTED)
+	assert_false(bool(guest.get("_quote_allowed")))
 	assert_true(P.valid_ipv4("127.0.0.1"))
 	assert_false(P.valid_ipv4("localhost"))
 	print("NET04_OFFLINE_BOOT_OK manual_ipv4=1 discovery_autostart=0")

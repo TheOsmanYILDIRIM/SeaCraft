@@ -4,7 +4,7 @@ const GAME_PORT := 17350
 const DISCOVERY_PORT := 17351
 const MARKET_ID := "market.haven.salvage"
 var _client: SessionClient
-var _discovery := LanDiscoveryClient.new()
+var _discovery := LanRoomBrowser.new()
 var _camera: GameplayCamera
 var _input_controller: GameplayInputController
 var _ui: CanvasLayer
