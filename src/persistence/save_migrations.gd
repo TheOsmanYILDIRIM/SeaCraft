@@ -5,6 +5,8 @@ const LEGACY_SCHEMA_0 := 0
 const LEGACY_SCHEMA_1 := 1
 const LEGACY_CONTENT_VERSION := "fnd02-fixture-1"
 const LEGACY_CONTENT_HASH := "8b9a1b829700f114e7b6a16daa14c4e2288e1e7ff9b36125e30f078c55d6b39d"
+const PRG05_CONTENT_HASH := "beb8c26f0aac774639e4224b273ad93a231a2076b96a0be9c571cc48680b8e49"
+const PRG05_CONTENT_COUNT := 23
 const LEGACY_V0_MASTER_SEED := 10404
 const LEGACY_V0_ENTITY_ID := "entity.player"
 
@@ -41,7 +43,17 @@ static func migrate(value: Variant) -> Dictionary:
 		var step_validation := _validate_version(version, current)
 		if version < DataContractVersions.SCHEMA_VERSION and not step_validation.is_empty():
 			return {"status": step_validation}
-	return {"status": "", "snapshot": current, "migrated": original_version != version}
+	# Exact additive PRG-05 predecessor only; arbitrary content mismatches still fail closed.
+	var content_migrated := false
+	if current.get("content_hash") == PRG05_CONTENT_HASH and current.get("content_version") == DataContractVersions.CONTENT_VERSION:
+		var stamp: Variant = current.get("content_manifest")
+		if stamp is Dictionary and stamp.size() == 3 and stamp.get("algorithm") == ContentManifest.ALGORITHM and stamp.get("hash") == PRG05_CONTENT_HASH and _integer(stamp.get("entry_count")) and int(stamp["entry_count"]) == PRG05_CONTENT_COUNT and current.get("sector_id") in [FoundationSector.ID, FoundationSector.OUTER_ID, FoundationSector.HAVEN_ID]:
+			var new_hash := ContentManifest.current_hash()
+			if not new_hash.is_empty() and new_hash != PRG05_CONTENT_HASH:
+				current["content_hash"] = new_hash
+				current["content_manifest"] = ContentManifest.metadata()
+				content_migrated = true
+	return {"status": "", "snapshot": current, "migrated": original_version != version or content_migrated}
 
 
 static func _validate_version(version: int, dto: Dictionary) -> String:

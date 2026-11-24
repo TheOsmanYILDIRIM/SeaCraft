@@ -7,3 +7,4 @@ extends Resource
 @export var exit_anchor: String = ""
 @export var entry_anchor: String = ""
 @export var activation_radius: float = 32.0
+@export var allows_mode_transition: bool = false

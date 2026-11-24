@@ -18,6 +18,7 @@ static func plan_route(graph_snapshot: Dictionary, start_sector: String, destina
 		return []
 	var known: Dictionary = {}
 	var hazard_by_sector: Dictionary = {}
+	var mode_by_sector: Dictionary = {}
 	for raw in sectors:
 		if not raw is Dictionary:
 			return []
@@ -25,9 +26,15 @@ static func plan_route(graph_snapshot: Dictionary, start_sector: String, destina
 		var tag := str(raw.get("hazard_tag", ""))
 		if not SectorIds.valid(sector_id) or known.has(sector_id):
 			return []
+		var mode: Variant = raw.get("mode", 0)
+		if typeof(mode) != TYPE_INT or mode not in [0, 1]:
+			return []
+		mode_by_sector[sector_id] = mode
 		known[sector_id] = true
 		hazard_by_sector[sector_id] = tag
 	if not known.has(start_sector) or not known.has(destination_sector):
+		return []
+	if mode_by_sector[start_sector] != mode_by_sector[destination_sector]:
 		return []
 	if start_sector == destination_sector:
 		return [start_sector]
@@ -41,7 +48,9 @@ static func plan_route(graph_snapshot: Dictionary, start_sector: String, destina
 		var to_sector := str(raw.get("to_sector", ""))
 		if not known.has(from_sector) or not known.has(to_sector):
 			return []
-		(outgoing[from_sector] as Array).append(to_sector)
+		# Background surface traffic cannot implicitly dive through player mode gates.
+		if mode_by_sector[from_sector] == mode_by_sector[to_sector]:
+			(outgoing[from_sector] as Array).append(to_sector)
 	for sector_id in outgoing:
 		(outgoing[sector_id] as Array).sort()
 	var distance: Dictionary = {start_sector: 0.0}
@@ -92,6 +101,12 @@ static func advance(state: Dictionary, graph_snapshot: Dictionary, hazard_facts:
 		result["last_simulation_tick"] = int(result["last_simulation_tick"]) + elapsed_ticks
 		return {"state": result, "arrived": destination == result["sector_id"] and not destination.is_empty(), "events": events}
 	var route: Array = (travel["route"] as Array).duplicate()
+	var current_mode := _sector_mode(graph_snapshot, str(result["sector_id"]))
+	if current_mode < 0 or _sector_mode(graph_snapshot, destination) != current_mode:
+		return {}
+	for route_sector in route:
+		if _sector_mode(graph_snapshot, str(route_sector)) != current_mode:
+			return {}
 	var route_index := int(travel["route_index"])
 	var route_matches: bool = not route.is_empty() and route_index >= 0 and route_index < route.size() and route[route_index] == result["sector_id"] and route[route.size() - 1] == destination
 	if not route_matches:
@@ -139,6 +154,14 @@ static func advance(state: Dictionary, graph_snapshot: Dictionary, hazard_facts:
 	result["travel"] = travel
 	result["last_simulation_tick"] = int(result["last_simulation_tick"]) + elapsed_ticks
 	return {"state": result, "arrived": arrived, "events": events}
+
+
+static func _sector_mode(graph_snapshot: Dictionary, sector_id: String) -> int:
+	for raw in graph_snapshot.get("sectors", []):
+		if raw is Dictionary and raw.get("sector_id") == sector_id:
+			var mode: Variant = raw.get("mode", 0)
+			return int(mode) if typeof(mode) == TYPE_INT and mode in [0, 1] else -1
+	return -1
 
 
 static func _sector_hazard_tag(graph_snapshot: Dictionary, sector_id: String) -> String:

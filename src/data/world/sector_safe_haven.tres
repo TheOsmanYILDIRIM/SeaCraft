@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SectorDefinition" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1"]
 [ext_resource type="Script" path="res://src/data/definitions/sector_anchor.gd" id="2"]
@@ -19,6 +19,23 @@ stable_id = "anchor.haven_center"
 sector_id = "sector.safe_haven"
 position = Vector2(0, 0)
 category = "player"
+
+[sub_resource type="Resource" id="Anchor_dive"]
+script = ExtResource("2")
+stable_id = "anchor.haven_dive"
+sector_id = "sector.safe_haven"
+position = Vector2(400, 0)
+category = "gate"
+
+[sub_resource type="Resource" id="Gate_deep"]
+script = ExtResource("4")
+stable_id = "gate.haven_deep"
+from_sector = "sector.safe_haven"
+to_sector = "sector.deep_haven"
+exit_anchor = "anchor.haven_dive"
+entry_anchor = "anchor.deep_entry"
+activation_radius = 64.0
+allows_mode_transition = true
 
 [sub_resource type="Resource" id="Gate_outer"]
 script = ExtResource("4")
@@ -48,9 +65,9 @@ display_name = "Ashen Haven"
 label_id = "label.safe_haven"
 bounds = Rect2(-640, -360, 1280, 720)
 navigation_fixture = SubResource("Nav_fixture")
-spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_west"), SubResource("Anchor_center")])
-neighbor_ids = PackedStringArray("sector.outer_reach")
-transition_gates = Array[ExtResource("4")]([SubResource("Gate_outer")])
+spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_west"), SubResource("Anchor_center"), SubResource("Anchor_dive")])
+neighbor_ids = PackedStringArray("sector.outer_reach", "sector.deep_haven")
+transition_gates = Array[ExtResource("4")]([SubResource("Gate_outer"), SubResource("Gate_deep")])
 hazard_cost_profile_id = "hazard.safe"
 safe_haven = true
 safe_zones = Array[ExtResource("5")]([SubResource("Safe_core")])

@@ -29,6 +29,9 @@ func configure(rows: Array[Dictionary], edges: Array[SectorGate], start_id: Stri
 		var map_position: Variant = row.get("map_node_position", Vector2.ZERO)
 		var label: Variant = row.get("label_id", id)
 		var map_layer_value: Variant = row.get("map_layer", 0)
+		var mode: Variant = row.get("mode", 0)
+		if typeof(mode) != TYPE_INT or mode not in [0, 1]:
+			return "invalid_sector_mode"
 		var safe_value: Variant = row.get("safe_haven", false)
 		var tag: Variant = row.get("hazard_tag", "")
 		if not map_position is Vector2 or not map_position.is_finite() or not label is String or not SectorIds.valid(label):
@@ -39,7 +42,7 @@ func configure(rows: Array[Dictionary], edges: Array[SectorGate], start_id: Stri
 			return "invalid_map_metadata"
 		sectors[id] = {"path": path, "anchors": anchors, "map_node_position": map_position,
 			"label_id": label, "map_layer": int(map_layer_value), "safe_haven": safe_value,
-			"hazard_tag": tag, "authored_map": row.has("map_node_position")}
+			"hazard_tag": tag, "mode": mode, "authored_map": row.has("map_node_position")}
 		outgoing[id] = []
 		incoming[id] = []
 	if not sectors.has(start_id):
@@ -57,6 +60,9 @@ func configure(rows: Array[Dictionary], edges: Array[SectorGate], start_id: Stri
 			return "invalid_transition"
 		if not sectors[edge.from_sector]["anchors"].has(edge.exit_anchor) or not sectors[edge.to_sector]["anchors"].has(edge.entry_anchor):
 			return "invalid_spawn_reference"
+		var changes_mode: bool = sectors[edge.from_sector]["mode"] != sectors[edge.to_sector]["mode"]
+		if changes_mode != edge.allows_mode_transition:
+			return "invalid_mode_gate"
 		var snapshot := edge.duplicate() as SectorGate
 		gates[edge.stable_id] = snapshot
 		outgoing[edge.from_sector].append(snapshot)
@@ -101,14 +107,14 @@ func presentation_snapshot() -> Dictionary:
 		neighbors.sort()
 		var p: Vector2 = row["map_node_position"]
 		sectors.append({"sector_id": id, "map_x": p.x, "map_y": p.y, "label_id": row["label_id"],
-			"layer": row["map_layer"], "neighbors": neighbors, "safe_haven": row["safe_haven"],
+			"layer": row["map_layer"], "mode": row["mode"], "neighbors": neighbors, "safe_haven": row["safe_haven"],
 			"hazard_tag": row["hazard_tag"]})
 	var connections: Array = []
 	var gate_ids := _gates.keys()
 	gate_ids.sort()
 	for gate_id in gate_ids:
 		var edge: SectorGate = _gates[gate_id]
-		connections.append({"gate_id": gate_id, "from_sector": edge.from_sector, "to_sector": edge.to_sector})
+		connections.append({"gate_id": gate_id, "from_sector": edge.from_sector, "to_sector": edge.to_sector, "mode_transition": edge.allows_mode_transition})
 	return {"sectors": sectors, "connections": connections}
 
 
@@ -117,6 +123,8 @@ func matches_definition(definition: SectorDefinition) -> bool:
 	if not _sectors.has(id):
 		return false
 	var row: Dictionary = _sectors[id]
+	if definition.layer != row["mode"]:
+		return false
 	var anchors: Dictionary = row["anchors"]
 	if anchors.size() != definition.spawn_anchors.size():
 		return false
@@ -136,7 +144,7 @@ func matches_definition(definition: SectorDefinition) -> bool:
 			return false
 		local_gates[edge.stable_id] = true
 		var expected: SectorGate = _gates.get(edge.stable_id)
-		if expected == null or expected.from_sector != id or edge.from_sector != id or edge.to_sector != expected.to_sector or edge.exit_anchor != expected.exit_anchor or edge.entry_anchor != expected.entry_anchor or edge.activation_radius != expected.activation_radius:
+		if expected == null or expected.from_sector != id or edge.from_sector != id or edge.to_sector != expected.to_sector or edge.exit_anchor != expected.exit_anchor or edge.entry_anchor != expected.entry_anchor or edge.activation_radius != expected.activation_radius or edge.allows_mode_transition != expected.allows_mode_transition:
 			return false
 	if local_gates.size() != outbound.size():
 		return false

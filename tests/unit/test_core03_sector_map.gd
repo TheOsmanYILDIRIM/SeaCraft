@@ -23,8 +23,8 @@ class FakeCamera:
 func test_core03_pilot_graph_and_valid_invalid_transition_rules() -> void:
 	var graph := FoundationSector.graph()
 	var snapshot := graph.presentation_snapshot()
-	assert_eq(snapshot["sectors"].size(), 3)
-	assert_eq(snapshot["connections"].size(), 4)
+	assert_eq(snapshot["sectors"].size(), 4)
+	assert_eq(snapshot["connections"].size(), 6)
 	var authority := RefCounted.new()
 	var world := SectorWorld.new(graph, authority)
 	assert_true(world.activate_initial(authority, FoundationSector.ID, FoundationSector.ENTRY, PLAYER))
@@ -287,7 +287,7 @@ func test_core03_world_map_snapshot_is_detached() -> void:
 	first["connections"].clear()
 	var second := graph.presentation_snapshot()
 	assert_ne(second["sectors"][0]["label_id"], "label.forged")
-	assert_eq(second["connections"].size(), 4)
+	assert_eq(second["connections"].size(), 6)
 	var haven_found := false
 	for row: Dictionary in second["sectors"]:
 		if row["sector_id"] == FoundationSector.HAVEN_ID:

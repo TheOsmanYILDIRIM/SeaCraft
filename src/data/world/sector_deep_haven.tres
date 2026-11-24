@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="SectorDefinition" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/data/definitions/sector_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_anchor.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_navigation_fixture.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/definitions/sector_gate.gd" id="4"]
+[ext_resource type="Script" path="res://src/data/definitions/safe_zone_definition.gd" id="5"]
+
+[sub_resource type="Resource" id="Anchor_entry"]
+script = ExtResource("2")
+stable_id = "anchor.deep_entry"
+sector_id = "sector.deep_haven"
+position = Vector2(-400, 0)
+category = "gate"
+
+[sub_resource type="Resource" id="Gate_surface"]
+script = ExtResource("4")
+stable_id = "gate.deep_haven_surface"
+from_sector = "sector.deep_haven"
+to_sector = "sector.safe_haven"
+exit_anchor = "anchor.deep_entry"
+entry_anchor = "anchor.haven_dive"
+activation_radius = 64.0
+allows_mode_transition = true
+
+[sub_resource type="Resource" id="Safe_core"]
+script = ExtResource("5")
+stable_id = "safe_zone.deep_haven_core"
+sector_id = "sector.deep_haven"
+center = Vector2(-360, 0)
+radius = 250.0
+
+[sub_resource type="Resource" id="Nav_fixture"]
+script = ExtResource("3")
+waypoints = PackedVector2Array(-360, -180, 360, -180, -360, 180, 360, 180)
+clearance = 16.0
+
+[resource]
+script = ExtResource("1")
+stable_id = "sector.deep_haven"
+display_name = "Deep Haven"
+label_id = "label.deep_haven"
+bounds = Rect2(-640, -360, 1280, 720)
+navigation_fixture = SubResource("Nav_fixture")
+spawn_anchors = Array[ExtResource("2")]([SubResource("Anchor_entry")])
+neighbor_ids = PackedStringArray("sector.safe_haven")
+transition_gates = Array[ExtResource("4")]([SubResource("Gate_surface")])
+hazard_cost_profile_id = "hazard.deep_safe"
+layer = 1
+safe_haven = true
+safe_zones = Array[ExtResource("5")]([SubResource("Safe_core")])
+map_node_position = Vector2(340, 180)
+map_layer = 1
+biome_tag = "hazard.deep_safe"

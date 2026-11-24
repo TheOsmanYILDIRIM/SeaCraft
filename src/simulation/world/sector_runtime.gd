@@ -10,6 +10,8 @@ var spatial := SectorSpatialHash.new()
 var safe_haven := false
 var map_node_position := Vector2.ZERO
 var map_layer := 0
+# The active authored sector is the single authority for the vessel mode.
+var mode := 0
 var biome_tag := ""
 var _anchors: Dictionary = {}
 var _gates: Dictionary = {}
@@ -32,6 +34,7 @@ static func build(definition: SectorDefinition) -> SectorRuntime:
 	runtime.safe_haven = definition.safe_haven
 	runtime.map_node_position = definition.map_node_position
 	runtime.map_layer = definition.map_layer
+	runtime.mode = definition.layer
 	runtime.biome_tag = definition.biome_tag
 	runtime.navigation = SectorNavigation.new()
 	if not runtime.navigation.configure(definition.bounds, definition.navigation_fixture):
@@ -197,6 +200,7 @@ func presentation_snapshot() -> Dictionary:
 			gates.append({"gate_id": id, "to_sector": edge.to_sector, "x": exit.position.x, "y": exit.position.y})
 	return {
 		"sector_id": sector_id,
+		"mode": mode,
 		"bounds": {"x": bounds.position.x, "y": bounds.position.y, "w": bounds.size.x, "h": bounds.size.y},
 		"safe_haven": safe_haven,
 		"safe_zones": zones,

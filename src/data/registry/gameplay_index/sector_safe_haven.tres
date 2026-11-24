@@ -7,4 +7,4 @@ script = ExtResource("1")
 stable_id = "sector.safe_haven"
 definition_type = "sector"
 definition_path = "res://src/data/world/sector_safe_haven.tres"
-referenced_ids = PackedStringArray("safe_zone.haven_core", "sector.outer_reach")
+referenced_ids = PackedStringArray("safe_zone.haven_core", "sector.outer_reach", "sector.deep_haven")

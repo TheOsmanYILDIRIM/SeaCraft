@@ -120,7 +120,7 @@ jobs:
           godot --headless --path . --quit-after 1 2>&1 | tee "$RUNNER_TEMP/headless-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/headless-boot.log"
 
-      - name: GUT full suite through PRG-05
+      - name: GUT full suite through PRG-06
         shell: bash
         run: |
           set -euo pipefail
@@ -147,6 +147,10 @@ jobs:
           grep -Fq "test_prg03_progression.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg04_quest.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg05_economy.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "test_prg06_mode.gd" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PRG06_MODE_GATE_OK" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PRG06_SHARED_SAVE_OK" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PRG06_LEGACY_CONTENT_OK" "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs01_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs02_suite.py "$RUNNER_TEMP/gut.log"
           python3 tools/ci/verify_vs03_suite.py "$RUNNER_TEMP/gut.log"

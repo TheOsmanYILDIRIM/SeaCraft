@@ -59,6 +59,8 @@ var _bounty_bridge: Prg05BountyCombatBridge
 var _economy_world: WorldSimulationAuthority
 var _economy_runner: Prg05EconomyWorldRunner
 var _market_anchor: SectorAnchor
+var _mode_button: Button
+var _surface_sprite: Sprite2D
 var _lan_host: ProductionLanHost
 var _lan_remote_motor: ShipMotor
 var _lan_saved_state: Dictionary = {}
@@ -167,6 +169,8 @@ func _ready() -> void:
 	_setup_market_ui()
 	_setup_visual_pilot()
 	_setup_lan_ui()
+	_setup_mode_ui()
+	_refresh_mode_presentation()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
 	print("SEACRAFT_CONTENT_MANIFEST %s %d" % [ContentManifest.current_hash(), ContentManifest.current_entry_count()])
@@ -181,7 +185,8 @@ var _pilot_comparison: Sprite2D
 
 func _setup_visual_pilot() -> void:
 	var player_marker: Polygon2D = $BoatMarker
-	if VISUAL_PILOT.mount_atlas(player_marker, "SC-02", 104.0) != null:
+	_surface_sprite = VISUAL_PILOT.mount_atlas(player_marker, "SC-02", 104.0)
+	if _surface_sprite != null:
 		player_marker.color.a = 0.0
 	if _practice_marker != null and VISUAL_PILOT.mount_atlas(_practice_marker, "SC-03", 132.0) != null:
 		# Keep the marker node and its child target ring/visibility contract.
@@ -211,7 +216,7 @@ func _setup_visual_pilot() -> void:
 
 func _apply_pilot_water() -> void:
 	if is_instance_valid(_pilot_water):
-		_pilot_water.material = VISUAL_PILOT.water_material() if _pilot_water_enabled else null
+		_pilot_water.material = VISUAL_PILOT.water_material() if _pilot_water_enabled and active_sector() != null and active_sector().mode == 0 else null
 
 
 func active_sector() -> SectorRuntime:
@@ -230,6 +235,7 @@ func _physics_process(_delta: float) -> void:
 		_diag_physics_left -= 1
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
 	_refresh_market_access()
+	_refresh_mode_button()
 	_advance_lan_route()
 	if _map_overlay != null:
 		_map_overlay.set_player_world_position(position_now)
@@ -829,6 +835,7 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 	_ship_motor.cancel_target()
 	_build_sector_geometry(_world.active())
 	_sync_sector_local_presentation()
+	_refresh_mode_presentation()
 	if _map_overlay != null:
 		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
 	_save_service.mark_dirty()
@@ -1118,7 +1125,7 @@ func _refresh_lan_ui() -> void:
 	_lan_travel.disabled = _lan_permission_pending or running or (haven and _can_access_market())
 	_lan_start.disabled = _lan_permission_pending or (not running and not _can_access_market())
 	_lan_start.text = "Odayı kapat" if running else "Oda oluştur"
-	_lan_join.disabled = _lan_permission_pending or running
+	_lan_join.disabled = _lan_permission_pending or running or active_sector().mode != 0
 	if running:
 		var peers: Dictionary = lan_host_snapshot().get("peer_to_player", {})
 		var addresses := PackedStringArray()
@@ -1143,6 +1150,9 @@ func _lan_travel_pressed() -> void:
 		FoundationSector.OUTER_ID:
 			anchor_id = FoundationSector.OUTER_EAST
 			gate_id = FoundationSector.GATE_OUTER_HAVEN
+		FoundationSector.DEEP_ID:
+			anchor_id = FoundationSector.DEEP_ENTRY
+			gate_id = FoundationSector.GATE_DEEP_HAVEN
 	var anchor := sector.anchor(anchor_id)
 	if anchor == null:
 		return
@@ -1240,6 +1250,10 @@ func _lan_join_pressed() -> void:
 		return
 	if lan_host_snapshot().get("running", false):
 		return
+	if active_sector().mode != 0:
+		_lan_status.text = "LAN için önce yüzeye çıkın."
+		_lan_status.set_meta("error", true)
+		return
 	# Persist only the local world before leaving it. Guest scene has no save service.
 	_flush_checkpoint()
 	if _save_service.is_dirty():
@@ -1247,6 +1261,74 @@ func _lan_join_pressed() -> void:
 		_lan_status.set_meta("error", true)
 		return
 	get_tree().change_scene_to_file("res://src/presentation/lan_guest.tscn")
+
+
+func _setup_mode_ui() -> void:
+	_mode_button = Button.new()
+	_mode_button.name = "Prg06ModeButton"
+	_mode_button.size = Vector2(150, 64)
+	_mode_button.focus_mode = Control.FOCUS_NONE
+	_mode_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_mode_button.pressed.connect(_mode_pressed)
+	$UI.add_child(_mode_button)
+	get_viewport().size_changed.connect(_layout_mode_ui)
+	_layout_mode_ui()
+	_refresh_mode_button()
+
+
+func _layout_mode_ui() -> void:
+	if is_instance_valid(_mode_button) and is_instance_valid(_lan_button):
+		_mode_button.position = _lan_button.position + Vector2(0, 78)
+
+
+func _mode_gate() -> String:
+	if active_sector() == null:
+		return ""
+	match active_sector().sector_id:
+		FoundationSector.HAVEN_ID:
+			return FoundationSector.GATE_HAVEN_DEEP
+		FoundationSector.DEEP_ID:
+			return FoundationSector.GATE_DEEP_HAVEN
+	return ""
+
+
+func _refresh_mode_button() -> void:
+	if not is_instance_valid(_mode_button):
+		return
+	var gate := _mode_gate()
+	_mode_button.visible = not gate.is_empty() and not _world_map_open and not _market_open and not _lan_menu.visible
+	if gate.is_empty():
+		return
+	var anchor := active_sector().anchor(FoundationSector.HAVEN_DIVE if active_sector().mode == 0 else FoundationSector.DEEP_ENTRY)
+	var nearby := anchor != null and _ship_motor.global_position.distance_to(anchor.position) <= 64.0
+	_mode_button.text = ("DAL" if active_sector().mode == 0 else "YÜZEYE ÇIK") if nearby else "KAPIYA GİT"
+	_mode_button.disabled = bool(lan_host_snapshot().get("running", false)) or _lan_permission_pending
+
+
+func _mode_pressed() -> void:
+	var gate := _mode_gate()
+	if gate.is_empty() or bool(lan_host_snapshot().get("running", false)) or _lan_permission_pending:
+		return
+	var anchor := active_sector().anchor(FoundationSector.HAVEN_DIVE if active_sector().mode == 0 else FoundationSector.DEEP_ENTRY)
+	if anchor == null:
+		return
+	if _ship_motor.global_position.distance_to(anchor.position) > 64.0:
+		_on_gameplay_command(GameplayCommand.move_to_world_position(anchor.position))
+	else:
+		request_sector_transition(gate)
+
+
+func _refresh_mode_presentation() -> void:
+	if active_sector() == null:
+		return
+	var submerged := active_sector().mode == 1
+	var marker: Polygon2D = $BoatMarker
+	if is_instance_valid(_surface_sprite):
+		_surface_sprite.visible = not submerged
+	marker.polygon = PackedVector2Array([-28, 0, -18, -9, 16, -9, 29, 0, 16, 9, -18, 9]) if submerged else PackedVector2Array([-18, 12, 20, 0, -18, -12])
+	marker.color = Color(0.38, 0.65, 0.8) if submerged else Color(0.72, 0.8, 0.86, 0.0 if is_instance_valid(_surface_sprite) else 1.0)
+	_apply_pilot_water()
+	_refresh_mode_button()
 
 
 func _setup_market_ui() -> void:
@@ -1418,7 +1500,7 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 	geometry.z_index = -1
 	_sector_geometry = geometry
 	add_child(geometry)
-	_add_rectangle(geometry, sector.bounds, Color(0.035, 0.095, 0.115))
+	_add_rectangle(geometry, sector.bounds, Color(0.025, 0.055, 0.13) if sector.mode == 1 else Color(0.035, 0.095, 0.115))
 	_pilot_water = geometry.get_child(0) as Polygon2D
 	_apply_pilot_water()
 	_market_anchor = sector.anchor(PILOT_MARKET_ANCHOR) if sector.sector_id == FoundationSector.HAVEN_ID else null
@@ -1436,6 +1518,20 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 		market_label.position = _market_anchor.position + Vector2(-26.0, -20.0)
 		market_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		geometry.add_child(market_label)
+	var mode_anchor := sector.anchor(FoundationSector.HAVEN_DIVE if sector.mode == 0 else FoundationSector.DEEP_ENTRY)
+	if mode_anchor != null:
+		var ring := Line2D.new()
+		ring.position = mode_anchor.position
+		ring.width = 2.0
+		ring.default_color = Color(0.3, 0.8, 1.0)
+		for index in range(33):
+			ring.add_point(Vector2.from_angle(TAU * float(index) / 32.0) * 64.0)
+		geometry.add_child(ring)
+		var label := Label.new()
+		label.text = "DALIŞ NOKTASI" if sector.mode == 0 else "YÜZEYE ÇIKIŞ"
+		label.position = mode_anchor.position + Vector2(-65, -28)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		geometry.add_child(label)
 	if is_instance_valid(_pilot_comparison):
 		_pilot_comparison.visible = sector.sector_id == FoundationSector.ID
 	for obstacle in sector.navigation.obstacle_rects():
