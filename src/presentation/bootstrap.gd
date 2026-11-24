@@ -62,6 +62,15 @@ var _market_anchor: SectorAnchor
 var _lan_host: ProductionLanHost
 var _lan_remote_motor: ShipMotor
 var _lan_saved_state: Dictionary = {}
+var _lan_menu: PanelContainer
+var _lan_button: Button
+var _lan_status: Label
+var _lan_travel: Button
+var _lan_start: Button
+var _lan_join: Button
+var _lan_marker: Polygon2D
+const LAN_GAME_PORT := 17350
+const LAN_DISCOVERY_PORT := 17351
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -148,6 +157,7 @@ func _ready() -> void:
 	_setup_map_ui()
 	_setup_market_ui()
 	_setup_visual_pilot()
+	_setup_lan_ui()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
 	print("SEACRAFT_CONTENT_MANIFEST %s %d" % [ContentManifest.current_hash(), ContentManifest.current_entry_count()])
@@ -733,6 +743,7 @@ func _block_boot(reason: Dictionary) -> void:
 
 
 func _process(_delta: float) -> void:
+	_refresh_lan_ui()
 	if _save_service.is_dirty() and Time.get_ticks_msec() - _last_attempt_ms >= CHECKPOINT_INTERVAL_MS:
 		_flush_checkpoint()
 
@@ -1008,6 +1019,166 @@ func _on_lan_authority_mutated(_intent_type: String) -> void:
 	_save_service.mark_dirty()
 	if _market_open:
 		_refresh_market_quote()
+
+
+func _setup_lan_ui() -> void:
+	_lan_button = Button.new()
+	_lan_button.name = "LanMenuButton"
+	_lan_button.text = "LAN"
+	_lan_button.size = Vector2(150, 64)
+	_lan_button.focus_mode = Control.FOCUS_NONE
+	$UI.add_child(_lan_button)
+	_lan_menu = PanelContainer.new()
+	_lan_menu.name = "LanMenu"
+	$UI.add_child(_lan_menu)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_lan_menu.add_child(column)
+	_lan_status = Label.new()
+	_lan_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_lan_status.add_theme_font_size_override("font_size", 22)
+	_lan_status.custom_minimum_size.y = 100
+	column.add_child(_lan_status)
+	_lan_travel = _lan_action(column, "Limana git / geç", _lan_travel_pressed)
+	_lan_start = _lan_action(column, "Oda oluştur", _lan_start_pressed)
+	_lan_join = _lan_action(column, "Odaya katıl", _lan_join_pressed)
+	_lan_action(column, "Kapat", _toggle_lan_menu)
+	_lan_button.pressed.connect(_toggle_lan_menu)
+	_lan_menu.hide()
+	get_viewport().size_changed.connect(_layout_lan_ui)
+	_layout_lan_ui()
+
+
+func _lan_action(column: VBoxContainer, caption: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size = Vector2(0, 64)
+	button.add_theme_font_size_override("font_size", 22)
+	button.focus_mode = Control.FOCUS_NONE
+	button.pressed.connect(action)
+	column.add_child(button)
+	return button
+
+
+func _layout_lan_ui() -> void:
+	var safe := get_viewport_rect()
+	if OS.has_feature("android"):
+		var window := Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
+		var pixels := window.intersection(DisplayServer.get_display_safe_area())
+		if pixels.has_area():
+			pixels.position -= window.position
+			safe = safe.intersection(SafeAreaMath.display_safe_area_to_logical(Rect2(pixels), Vector2(1280, 720), Vector2(window.size)))
+	_lan_button.position = Vector2(safe.end.x - 174, safe.position.y + 174)
+	_lan_menu.size = Vector2(minf(640, safe.size.x - 48), 410)
+	_lan_menu.position = safe.get_center() - _lan_menu.size * 0.5
+
+
+func _toggle_lan_menu() -> void:
+	if not _lan_menu.visible:
+		if _market_open:
+			_toggle_market()
+		if _world_map_open:
+			_toggle_world_map()
+	_lan_menu.visible = not _lan_menu.visible
+	($InputController as GameplayInputController).set_world_input_blocked(_lan_menu.visible)
+	_refresh_lan_ui()
+
+
+func _refresh_lan_ui() -> void:
+	if _lan_menu == null or active_sector() == null:
+		return
+	var running := bool(lan_host_snapshot().get("running", false))
+	_lan_button.text = "LAN • AÇIK" if running else "LAN"
+	if _lan_marker != null:
+		_lan_marker.visible = running
+		if running and is_instance_valid(_lan_remote_motor):
+			_lan_marker.global_position = _lan_remote_motor.global_position
+			_lan_marker.rotation = _lan_remote_motor.rotation
+	if not _lan_menu.visible:
+		return
+	var haven := active_sector().sector_id == FoundationSector.HAVEN_ID
+	_lan_travel.disabled = running or (haven and _can_access_market())
+	_lan_start.disabled = not running and not _can_access_market()
+	_lan_start.text = "Odayı kapat" if running else "Oda oluştur"
+	_lan_join.disabled = running
+	if running:
+		var peers: Dictionary = lan_host_snapshot().get("peer_to_player", {})
+		var addresses := PackedStringArray()
+		for address in IP.get_local_addresses():
+			if SessionProtocol.valid_ipv4(address) and not address.begins_with("127."):
+				addresses.append(address)
+		_lan_status.text = "Oda açık • %d/2 oyuncu\nIP: %s • Port: %d" % [1 + peers.size(), ", ".join(addresses), LAN_GAME_PORT]
+	elif not _lan_status.has_meta("error"):
+		_lan_status.text = "Aynı Wi-Fi ağına bağlanın. Oda açmak için Güvenli Liman pazarına yaklaşın." if not _can_access_market() else "Güvenli Liman • Oda oluşturabilir veya başka odaya katılabilirsiniz."
+
+
+func _lan_travel_pressed() -> void:
+	_lan_status.remove_meta("error")
+	var sector := active_sector()
+	var anchor_id := "anchor.haven_center"
+	var gate_id := ""
+	match sector.sector_id:
+		FoundationSector.ID:
+			anchor_id = FoundationSector.FOUNDATION_GATE
+			gate_id = FoundationSector.GATE_FOUNDATION_OUTER
+		FoundationSector.OUTER_ID:
+			anchor_id = FoundationSector.OUTER_EAST
+			gate_id = FoundationSector.GATE_OUTER_HAVEN
+	var anchor := sector.anchor(anchor_id)
+	if anchor == null:
+		return
+	if not gate_id.is_empty() and _ship_motor.global_position.distance_to(anchor.position) <= 64.0:
+		var result := request_sector_transition(gate_id)
+		if not result.get("accepted", false):
+			_lan_status.text = str(result.get("reason", "Geçiş reddedildi"))
+			_lan_status.set_meta("error", true)
+		return
+	_on_gameplay_command(GameplayCommand.move_to_world_position(anchor.position))
+	_toggle_lan_menu()
+
+
+func _lan_start_pressed() -> void:
+	if lan_host_snapshot().get("running", false):
+		stop_lan_host()
+		request_checkpoint()
+		_refresh_lan_ui()
+		return
+	if not _can_access_market():
+		return
+	var permission := LanPermissionGate.new().request_from_user_action()
+	if permission != LanPermissionGate.RESULT_ALLOWED:
+		_lan_status.text = "Yerel ağ iznine izin verin, sonra tekrar deneyin: " + permission
+		_lan_status.set_meta("error", true)
+		return
+	var result := start_lan_host(LAN_GAME_PORT, LAN_DISCOVERY_PORT)
+	if not result.get("accepted", false):
+		_lan_status.text = "Oda açılamadı: " + str(result.get("reason", ""))
+		_lan_status.set_meta("error", true)
+		return
+	_lan_status.remove_meta("error")
+	# Pilot guests receive a single persisted, authority-owned starting grant.
+	var grant := _loot.inventory_state().grant_economy_currency_authoritative(LAN_REMOTE_PLAYER_ID, "event.lan.pilot.starting_credit", 1000)
+	if not grant.get("accepted", false):
+		push_warning("LAN starting credit: " + str(grant.get("reason", "")))
+	if _lan_marker == null:
+		_lan_marker = Polygon2D.new()
+		_lan_marker.polygon = PackedVector2Array([Vector2(-18, 12), Vector2(20, 0), Vector2(-18, -12)])
+		_lan_marker.color = Color(0.3, 0.85, 0.9)
+		add_child(_lan_marker)
+	request_checkpoint()
+	_refresh_lan_ui()
+
+
+func _lan_join_pressed() -> void:
+	if lan_host_snapshot().get("running", false):
+		return
+	# Persist only the local world before leaving it. Guest scene has no save service.
+	_flush_checkpoint()
+	if _save_service.is_dirty():
+		_lan_status.text = "Yerel kayıt tamamlanamadı. Önce kaydı doğrulayın."
+		_lan_status.set_meta("error", true)
+		return
+	get_tree().change_scene_to_file("res://src/presentation/lan_guest.tscn")
 
 
 func _setup_market_ui() -> void:

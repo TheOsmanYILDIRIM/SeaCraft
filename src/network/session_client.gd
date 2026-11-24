@@ -19,6 +19,7 @@ signal session_rejected(reason: String)
 signal command_accepted(sequence: int)
 signal command_rejected(sequence: int, reason: String)
 signal quest_snapshot_received(snapshot: Dictionary)
+signal market_snapshot_received(snapshot: Dictionary)
 
 var _peer: ENetMultiplayerPeer
 var _bridge: SessionRpcBridge
@@ -49,6 +50,7 @@ func _ready() -> void:
 	_bridge.baseline_chunk_received.connect(_on_baseline_chunk)
 	_bridge.baseline_ready_received.connect(_on_baseline_ready)
 	_bridge.transaction_result_received.connect(_on_transaction_result)
+	_bridge.market_snapshot_received.connect(_on_market_snapshot)
 	_replication = REPLICATION.new()
 	_replication.name = "Replication"
 	add_child(_replication, true)
@@ -339,3 +341,8 @@ func _set_state(next_state: String) -> void:
 		return
 	_state = next_state
 	connection_state_changed.emit(_state)
+
+
+func _on_market_snapshot(snapshot: Dictionary) -> void:
+	if _state == STATE_READY and PROTOCOL.primitive_safe(snapshot):
+		market_snapshot_received.emit(snapshot.duplicate(true))

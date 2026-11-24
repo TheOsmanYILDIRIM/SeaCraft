@@ -12,6 +12,7 @@ signal replication_event_received(event: Dictionary)
 signal baseline_chunk_received(chunk: Dictionary)
 signal baseline_ready_received(payload: Dictionary)
 signal transaction_result_received(transaction_id: String, result: Dictionary)
+signal market_snapshot_received(snapshot: Dictionary)
 
 
 func send_client_hello(hello: Dictionary) -> void:
@@ -115,3 +116,12 @@ func _rpc_replication_snapshot(snapshot: Dictionary) -> void:
 @rpc("authority", "call_remote", "reliable", 1)
 func _rpc_replication_event(event: Dictionary) -> void:
 	replication_event_received.emit(event)
+
+
+func send_market_snapshot(peer_id: int, snapshot: Dictionary) -> void:
+	rpc_id(peer_id, "_rpc_market_snapshot", snapshot)
+
+
+@rpc("authority", "call_remote", "reliable", 0)
+func _rpc_market_snapshot(snapshot: Dictionary) -> void:
+	market_snapshot_received.emit(snapshot)

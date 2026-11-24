@@ -5,7 +5,7 @@ const DATA_VERSIONS := preload("res://src/data/contracts/data_contract_versions.
 const CONTENT_MANIFEST := preload("res://src/data/registry/content_manifest.gd")
 const COMMANDS := preload("res://src/simulation/commands/gameplay_command.gd")
 
-const PROTOCOL_VERSION: int = 7
+const PROTOCOL_VERSION: int = 8
 const CHANNEL_CONTROL: int = 0
 const CHANNEL_GAMEPLAY: int = 1
 const CHANNEL_SNAPSHOT: int = 2

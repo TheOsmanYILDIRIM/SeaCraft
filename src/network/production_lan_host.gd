@@ -18,6 +18,9 @@ var _remote_motor: ShipMotor
 var _definition_id := ""
 var _discovery_error := OK
 var _running := false
+var _market_id := ""
+var _market_guard: Prg05MarketAccessGuard
+var _next_market_snapshot_ms := 0
 
 
 func start_host(game_port: int, discovery_port: int, advertised_address: String,
@@ -57,6 +60,8 @@ func start_host(game_port: int, discovery_port: int, advertised_address: String,
 	if not guard.bind_market(market_id, sector, market_center, market_radius) or not _session.bind_market_access_authority(guard):
 		return _fail_start("market_authority_binding_failed")
 
+	_market_id = market_id
+	_market_guard = guard
 	_sector = sector
 	_combat = combat
 	_inventory = inventory
@@ -129,6 +134,9 @@ func snapshot() -> Dictionary:
 
 
 func _process(_delta: float) -> void:
+	if is_running() and Time.get_ticks_msec() >= _next_market_snapshot_ms:
+		_next_market_snapshot_ms = Time.get_ticks_msec() + 500
+		_publish_market_view()
 	if not is_running() or _discovery == null:
 		return
 	var peers: Dictionary = _session.snapshot().get("peer_to_player", {})
@@ -191,3 +199,16 @@ func _fail_start(reason: String, error: int = FAILED) -> Dictionary:
 	_session = null
 	_running = false
 	return {"accepted": false, "reason": reason, "error": error}
+
+
+func _publish_market_view() -> void:
+	if _market_guard == null or _inventory == null:
+		return
+	var peers: Dictionary = _session.snapshot().get("peer_to_player", {})
+	for peer_id in peers:
+		if str(peers[peer_id]) != _remote_id:
+			continue
+		var allowed := _market_guard.allows(_remote_id, _market_id, _remote_motor)
+		var view := {"market_id": _market_id, "allowed": allowed, "balance": _inventory.economy_balance(_remote_id),
+			"quote": _inventory.economy_quote(_remote_id, _market_id) if allowed else {}}
+		_session.send_market_snapshot(int(peer_id), _remote_id, view)

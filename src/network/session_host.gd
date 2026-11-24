@@ -551,3 +551,13 @@ func _on_gameplay_drop_created(drop: Dictionary) -> void:
 
 func _on_gameplay_drop_claimed(drop_id: String, _item_id: String, _quantity: int) -> void:
 	despawn_network_entity(drop_id)
+
+
+# Detached, targeted read-only market view. Never accepts client prices/identity.
+func send_market_snapshot(peer_id: int, player_id: String, snapshot: Dictionary) -> bool:
+	if not _running or peer_state(peer_id) != STATE_READY or mapped_player_id(peer_id) != player_id:
+		return false
+	if not PROTOCOL.primitive_safe(snapshot):
+		return false
+	_bridge.send_market_snapshot(peer_id, snapshot)
+	return true
