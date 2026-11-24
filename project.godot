@@ -18,6 +18,11 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=0
 
+[editor]
+
+; Content compatibility hashes the original .tres bytes on every platform.
+export/convert_text_resources_to_binary=false
+
 [input_devices]
 
 pointing/emulate_mouse_from_touch=true

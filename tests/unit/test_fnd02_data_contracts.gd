@@ -185,3 +185,19 @@ func _property_names(object: Object) -> PackedStringArray:
 
 func _dummy_callable() -> void:
 	pass
+
+
+func test_gameplay_registry_is_nonempty_and_hashes_source_definitions() -> void:
+	var registry := ContentManifest.registry()
+	assert_not_null(registry)
+	if registry == null:
+		return
+	assert_gt(registry.indexed_count(), 0)
+	assert_true(registry.matches_type(FoundationSector.ID, "sector"))
+	assert_true(registry.matches_type("ship.foundation_player", "ship"))
+	assert_true(registry.matches_type("faction.player", "faction"))
+	assert_true(registry.matches_type("item.vs03_salvage_scrap", "item"))
+	assert_eq(registry.manifest_rows().size(), registry.indexed_count())
+	assert_ne(registry.manifest_hash(), "".sha256_text())
+	assert_eq(registry.manifest_hash(), ContentManifest.current_hash())
+	assert_eq(ContentManifest.current_entry_count(), registry.indexed_count())

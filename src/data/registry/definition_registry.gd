@@ -18,7 +18,8 @@ func build_from_index_directory(index_directory: String) -> Error:
 	var directory := DirAccess.open(index_directory)
 	if directory == null:
 		return _fail("index directory cannot be opened: %s" % index_directory, ERR_CANT_OPEN)
-	var file_names := directory.get_files()
+	# ResourceLoader enumerates the editor-visible names in exported packs.
+	var file_names := ResourceLoader.list_directory(index_directory)
 	file_names.sort()
 	for file_name in file_names:
 		if file_name.get_extension().to_lower() != "tres":
@@ -34,6 +35,8 @@ func build_from_index_directory(index_directory: String) -> Error:
 		if _entries_by_id.has(entry.stable_id):
 			return _fail("duplicate stable ID: %s" % entry.stable_id, ERR_INVALID_DATA)
 		_entries_by_id[entry.stable_id] = entry
+	if _entries_by_id.is_empty():
+		return _fail("empty definition index: %s" % index_directory, ERR_INVALID_DATA)
 	for stable_id in _entries_by_id:
 		var entry := _entries_by_id[stable_id] as DefinitionIndexEntry
 		for referenced_id in entry.referenced_ids:

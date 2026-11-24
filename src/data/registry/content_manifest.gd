@@ -21,7 +21,10 @@ static func current_hash() -> String:
 	var current := registry()
 	if current == null:
 		return ""
-	_cached_hash = current.manifest_hash()
+	var verified_hash := current.manifest_hash()
+	if verified_hash.is_empty() or current.indexed_count() <= 0:
+		return ""
+	_cached_hash = verified_hash
 	_cached_count = current.indexed_count()
 	return _cached_hash
 

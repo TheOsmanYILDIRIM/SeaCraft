@@ -443,6 +443,10 @@ jobs:
           test -s build/linux/SeaCraft.pck
           timeout 10s build/linux/SeaCraft.x86_64 --headless --quit-after 1 2>&1 | tee "$RUNNER_TEMP/exported-linux-boot.log"
           grep -q "SeaCraft bootstrap ready" "$RUNNER_TEMP/exported-linux-boot.log"
+          # Source and exported runtime must see the same nonempty content index.
+          grep -E '^SEACRAFT_CONTENT_MANIFEST [a-f0-9]{64} [1-9][0-9]*$' "$RUNNER_TEMP/headless-boot.log" > "$RUNNER_TEMP/source-manifest.txt"
+          grep -E '^SEACRAFT_CONTENT_MANIFEST [a-f0-9]{64} [1-9][0-9]*$' "$RUNNER_TEMP/exported-linux-boot.log" > "$RUNNER_TEMP/export-manifest.txt"
+          cmp "$RUNNER_TEMP/source-manifest.txt" "$RUNNER_TEMP/export-manifest.txt"
 
       - name: Export Android debug APK
         shell: bash
@@ -463,6 +467,21 @@ jobs:
           test -s build/android/SeaCraft-debug.apk
           unzip -tq build/android/SeaCraft-debug.apk
           unzip -Z1 build/android/SeaCraft-debug.apk > "$RUNNER_TEMP/apk-entry-list.txt"
+          # Android must retain the byte-exact gameplay definitions used by the manifest.
+          python3 - <<'PY'
+          import re, zipfile
+          from pathlib import Path
+          entries = sorted(Path("src/data/registry/gameplay_index").glob("*.tres"))
+          assert entries, "empty gameplay index"
+          with zipfile.ZipFile("build/android/SeaCraft-debug.apk") as apk:
+              for entry in entries:
+                  assert apk.read("assets/" + entry.as_posix()) == entry.read_bytes(), entry
+                  match = re.search(r'^definition_path = "res://([^"]+)"', entry.read_text(), re.M)
+                  assert match, entry
+                  definition = Path(match.group(1))
+                  assert apk.read("assets/" + definition.as_posix()) == definition.read_bytes(), definition
+          print("ANDROID_CONTENT_MANIFEST_SOURCE_BYTES_OK", len(entries))
+          PY
           ! grep -Ei '^assets/.*(\.zip$|original.*\.png$)' "$RUNNER_TEMP/apk-entry-list.txt"
           for atlas in src/presentation/ship/pilot_atlases/*.png; do
             name="$(basename "$atlas" .png)"

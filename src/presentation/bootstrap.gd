@@ -140,6 +140,7 @@ func _ready() -> void:
 	_setup_visual_pilot()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
+	print("SEACRAFT_CONTENT_MANIFEST %s %d" % [ContentManifest.current_hash(), ContentManifest.current_entry_count()])
 	print(BOOT_MARKER)
 
 
