@@ -843,7 +843,7 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 	_build_sector_geometry(_world.active())
 	_sync_sector_local_presentation()
 	_refresh_mode_presentation()
-	($GameplayCamera as GameplayCamera).recenter()
+	_recenter_helm_camera()
 	_refresh_helm()
 	if _map_overlay != null:
 		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
@@ -1274,9 +1274,8 @@ func _lan_join_pressed() -> void:
 
 func _setup_helm_ui() -> void:
 	var camera := $GameplayCamera as GameplayCamera
-	camera.set_follow_target(_ship_motor)
 	camera.set_world_limits(active_sector().bounds)
-	camera.recenter()
+	_recenter_helm_camera()
 	_destination_marker = Line2D.new()
 	_destination_marker.name = "Play01Destination"
 	_destination_marker.width = 2.5
@@ -1287,10 +1286,17 @@ func _setup_helm_ui() -> void:
 	_helm_stop = _helm_button("Play01Stop", "DUR", func() -> void:
 		_on_gameplay_command(GameplayCommand.cancel())
 	)
-	_helm_center = _helm_button("Play01Center", "GEMİYE DÖN", camera.recenter)
+	_helm_center = _helm_button("Play01Center", "GEMİYE DÖN", _recenter_helm_camera)
 	get_viewport().size_changed.connect(_layout_helm)
 	_layout_helm()
 	_refresh_helm()
+
+
+# The camera follows the rendered BoatMarker (the serialized scene contract).
+# Sync it immediately on teleport/boot/manual recenter, not a frame later.
+func _recenter_helm_camera() -> void:
+	($BoatMarker as ShipStatePresenter)._sync_from_simulation()
+	($GameplayCamera as GameplayCamera).recenter()
 
 
 func _helm_button(node_name: String, label: String, action: Callable) -> CombatFireButton:
