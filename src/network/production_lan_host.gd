@@ -42,7 +42,7 @@ func start_host(game_port: int, discovery_port: int, advertised_address: String,
 		return {"accepted": false, "reason": "market_geometry_invalid"}
 
 	_session = SessionHost.new()
-	_session.name = "SessionHost"
+	_session.name = "Session
 	add_child(_session, true)
 	if not ledger_state.is_empty() and not _session.restore_transaction_ledger(ledger_state):
 		return _fail_start("invalid_transaction_ledger")
