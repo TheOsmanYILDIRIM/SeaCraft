@@ -1,4 +1,12 @@
-# AKTİF GÖREV — PRG-06 · Surface/submarine ve içerik genişletme
+# AKTİF GÖREV — PLAY-01 · Gemi hareketi, kamera ve mobil kontrol
+
+Kullanıcı 2026-11-24 oynanış öncelikli sırayı onayladı. Kanonik plan `GELISTIRME_GOREV_PLANI.md` üst bölümü. Tek aktif geliştirme PLAY-01; PRG-06 askıda, mevcut kod/kayıtlar korunur; PRG-05 fiziksel LAN kabulü ayrı açık. PLAY-02 öncesi gerçek cihaz oynanış kabulü şart.
+
+İlk dilim: canvas transform hizası, gemiye dönme, durma ve hedef işareti; mevcut hareket ve save/network kuralları korunur. Cihaz kabulü: düz/ters yön, yakın hedef, kamera pan/pinch/merkezle, kıyı, durma; takılma ve dokunma sapması gözlemi. Hız/dönüş dengesi sonraki PLAY-01 diliminde ölçüme göre.
+
+---
+
+# ASKIDA — PRG-06 · Surface/submarine ve içerik genişletme
 
 Plan: `GELISTIRME_GOREV_PLANI.md` PRG-06; kanonik Beyin `tasks/seacraft-prg06-surface-submarine-20261124.md`; yalnız `main`, Godot 4.7.2. PRG-05 ekonomi persistence ve host transaction test gate geçti. Kullanıcı 2026-11-24 fiziksel cihaz testini üstlendi ve plana göre geliştirmeye devam edilmesini istedi. PRG-05 cihaz kabulü `not_run`, ayrı açık kalır.
 
@@ -6,7 +14,7 @@ Plan: `GELISTIRME_GOREV_PLANI.md` PRG-06; kanonik Beyin `tasks/seacraft-prg06-su
 
 - Authored sector mode (surface 0/submarine 1), validated cross-mode gates, Deep Haven and protected entry; surface FAR routing cannot cross into underwater mode. Bootstrap mobile gate button routes to anchor, dives and returns. Existing shared inventory, entity identity, world and persistence retained; predecessor manifest migration narrowly matches verified PRG-05 hash and count. LAN manifest mismatch rejected; underwater LAN host/join blocked, running room cannot transition. Placeholder submarine presentation only.
 - Exact code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`; [CI 45457089855](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45457089855) **success**, GUT **420/420**, **30,000 asserts**, `PRG06_MODE_GATE_OK`, `PRG06_SHARED_SAVE_OK`, `PRG06_LEGACY_CONTENT_OK`; NET01–04 real-process and PRG05 production save/replay passed. Manifest 25 entries, `2e2621f8506cf623ec41a93298aebbcaee94526f0cc244eb2ec86c0ab740a3a4`; Linux runtime manifest parity and Android source bytes verified. Android artifact `14951033193`, ZIP SHA-256 `d5ac2f48017f5b641bbdbfd7d0a6470805d8517b2ada8657372d1e72f6408774`; Linux artifact `14950518669`, ZIP SHA-256 `21549e8370211004243894cc76c4ed954e40db6656de104f58778ac6d9130741`; authenticated readback passed.
-- **Open:** submarine tier/loadout, launcher/torpedo/breach, mode-specific gems/progression, auto-fire, actual underwater host-authoritative combat and network composition; physical Android movement/memory/touch `not_run`. ADV-01 not started.
+- **Deferred:** submarine tier/loadout, launcher/torpedo/breach, mode-specific gems/progression, auto-fire, actual underwater host-authoritative combat and network composition; physical Android movement/memory/touch `not_run`. ADV-01 not started.
 
 ---
 

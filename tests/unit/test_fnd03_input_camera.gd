@@ -380,3 +380,69 @@ func test_android_mouse_fallback_can_move_and_pan_when_native_touch_is_missing()
 	controller._process_android_mouse_fallback(release)
 	assert_eq(commands.size(), 1)
 	assert_eq(commands[0]["type"], COMMANDS.CAMERA_PAN)
+
+
+func test_play01_rendered_canvas_hit_test_with_camera_limits_and_smoothing() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(640, 360)
+	add_child_autofree(viewport)
+	var root := Node2D.new()
+	viewport.add_child(root)
+	var camera := GameplayCamera.new()
+	root.add_child(camera)
+	camera.make_current()
+	camera.set_world_limits(Rect2(-640, -360, 1280, 720))
+	camera.global_position = Vector2(630, 320)
+	camera.reset_smoothing()
+	camera.force_update_scroll()
+	var marker := Node2D.new()
+	marker.position = Vector2(390, 180)
+	root.add_child(marker)
+	await get_tree().process_frame
+	var rendered := marker.get_global_transform_with_canvas().origin
+	assert_lt(camera.screen_to_world_position(rendered).distance_to(marker.global_position), 0.01)
+	assert_lt(camera.world_to_screen_position(marker.global_position).distance_to(rendered), 0.01)
+	camera.global_position = Vector2(-400, -180)
+	camera.force_update_scroll()
+	rendered = marker.get_global_transform_with_canvas().origin
+	assert_lt(camera.screen_to_world_position(rendered).distance_to(marker.global_position), 0.01)
+	camera.zoom_by(1.5)
+	rendered = marker.get_global_transform_with_canvas().origin
+	assert_lt(camera.screen_to_world_position(rendered).distance_to(marker.global_position), 0.01)
+	camera.set_follow_target(marker)
+	camera.recenter()
+	assert_true(camera.is_follow_mode())
+	assert_lt(camera.screen_to_world_position(marker.get_global_transform_with_canvas().origin).distance_to(marker.global_position), 0.01)
+	print("PLAY01_RENDERED_CANVAS_OK")
+
+
+func test_play01_packed_helm_controls_and_destination() -> void:
+	var scene := preload("res://src/presentation/bootstrap.tscn").instantiate()
+	scene.set("_save_service", SaveService.new("user://play01-helm-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
+	add_child_autofree(scene)
+	scene.set_process(false)
+	scene.set_physics_process(false)
+	var motor := scene.get_node("ShipMotor") as ShipMotor
+	motor.set_physics_process(false)
+	var camera := scene.get_node("GameplayCamera") as GameplayCamera
+	var stop := scene.get_node("UI/Play01Stop") as Button
+	var center := scene.get_node("UI/Play01Center") as Button
+	var marker := scene.get_node("Play01Destination") as Line2D
+	assert_false(marker.visible)
+	assert_true(stop.disabled)
+	camera.pan_world_delta(Vector2(100, 0))
+	assert_false(camera.is_follow_mode())
+	center.pressed.emit()
+	assert_true(camera.is_follow_mode())
+	var target := motor.global_position + Vector2(100, 0)
+	scene._on_gameplay_command(COMMANDS.move_to_world_position(target))
+	assert_true(motor.has_target())
+	assert_true(marker.visible)
+	assert_eq(marker.global_position, target)
+	assert_false(stop.disabled)
+	assert_true(scene._ui_captures_touch(stop.get_global_rect().get_center()))
+	stop.pressed.emit()
+	assert_false(motor.has_target())
+	assert_false(marker.visible)
+	assert_true(stop.disabled)
+	print("PLAY01_PACKED_HELM_OK")

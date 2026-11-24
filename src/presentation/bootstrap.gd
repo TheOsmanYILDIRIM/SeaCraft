@@ -61,6 +61,9 @@ var _economy_runner: Prg05EconomyWorldRunner
 var _market_anchor: SectorAnchor
 var _mode_button: Button
 var _surface_sprite: Sprite2D
+var _helm_stop: CombatFireButton
+var _helm_center: CombatFireButton
+var _destination_marker: Line2D
 var _lan_host: ProductionLanHost
 var _lan_remote_motor: ShipMotor
 var _lan_saved_state: Dictionary = {}
@@ -170,6 +173,7 @@ func _ready() -> void:
 	_setup_visual_pilot()
 	_setup_lan_ui()
 	_setup_mode_ui()
+	_setup_helm_ui()
 	_refresh_mode_presentation()
 	ANDROID_TRACE.record("bootstrap", "world ready")
 	($InputController as GameplayInputController).ui_hit_test = _ui_captures_touch
@@ -237,6 +241,7 @@ func _physics_process(_delta: float) -> void:
 	_refresh_market_access()
 	_refresh_mode_button()
 	_advance_lan_route()
+	_refresh_helm()
 	if _map_overlay != null:
 		_map_overlay.set_player_world_position(position_now)
 	if _npc_motor != null and _combat != null and _combat.is_alive(PRACTICE_TARGET):
@@ -296,6 +301,7 @@ func _on_gameplay_command(command: Dictionary) -> void:
 		_diag_physics_left = 12
 	if accepted:
 		_save_service.mark_dirty()
+		_refresh_helm()
 
 
 func _setup_combat(sector: SectorRuntime) -> void:
@@ -762,6 +768,7 @@ func _block_boot(reason: Dictionary) -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_lan_ui()
+	_refresh_helm()
 	if _save_service.is_dirty() and Time.get_ticks_msec() - _last_attempt_ms >= CHECKPOINT_INTERVAL_MS:
 		_flush_checkpoint()
 
@@ -836,6 +843,8 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 	_build_sector_geometry(_world.active())
 	_sync_sector_local_presentation()
 	_refresh_mode_presentation()
+	($GameplayCamera as GameplayCamera).recenter()
+	_refresh_helm()
 	if _map_overlay != null:
 		_map_overlay.configure_minimap(_world.active().presentation_snapshot(), _ship_motor.global_position)
 	_save_service.mark_dirty()
@@ -1263,6 +1272,64 @@ func _lan_join_pressed() -> void:
 	get_tree().change_scene_to_file("res://src/presentation/lan_guest.tscn")
 
 
+func _setup_helm_ui() -> void:
+	var camera := $GameplayCamera as GameplayCamera
+	camera.set_follow_target(_ship_motor)
+	camera.set_world_limits(active_sector().bounds)
+	camera.recenter()
+	_destination_marker = Line2D.new()
+	_destination_marker.name = "Play01Destination"
+	_destination_marker.width = 2.5
+	_destination_marker.default_color = Color(0.35, 0.9, 0.85, 0.9)
+	for index in range(33):
+		_destination_marker.add_point(Vector2.from_angle(TAU * float(index) / 32.0) * 18.0)
+	add_child(_destination_marker)
+	_helm_stop = _helm_button("Play01Stop", "DUR", func() -> void:
+		_on_gameplay_command(GameplayCommand.cancel())
+	)
+	_helm_center = _helm_button("Play01Center", "GEMİYE DÖN", camera.recenter)
+	get_viewport().size_changed.connect(_layout_helm)
+	_layout_helm()
+	_refresh_helm()
+
+
+func _helm_button(node_name: String, label: String, action: Callable) -> CombatFireButton:
+	var button := CombatFireButton.new()
+	button.name = node_name
+	button.text = label
+	button.size = Vector2(126, 54)
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.touch_captured.connect(($InputController as GameplayInputController).reset_touch)
+	button.pressed.connect(action)
+	$UI.add_child(button)
+	return button
+
+
+func _layout_helm() -> void:
+	var safe := get_viewport_rect()
+	if OS.has_feature("android"):
+		var window := Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
+		var pixels := window.intersection(DisplayServer.get_display_safe_area())
+		if pixels.has_area():
+			pixels.position -= window.position
+			safe = safe.intersection(SafeAreaMath.display_safe_area_to_logical(Rect2(pixels), Vector2(1280, 720), Vector2(window.size)))
+	_helm_stop.position = safe.position + Vector2(24, 184)
+	_helm_center.position = _helm_stop.position + Vector2(134, 0)
+
+
+func _refresh_helm() -> void:
+	if not is_instance_valid(_helm_stop):
+		return
+	var modal := _world_map_open or _market_open or (_lan_menu != null and _lan_menu.visible)
+	_helm_stop.visible = not modal
+	_helm_center.visible = not modal
+	_helm_stop.disabled = not _ship_motor.has_target() and _ship_motor.velocity.length() <= 0.5
+	_destination_marker.visible = _ship_motor.has_target() and not modal
+	if _destination_marker.visible:
+		_destination_marker.global_position = _ship_motor.target_world_position()
+
+
 func _setup_mode_ui() -> void:
 	_mode_button = Button.new()
 	_mode_button.name = "Prg06ModeButton"
@@ -1495,6 +1562,7 @@ func _layout_map_ui() -> void:
 func _build_sector_geometry(sector: SectorRuntime) -> void:
 	if _sector_geometry != null:
 		_sector_geometry.queue_free()
+	($GameplayCamera as GameplayCamera).set_world_limits(sector.bounds)
 	var geometry := Node2D.new()
 	geometry.name = "ActiveSectorGeometry"
 	geometry.z_index = -1

@@ -1,5 +1,7 @@
 # SeaCraft
 
+**Güncel geliştirme sırası:** `GELISTIRME_GOREV_PLANI.md` PLAY-01…10; önce 15 dakikalık surface oynanış. PRG-06 pilotu korunmuş fakat ileri içerik askıda. CI teknik kabul, cihaz oynanış kabulü ayrıdır.
+
 Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game targeting desktop and Android.
 
 ## FND-01 contract

@@ -2,6 +2,8 @@
 
 ## Güncel durum
 
+**Oynanış öncelikli revizyon:** PLAY-01 aktif; PRG-06 askıda, mevcut pilot korunur. PLAY-08/09 kabulünden önce ileri içerik geliştirilmez. Önceki teknik kanıtlar aşağıda tarihsel olarak korunur.
+
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
 - Dal: yalnız `main`
 - Godot: `4.7.2-stable`
@@ -17,7 +19,7 @@
 - Fiziksel Android yeni-build doğrulaması: **awaiting_retest / not_run**
 - PRG-05: **active**; son doğrulanmış Android LAN hotfix exact SHA `ecda2d69ea2d79cbc40bb73bc4fcfae12dd41bdf`, CI `45440455081` success, GUT 417/417
 
-- PRG-06: **active** — checkpoint 1 verified, code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`, CI `45457089855` success, GUT 420/420; physical tests not_run.
+- PRG-06: **paused** — checkpoint 1 verified, code `a45e0cc327671fd6b2fe3f141f0f6a56bedb364c`, CI `45457089855` success, GUT 420/420; physical tests not_run.
 
 ## Android smoke hotfix
 

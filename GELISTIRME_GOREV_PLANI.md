@@ -1,4 +1,36 @@
-# SeaCraft — Geliştirme Görev ve Bağımlılık Planı
+# SeaCraft — Oynanış Öncelikli Geliştirme Planı
+
+**2026-11-24 — Kullanıcı onaylı yeni yürütme sırası.** Bu bölüm aşağıdaki tarihsel teknik görev kataloğunun yürütme sırasını ve geçiş kapılarını geçersiz kılar. Eski kod, testler, mekanik/içerik katalogları, kayıt uyumluluğu ve kanıtlar korunur; teknik olarak bitmiş altyapı oynanış kabulü anlamına gelmez.
+
+## Hedef: 15 dakikalık keyifli offline surface prototipi
+
+Oyuncu açılıştan itibaren gemisini anlayarak sürer, yönünü bulur, bir NPC ile savaşır, ganimet alır, limana döner, onarır ve somut bir gelişim elde eder. Bunu ikinci kez yapmak ister. Her aşama önce gerçek Bootstrap sahnesinde görünür ve denenebilir olacak; katalog kapsamı için yeni soyut sistem eklenmeyecek.
+
+| Sıra | İş | Oynanış kabulü |
+|---|---|---|
+| PLAY-01 | Gemi hareketi, dönüş, hız, kamera ve dokunmatik kontrol | Dokunulan hedef ile ekrandaki hedef örtüşür; pan/zoom sonrası gemiye dönülebilir; rota ve durma görünür; düz, ters yön, yakın hedef ve kıyı senaryoları kontrollü; Android gerçek cihazda rahat kullanım. |
+| PLAY-02 | Deniz, gemi sprite'ları, harita | SC-02/SC-03 doğru pivot ve yön; hareket izi/köpük ve okunur deniz/kıyı; bölge geçişi ve harita anlaşılır; Android performans ölçümü. |
+| PLAY-03 | Top savaşı | Menzil/borda/reload açık; top atışı, mermi, isabet, hasar ve batış görsel/ses geri bildirimi; yanlış atışın nedeni anlaşılır; dövüş mobilde kontrol edilebilir. |
+| PLAY-04 | NPC gemileri | Canlı devriye, tehdit, takip, ateş, kaçış ve onarım; tekrar karşılaşılabilir düşmanlar; oyuncu davranışına okunur tepki. |
+| PLAY-05 | Ganimet, envanter, liman, tamir | Savaş ödülü görülebilir/alınabilir; envanter erişilebilir; liman ve tamir açık; kayıt/yükleme ilerlemeyi korur. |
+| PLAY-06 | Gemi alımı, ekipman, güçlenme | En az bir gerçek satın alma veya yükseltme, fiyat ve etkisi anlaşılır; tekrar oynama motivasyonu. |
+| PLAY-07 | Görev, ekonomi, keşif | Tek basit görev zinciri, anlamlı bölge ve ticaret; mevcut PRG sistemleri ancak gerçek oyun akışı gerektirdiğinde kullanılır. |
+| PLAY-08 | 15 dakika döngü ve denge | Baştan sona gerçek Android oynanış; hareket→savaş→loot→liman→güçlenme döngüsü en az iki kez; sıkışma/çökme/kayıp yok, oyuncu geri bildirimi ile kabul. |
+| PLAY-09 | LAN olgunlaştırma | Aynı offline döngü iki gerçek cihazda; yetki, reconnect, kayıt, drift ve dokunmatik UX; mevcut NET/PRG05 altyapısı korunur. |
+| PLAY-10 | İleri içerik | Ancak PLAY-08 ve PLAY-09 kabulünden sonra PRG-06 denizaltı/torpido, ADV boss/raid ve geniş içerik değerlendirilir. |
+
+## Yürütme ve kanıt kuralları
+
+- **Tek aktif geliştirme: PLAY-01.** Bir sonraki aşamaya geçmeden önce mevcut aşamanın kullanıcı tarafından oynanış kabulü gerekir. Fiziksel kabul beklerken aynı aşamadaki bağımsız iyileştirmeler ve otomatik testler sürdürülür; yeni mekanik aşamasına atlanmaz.
+- Otomatik CI ve Android/Linux export teknik kapıdır; gerçek cihaz kontrolü ve kullanıcı deneyimi ayrı kapıdır. GUT sayısı kalite/oynanabilirlik ölçüsü değildir. Her checkpoint APK, exact commit, test kanıtı ve kısa cihaz senaryosu verir.
+- Mevcut FND/VS/CORE/AI/NET/PRG testleri ve save/network authority sözleşmeleri korunur. Yeni iş bu sistemleri görünür ve oynanabilir kılmaya odaklanır. PRG-05 fiziksel LAN kabulü kullanıcıya atanmış ayrı açık kayıt; PRG-06 askıda (mevcut Deep Haven pilotu ve kayıtlar korunur). ADV-01 başlamaz.
+- PLAY-01 ilk dilim: gerçek canvas transform ile dokunma/çizim hizası, kameranın gemiyi yeniden merkezlemesi ve rota/dur komutunun görünür olması. Sonraki dilim: gerçek hareket/turn/arrival ve kıyı senaryolarını ölçmek, cihaz geri bildirimiyle hız/dönüş ayarı; yol bulma ve takılma giderimi. Sayısal denge değerleri cihaz kanıtı olmadan keyfi değiştirilmez.
+- Görsel/sprite üretimi ayrı lane olabilir; PLAY-02 için gerekli onaylı pilotlar kullanılır, tüm katalog beklenmez.
+
+---
+
+# Tarihsel teknik görev kataloğu (referans, yürütme sırası değildir)
+
 
 > Plan revizyon girdisi: main @ 02f0571c762f8ab4c7893227e153e1570dd68627  
 > Hedef motor: Godot 4.7  
@@ -772,7 +804,7 @@ Bu sıra MEKANIK_KATALOGU.md, ICERIK_KATALOGU.md, GODOT_HAZIR_COZUMLER.md, HAZIR
 
 **Gerçek cihaz doğrulaması:** Uzun LAN oturumunda ekonomi state drift gözlemi.
 
-**Sonraki görevi engelleyen kapı:** Faction/economy state persistence ve host transaction testleri geçmeden PRG-06 başlamaz.
+**Tarihsel teknik kapı:** Faction/economy persistence ve host transaction testleri. Güncel PRG-06 başlama kapısı PLAY-08/09 kullanıcı kabulüdür.
 
 ## PRG-06 — Surface/submarine katmanı ve içerik genişletme altyapısı
 
@@ -1021,7 +1053,7 @@ Vertical slice tamamlanmış sayılmak için aşağıdaki tek akış doğrulanı
 | A05 LimboAI | OPTIONAL alternatif | AI-01 sonrası | Beehave + custom FSM yetersizse; Android GDExtension yükleme kanıtı |
 | A04 Godot SQLite | OPTIONAL | CORE-04 sonrası ölçüm | JSON persistence ölçeği gerçekten yetersizse |
 
-# 5. IMPLEMENTATION ORDER
+# 5. TARİHSEL IMPLEMENTATION ORDER (geçersiz yürütme sırası)
 
 | Sıra | Görev ID | Dalga | Başlaması için ana kapı |
 |---:|---|---|---|

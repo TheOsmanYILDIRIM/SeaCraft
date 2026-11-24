@@ -42,14 +42,17 @@ func _process(_delta: float) -> void:
 
 
 func pan_world_delta(world_delta: Vector2) -> void:
-	_state.position = global_position
+	_state.position = get_screen_center_position()
 	_state.pan_world_delta(world_delta)
 	global_position = _state.position
+	reset_smoothing()
+	force_update_scroll()
 
 
 func zoom_by(factor: float) -> void:
 	_state.zoom_value = zoom.x
 	zoom = Vector2.ONE * _state.zoom_by(factor)
+	force_update_scroll()
 
 
 func recenter() -> void:
@@ -57,6 +60,8 @@ func recenter() -> void:
 		_state.set_follow_target_position(_follow_target.global_position)
 	_state.recenter()
 	global_position = _state.position
+	reset_smoothing()
+	force_update_scroll()
 
 
 func set_follow_target(target: Node2D) -> void:
@@ -74,29 +79,18 @@ func set_world_limits(limits: Rect2) -> void:
 	global_position = _state.position
 
 
+# Use the actual rendered canvas, not the camera's unsmoothed node position.
+# Limits, smoothing and viewport resize can make those two centers differ.
 func screen_to_world_position(screen_position: Vector2) -> Vector2:
-	return CAMERA_MATH.screen_to_world(
-		screen_position,
-		global_position,
-		zoom,
-		get_viewport_rect().size
-	)
+	return get_canvas_transform().affine_inverse() * screen_position
 
 
 func world_to_screen_position(world_position: Vector2) -> Vector2:
-	return CAMERA_MATH.world_to_screen(
-		world_position,
-		global_position,
-		zoom,
-		get_viewport_rect().size
-	)
+	return get_canvas_transform() * world_position
 
 
 func screen_delta_to_world_delta(screen_delta: Vector2) -> Vector2:
-	return screen_delta / Vector2(
-		max(abs(zoom.x), CAMERA_MATH.MIN_ZOOM_COMPONENT),
-		max(abs(zoom.y), CAMERA_MATH.MIN_ZOOM_COMPONENT)
-	)
+	return get_canvas_transform().affine_inverse().basis_xform(screen_delta)
 
 
 func is_follow_mode() -> bool:
