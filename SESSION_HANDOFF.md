@@ -2,6 +2,14 @@
 
 ## Güncel durum
 
+## PLAY-01 checkpoint 1 — 2026-11-24
+
+- Gerçek rendered canvas hit-test, BoatMarker follow/recenter (boot/teleport/manual), mobil DUR ve GEMİYE DÖN, hedef işareti. Yakın/ters hedef orbit giderimi: arrival radius ×5 içinde dönüş hızı sınırı ve 0.01 settle tolerance; uzun rota davranışı korunur. 20 yakın/ters hedef kombinasyonu ve gerçek packed Bootstrap testleri geçti. İlk CI'da görülen follow ve VS04 broadside regresyonları kaynakta giderildi, testler gevşetilmedi.
+- Exact code `8e651ad825c385f15bdcbcc4af0cf681513ff3d6`; [CI 45467139708](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45467139708) success, **423/423 GUT**, **33.381 assertions**; `PLAY01_RENDERED_CANVAS_OK`, `PLAY01_PACKED_HELM_OK`, `PLAY01_NEAR_REVERSE_ARRIVAL_OK`; VS04, NET01–04, PRG05 production save/replay and offline guard passed. Android artifact `14954319289`, ZIP SHA256 `b7c9d795f8461e940db43e13bfca4dae3ddf1ab702b37ea5d69fdbe92570a231`; Linux `14953769621`, ZIP SHA256 `31cfb7407a4ad62a7c73c1be35ee02445046c0bbb621e6449065a572b4cb0cf3`; both authenticated readback passed.
+- PLAY-01 active: gerçek cihazda dokunma, pan/pinch, geri merkezleme, 180° dönüş, yakın varış, durma, kıyı/sıkışma ve hız hissi kabulü `not_run`. Kıyı rotası/takılma ve hareket hissi ayarı açık; PLAY-02 başlamadı. PRG-06 waiting; PRG05 fiziksel LAN ayrı açık.
+
+
+
 **Oynanış öncelikli revizyon:** PLAY-01 aktif; PRG-06 askıda, mevcut pilot korunur. PLAY-08/09 kabulünden önce ileri içerik geliştirilmez. Önceki teknik kanıtlar aşağıda tarihsel olarak korunur.
 
 - Repo: `TheOsmanYILDIRIM/SeaCraft`
