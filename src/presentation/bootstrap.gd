@@ -870,6 +870,12 @@ func _refresh_market_quote() -> void:
 	_market_panel.consume_convoy_status(_economy_runner != null and _economy_runner.is_settled(PILOT_CONVOY_ID))
 
 
+# Each namespaced ID segment must start with an ASCII letter, even when
+# a random nonce begins with a digit. Never accept an empty nonce.
+static func local_market_transaction_id(nonce: PackedByteArray) -> String:
+	return "txn.market.ui.r%s" % nonce.hex_encode() if nonce.size() == 16 else ""
+
+
 func _on_market_intent(operation: String, payload: Dictionary) -> void:
 	# Offline/local host adapter. Never trust the panel for stock, price or identity.
 	if not _market_open or _loot == null or not _can_access_market():
@@ -882,7 +888,10 @@ func _on_market_intent(operation: String, payload: Dictionary) -> void:
 	if quantity < 1 or quantity > Prg05MarketPanel.MAX_ORDER:
 		return
 	# New local intent IDs cannot collide with a persisted transaction after restart.
-	var transaction_id := "txn.market.ui.%s" % Crypto.new().generate_random_bytes(16).hex_encode()
+	var transaction_id := local_market_transaction_id(Crypto.new().generate_random_bytes(16))
+	if transaction_id.is_empty():
+		_market_panel.show_result({"accepted": false, "reason": "transaction_id_unavailable"})
+		return
 	var result := _loot.inventory_state().execute_transaction(FoundationSector.PLAYER, transaction_id, operation,
 		{"market_id": PILOT_MARKET_ID, "quantity": quantity})
 	if result.get("accepted", false):

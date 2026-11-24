@@ -674,3 +674,15 @@ func test_prg05_packed_bootstrap_economy_combat_convoy_market_save_resume() -> v
 	assert_true(saved_authority.has("ai04_world"))
 	assert_eq(int(saved_authority["progression"]["prg05"]["markets"][market]["stock"]), 11)
 	print("PRG05_PACKED_BOOTSTRAP_ECONOMY_OK")
+
+
+func test_prg05_local_market_transaction_id_all_nonce_prefixes() -> void:
+	var script := preload("res://src/presentation/bootstrap.gd")
+	for prefix in range(16):
+		var nonce := PackedByteArray()
+		nonce.resize(16)
+		nonce[0] = prefix * 16
+		var id := script.local_market_transaction_id(nonce)
+		assert_true(SectorIds.valid(id), id)
+		assert_eq(id, "txn.market.ui.r" + nonce.hex_encode())
+	assert_eq(script.local_market_transaction_id(PackedByteArray()), "")
