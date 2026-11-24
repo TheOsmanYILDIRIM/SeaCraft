@@ -81,10 +81,14 @@ func register(id: String, faction: String, max_hull: float, weapon: WeaponDefini
 
 
 func register_dormant(id: String, faction: String, max_hull: float, sector_id: String, position: Vector2,
-		target_class: String = TargetingService.SHIP) -> bool:
+		target_class: String = TargetingService.SHIP, weapon: WeaponDefinition = null,
+		defense: float = 0.0, dodge: float = 0.0, selectable: bool = true,
+		attack_modifiers: Dictionary = {}, mounted_side: int = 0) -> bool:
 	if not SectorIds.valid(id) or not SectorIds.valid(faction) or not SectorIds.valid(sector_id) or _roster.has(id):
 		return false
 	if not TargetingService.target_class_valid(target_class) or not position.is_finite() or not CoreCombatRules.bounded(max_hull, 0.000001, CoreCombatRules.MAX_VALUE):
+		return false
+	if not CoreCombatRules.bounded(defense, 0.0, CoreCombatRules.MAX_VALUE) or not probability(dodge) or absi(mounted_side) > 1:
 		return false
 	var actor := CombatantState.new()
 	actor.faction_id = faction
@@ -93,6 +97,21 @@ func register_dormant(id: String, faction: String, max_hull: float, sector_id: S
 	actor.target_class = target_class
 	actor.max_hull = max_hull
 	actor.hull = max_hull
+	actor.defense = defense
+	actor.dodge = dodge
+	actor.selectable = selectable
+	if weapon != null:
+		if not _valid_weapon(weapon) or not _valid_modifiers(attack_modifiers):
+			return false
+		var normal := CoreCombatRules.base_damage(weapon, null, attack_modifiers)
+		if not is_finite(normal):
+			return false
+		actor.normal_damage = normal
+		actor.attack_modifiers = attack_modifiers.duplicate(true)
+		actor.battery = WeaponBattery.new()
+		actor.battery.weapon = weapon.duplicate() as WeaponDefinition
+		actor.battery.mounted_side = mounted_side
+		actor.battery.reload_ticks = maxi(1, ceili(weapon.reload_seconds * _tick_rate))
 	_roster[id] = actor
 	return true
 
