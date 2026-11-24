@@ -119,6 +119,40 @@ func test_npc_starts_in_patrol() -> void:
 	assert_eq(brain.intent_id(), NpcBrain.Intent.PATROL_TO_WAYPOINT)
 
 
+func test_dormant_brain_boots_outside_home_sector_and_reactivates_after_rebind() -> void:
+	var haven_definition := ResourceLoader.load(FoundationSector.HAVEN_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	var haven := SectorRuntime.build(haven_definition)
+	assert_not_null(haven)
+	var haven_player := haven.anchor("anchor.haven_center").position
+	assert_true(haven.register_entity(PLAYER, haven_player))
+	var dormant_motor := ShipMotor.new()
+	add_child_autofree(dormant_motor)
+	dormant_motor.set_physics_process(false)
+	dormant_motor.global_position = NPC_POS
+	var weapon := WeaponDefinition.new()
+	weapon.stable_id = "weapon.vs02_dormant_test"
+	weapon.base_damage = 20.0
+	weapon.min_range_meters = 0.0
+	weapon.range_meters = 600.0
+	weapon.reload_seconds = 0.01
+	weapon.accuracy = 1.0
+	weapon.crit_chance = 0.0
+	var dormant_combat := CombatAuthority.new(haven, SeedStreams.new(88), 60)
+	assert_true(dormant_combat.register(PLAYER, "faction.player", 100.0, weapon))
+	assert_true(dormant_combat.register_dormant(NPC, "faction.hostile", 100.0, FoundationSector.ID, NPC_POS))
+	var dormant_brain := NpcBrain.create(NPC, haven, dormant_combat, dormant_motor, _test_tuning(), true)
+	assert_not_null(dormant_brain)
+	assert_false(dormant_brain.decision_tick(10))
+	var foundation_definition := ResourceLoader.load(FoundationSector.PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as SectorDefinition
+	var foundation := SectorRuntime.build(foundation_definition)
+	assert_not_null(foundation)
+	assert_true(foundation.register_entity(PLAYER, PLAYER_POS))
+	assert_true(dormant_combat.rebind_sector(foundation, PLAYER))
+	assert_true(foundation.entity_position(NPC).is_finite())
+	assert_true(dormant_brain.rebind_sector(foundation, dormant_combat))
+	assert_true(dormant_brain.decision_tick(20))
+
+
 func test_patrol_waypoint_order_is_deterministic() -> void:
 	assert_true(brain.decision_tick(10))
 	assert_eq(brain.patrol_index(), 0)
