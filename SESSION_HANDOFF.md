@@ -2,6 +2,12 @@
 
 ## Güncel durum
 
+## PLAY-01 checkpoint 2 — 2026-11-24
+
+- Bootstrap hareket komutları artık doğrudan kıyıya sürmek yerine mevcut `SectorNavigation.path()` üzerinden bounded waypoint rotası kuruyor. Erişilemez kıyı/ada hedefi reddediliyor; motor ara waypoint'leri izlerken hedef işareti kullanıcının son hedefinde kalıyor ve `Play01Route` kalan rotayı görünür gösteriyor. Sürekli slide collision durumunda 6 tick sonra, son erişilebilir konumu da kullanabilen en fazla 2 replan deneniyor; başarısızlıkta hedef güvenli biçimde iptal ediliyor. LAN rota sahipliği ve sektör geçişi helm rotasını temizliyor.
+- Exact code `7ba8cdd871b6d1dac02a91b159359d1eeed5d09e`; [CI 45475985405](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45475985405) **success**, **425/425 GUT**, **33.405 assertions**; `PLAY01_RENDERED_CANVAS_OK`, `PLAY01_PACKED_HELM_OK`, `PLAY01_NEAR_REVERSE_ARRIVAL_OK`, `PLAY01_COAST_ROUTE_OK`, `PLAY01_STUCK_RECOVERY_OK`; VS04, NET01–04 ve PRG05 production regresyonları geçti. Android artifact `14959542092`, ZIP SHA256 `8e483ecda5bbaa307fa84c69e26251a5e9de827dfd86c7c249ce443c0e4660fe`; Linux `14960740912`, ZIP SHA256 `c08f52f71f2c4895f79d3117655e45f460ec871797ac8017f1117ab52923ee53`; ikisi de exact SHA için authenticated readback geçti.
+- PLAY-01 active: fiziksel Android touch/pinch/recenter/180° dönüş/yakın varış/DUR/kıyı rota okunurluğu ve hareket hissi `not_run`. Sonraki iş aynı PLAY-01 içinde gerçek cihaz tuning/acceptance; cihaz kanıtı olmadan hız/dönüş değerleri değiştirilmez. PLAY-02 başlamadı; PRG-06 waiting.
+
 ## PLAY-01 checkpoint 1 — 2026-11-24
 
 - Gerçek rendered canvas hit-test, BoatMarker follow/recenter (boot/teleport/manual), mobil DUR ve GEMİYE DÖN, hedef işareti. Yakın/ters hedef orbit giderimi: arrival radius ×5 içinde dönüş hızı sınırı ve 0.01 settle tolerance; uzun rota davranışı korunur. 20 yakın/ters hedef kombinasyonu ve gerçek packed Bootstrap testleri geçti. İlk CI'da görülen follow ve VS04 broadside regresyonları kaynakta giderildi, testler gevşetilmedi.

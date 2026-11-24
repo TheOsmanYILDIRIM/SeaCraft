@@ -14,6 +14,19 @@ Kurallar:
 
 ---
 
+## PLAY-01 — Checkpoint 2 / kıyı rotası ve bounded sıkışma kurtarma (2026-11-24)
+
+Durum: `verified_checkpoint`; PLAY-01 `active`, PLAY-02 `not_started`.
+
+- Exact code SHA: **`7ba8cdd871b6d1dac02a91b159359d1eeed5d09e`**. [CI 45475985405](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45475985405): **completed/success**, **425/425 GUT**, **33.405 assert**.
+- Kullanıcı world-tap hedefi `SectorNavigation.path()` ile erişilebilir waypoint rotasına çevriliyor; ada/kıyı içindeki erişilemez hedef reddediliyor. Final hedef marker'ı korunurken `Play01Route` kalan rotayı çiziyor. Foundation fixture'da batıdan doğuya ada çevresi rota motorla tamamlandı ve kıyı collision sayısı sıfır kaldı.
+- Sıkışma kurtarma: 6 ardışık slide-collision tick sonrası replan; erişilemez pozisyonda son erişilebilir origin fallback; en fazla 2 replan ve ardından güvenli abort. `PLAY01_COAST_ROUTE_OK` ve `PLAY01_STUCK_RECOVERY_OK` exact CI'da geçti. Önceki rendered-canvas, packed-helm ve near/reverse arrival marker'ları da korundu.
+- VS04, NET01–04 gerçek süreçleri ve PRG05 production LAN save/replay regresyonları exact run'da geçti.
+- Android artifact **`14959542092`**, ZIP SHA-256 `8e483ecda5bbaa307fa84c69e26251a5e9de827dfd86c7c249ce443c0e4660fe`; Linux artifact **`14960740912`**, ZIP SHA-256 `c08f52f71f2c4895f79d3117655e45f460ec871797ac8017f1117ab52923ee53`. İkisi de exact code SHA için authenticated artifact readback geçti.
+- Fiziksel Android touch/pinch/recenter/turn/arrival/stop/coast, rota okunurluğu ve hareket hissi **`not_run`**. Bu checkpoint kullanıcı oynanış kabulü değildir; PLAY-02'ye geçiş kapısı açılmadı. Sonraki iş PLAY-01 gerçek cihaz tuning/acceptance.
+
+---
+
 ## NET-01 — LAN Session ve Host-Authority Protokolü
 
 Durum: `done`
