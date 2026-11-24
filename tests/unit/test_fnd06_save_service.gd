@@ -282,6 +282,7 @@ func test_bootstrap_load_and_pause_hook_use_isolated_store() -> void:
 	assert_eq(scene.get_node("ShipMotor").global_position, _ship.global_position)
 	_service.mark_dirty()
 	scene.notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	assert_eq(scene.get("save_status")["status"], SaveService.OK_STATUS, "legacy 64-bit seed must save with AI-04 world")
 	assert_false(_service.is_dirty())
 	assert_true(FileAccess.file_exists(_directory.path_join(SaveService.BACKUP)))
 

@@ -460,7 +460,7 @@ func _setup_combat(sector: SectorRuntime) -> void:
 func _setup_background_economy() -> bool:
 	var inventory := _loot.inventory_state()
 	_economy_world = WorldSimulationAuthority.new(ContentManifest.registry(), FoundationSector.graph(),
-		int(_streams.snapshot_state()["master_seed"]), true)
+		SeedStreams.derive_stream_seed(int(_streams.snapshot_state()["master_seed"]), "ai04.world.v1"), true)
 	var tick := _combat.simulation_tick()
 	if _pending_combat.has("ai04_world"):
 		if not _economy_world.restore_state(_pending_combat["ai04_world"]):
