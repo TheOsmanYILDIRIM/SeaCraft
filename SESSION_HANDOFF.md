@@ -15,7 +15,7 @@
 - Kaynak sprite ZIP arşivleri exporttan çıkarıldı; APK içinde bulunmuyor.
 - APK boyutunun ana bileşeni Godot debug engine: `libgodot_android.so` = `76181608` byte.
 - Fiziksel Android yeni-build doğrulaması: **awaiting_retest / not_run**
-- PRG-05: **active**; son doğrulanmış production LAN composition checkpoint'i exact SHA `ef470b821332d85846b345d20e09c5b22f2d50ea`, CI `45365494569` success, GUT 416/416
+- PRG-05: **active**; son doğrulanmış Android LAN hotfix exact SHA `ecda2d69ea2d79cbc40bb73bc4fcfae12dd41bdf`, CI `45440455081` success, GUT 417/417
 
 ## Android smoke hotfix
 
@@ -66,3 +66,6 @@ PRG-05 production LAN host composition kod+gerçek süreç+save/replay düzeyind
 - Android artifact `14905973534`, ZIP SHA-256 `846a2848b8278e5a87b2ea0207c34de72c162f93ee571c32c7903c8bd1e7ef22`; Linux artifact `14907086350`, ZIP SHA-256 `f9d1c66b5aa06331c34c0983ca18a3a56378159fac2b654ac8b86e9016a48001`; authenticated readback başarılı.
 - Fiziksel Android dokunmatik pazar/host-join UX ve uzun iki cihaz LAN economy drift `not_run`; bunlar tamamlanmadan PRG-05 kapanmaz ve PRG-06 başlamaz.
 
+## PRG-05 Android LAN izin hotfix — 2026-11-24
+
+**PRG-05 Android LAN izin hotfix — 2026-11-24:** Kullanıcının `415919e9c471` build'inde `requested` döngüsü: Android SDK <37 için gereksiz runtime gate kaldırıldı; SDK ≥37 gerçek izin grant'i, async callback + timeout/recheck, host/guest single-flight ve cancel; Android UDP broadcast receive ve `CHANGE_WIFI_MULTICAST_STATE` manifest doğrulaması eklendi. Exact code SHA `ecda2d69ea2d79cbc40bb73bc4fcfae12dd41bdf`; [CI 45440455081](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45440455081) **success**, GUT **417/417**, **29,960 asserts**, `NET04_PERMISSION_CALLBACK_OK grant=1 denied=1 false_grant=1 unrelated=1 timeout=1 broadcast=1`; NET01–04 ve PRG05 production integration, Android/Linux export ve authenticated artifact readback geçti. Android artifact `14944915113`, ZIP SHA-256 `73405fa9c09242e535b765eec5ee31bb71023d96f6faa9fd5102e47ba7b9569d`, APK SHA-256 `5ad80bd3a0feabe7b3ae8f802dc559efc8d372d83b5a129a537178e81e5bf996`; Linux artifact `14943621158`, ZIP SHA-256 `490d89cc9e0bdba3d58d1099d07c7846d0e5e03d0bf358779266b43a343914dc`. Fiziksel Android izin, host/join UX ve uzun iki-cihaz ekonomi drift retesti `not_run`; PRG-05 active; PRG-06 başlamadı.
