@@ -332,6 +332,7 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	input.combat_target_at = _target_at
 	_loot = LootAuthority.new(sector, _streams, VS03_LOOT_TABLE as LootTable, VS03_LOOT_ITEM as ItemDefinition, true)
 	if not _loot.bind_inventory_owner(FoundationSector.PLAYER, CORE_STOCK) or not _loot.reserve_inventory_item(PRACTICE_TARGET, CoreCombatRules.NPC_REPAIR):
+		push_error("VS-03 loot inventory authority setup failed")
 		return
 	if not _loot.inventory_state().configure_prg02(_streams):
 		push_error("PRG-02 progression authority setup failed")
@@ -376,17 +377,23 @@ func _setup_combat(sector: SectorRuntime) -> void:
 		push_error("PRG-05 combat diplomacy integration failed")
 		return
 	if not _combat.attach_inventory(_loot) or not _combat.register_ammo(ROUND_AMMO_PROFILE as AmmoProfile) or not _combat.register_ammo(EMBER_AMMO_PROFILE as AmmoProfile):
+		push_error("CORE combat inventory/ammo authority setup failed")
 		return
 	if not _combat.mount_ammo(FoundationSector.PLAYER, PackedStringArray([ROUND_AMMO, EMBER_AMMO])) or not _combat.configure_repair(FoundationSector.PLAYER, 20.0, 180, CoreCombatRules.STOWED):
+		push_error("CORE combat loadout/repair setup failed")
 		return
 	if not _combat.mount_harpoon(FoundationSector.PLAYER, HARPOON_PROFILE as HarpoonProfile):
+		push_error("CORE-02 harpoon setup failed")
 		return
 	_world_objects = WorldObjectAuthority.new(sector, _loot, _combat, VS03_LOOT_TABLE as LootTable, FoundationSector.PLAYER, true)
 	if _pending_combat.has("world") and not _world_objects.restore_state(_pending_combat["world"]):
+		push_error("CORE-02 world object restore failed")
 		return
 	if not _combat.configure_defense(FoundationSector.PLAYER, 0.15, {}, 8.0, 8.0) or not _combat.configure_defense(PRACTICE_TARGET, 0.1, {CoreCombatRules.FIRE: -0.2}, 0.0, 6.0):
+		push_error("CORE combat defense setup failed")
 		return
 	if _pending_combat.has("combat") and not _combat.restore_state(_pending_combat["combat"]):
+		push_error("CORE combat restore failed")
 		return
 	_bounty_bridge = Prg05BountyCombatBridge.new(_combat, _loot.inventory_state(), true)
 	if not _bounty_bridge.bind_bounty(PILOT_BOUNTY_ID, PRACTICE_TARGET):
@@ -399,19 +406,26 @@ func _setup_combat(sector: SectorRuntime) -> void:
 	if _pending_combat.has("npc_motion"):
 		var motion: Variant = _pending_combat["npc_motion"]
 		if not ShipMotor.valid_save_motion(motion):
+			push_error("VS-02 NPC motion restore validation failed")
 			return
 		if practice_active and not sector.move_entity(PRACTICE_TARGET, Vector2(motion["x"], motion["y"])):
+			push_error("VS-02 NPC motion sector restore failed")
 			return
 		_npc_motor.restore_save_motion(motion)
 	if _pending_combat.has("npc_ai") and not _npc_brain.restore_state(_pending_combat["npc_ai"]):
+		push_error("AI-01 NPC state restore failed")
 		return
 	if _pending_combat.has("scheduler") and not _ai_scheduler.restore_state(_pending_combat["scheduler"]):
+		push_error("AI-01 scheduler restore failed")
 		return
 	if _pending_combat.has("fleet") and not _fleet_coordinator.restore_state(_pending_combat["fleet"]):
+		push_error("AI-03 fleet restore failed")
 		return
 	if _pending_combat.has("docks") and not _dock_authority.restore_state(_pending_combat["docks"]):
+		push_error("AI-03 dock restore failed")
 		return
 	if not _ai_scheduler.register_brain(_npc_brain, (NPC_TUNING as NpcAiTuning).decision_interval_ticks, 0):
+		push_error("AI-01 scheduler brain registration failed")
 		return
 	if _combat.hull(PRACTICE_TARGET) <= 0.0:
 		_npc_brain.mark_sunk()
