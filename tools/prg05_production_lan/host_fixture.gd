@@ -136,12 +136,14 @@ func _travel_to_haven(scene: Node) -> bool:
 		return false
 	var motor := scene.get_node("ShipMotor") as ShipMotor
 	motor.global_position = scene.active_sector().anchor(FoundationSector.FOUNDATION_GATE).position
-	var first: Dictionary = scene.request_sector_transition(FoundationSector.GATE_FOUNDATION_OUTER)
-	if not bool(first.get("accepted", false)):
+	(scene.get("_lan_button") as Button).pressed.emit()
+	(scene.get("_lan_travel") as Button).pressed.emit()
+	if scene.active_sector().sector_id != FoundationSector.OUTER_ID:
 		return false
 	motor.global_position = scene.active_sector().anchor(FoundationSector.OUTER_EAST).position
-	var second: Dictionary = scene.request_sector_transition(FoundationSector.GATE_OUTER_HAVEN)
-	return bool(second.get("accepted", false)) and scene.active_sector().sector_id == FoundationSector.HAVEN_ID
+	(scene.get("_lan_travel") as Button).pressed.emit()
+	(scene.get("_lan_button") as Button).pressed.emit()
+	return scene.active_sector().sector_id == FoundationSector.HAVEN_ID
 
 
 func _verify_trade_state(scene: Node, stock: int, balance: int, quantity: int) -> bool:

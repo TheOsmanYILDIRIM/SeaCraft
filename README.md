@@ -344,3 +344,11 @@ Android export uses the Godot Gradle build template with target SDK 37. The mani
 ## PRG-05 faction/economy authority — initial slice
 
 Host/offline-owned `Prg05EconomyState` uses the existing authoritative `InventoryState` transaction ledger. Only server-configured price/stock and grants are trusted; client intents `economy_market_buy/sell` contain transaction ID, market ID and quantity. Persistent progression schema 5 migrates legacy v1–v4; no final sprites are needed. Company/crew, NPC world-event wiring, live market content and mobile UX remain open.
+
+
+## PRG-05 mobile LAN pilot
+
+- Open **LAN** from the gameplay screen. To host, use **Limana git / geç** to sail to the next eastern gate, reopen LAN at the gate and press the same button to cross. Repeat to reach Safe Haven, then sail to its market ring and press **Oda oluştur**. The route uses existing sector navigation; direct player movement cancels the route. Stop the room from the same menu.
+- On a second device choose **LAN → Odaya katıl**, grant local-network permission if requested, and select **Odaları ara** or type the displayed host IPv4 address. Pilot defaults: ENet 17350 / UDP discovery 17351. Both devices must run the same protocol-8 build on a local network without peer isolation.
+- The guest scene has no local world save writer. Movement is sent as host intents; the scene renders replicated ship proxies and the market panel reads host-only quotes and balance. An authoritative market transaction uses a unique ID, and a pending trade can replay that ID after explicit reconnect. One guest slot, the existing Safe Haven sector lock, and an idempotent pilot starting credit of 1000 are intentional test-slice limits.
+- Physical Android input, Android permission dialogs, Wi-Fi discovery and prolonged two-device economy drift remain device acceptance gates; the real-process CI fixture exercises the shipped host and guest controls, not Android hardware.

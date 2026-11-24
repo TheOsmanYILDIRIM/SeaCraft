@@ -74,6 +74,10 @@ const LAN_DISCOVERY_PORT := 17351
 var _lan_game_port := LAN_GAME_PORT
 var _lan_discovery_port := LAN_DISCOVERY_PORT
 var _lan_advertised_address := "255.255.255.255"
+var _lan_route := PackedVector2Array()
+var _lan_route_index := 0
+var _lan_route_sector := ""
+var _lan_route_deadline := 0
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -224,6 +228,7 @@ func _physics_process(_delta: float) -> void:
 		_diag_physics_left -= 1
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
 	_refresh_market_access()
+	_advance_lan_route()
 	if _map_overlay != null:
 		_map_overlay.set_player_world_position(position_now)
 	if _npc_motor != null and _combat != null and _combat.is_alive(PRACTICE_TARGET):
@@ -246,6 +251,8 @@ func _on_gameplay_command(command: Dictionary) -> void:
 		if active_sector() == null:
 			ANDROID_TRACE.record("bootstrap", "command blocked: no active sector")
 		return
+	if command.get("type") in [GameplayCommand.MOVE_TO_WORLD_POSITION, GameplayCommand.CANCEL]:
+		_lan_route.clear()
 	if _combat != null:
 		match command.get("type"):
 			CombatAuthority.SELECT:
@@ -815,6 +822,7 @@ func request_sector_transition(gate_id: String) -> Dictionary:
 	var result := _world.request_transition(_authority, FoundationSector.PLAYER, gate_id)
 	if not result["accepted"]:
 		return result
+	_lan_route.clear()
 	_ship_motor.global_position = _world.active().entity_position(FoundationSector.PLAYER)
 	_ship_motor.cancel_target()
 	_build_sector_geometry(_world.active())
@@ -1138,8 +1146,34 @@ func _lan_travel_pressed() -> void:
 			_lan_status.text = str(result.get("reason", "Geçiş reddedildi"))
 			_lan_status.set_meta("error", true)
 		return
-	_on_gameplay_command(GameplayCommand.move_to_world_position(anchor.position))
+	# Use the existing bounded visibility-graph route rather than steering
+	# straight into the island between the player and the eastern gate.
+	var route := sector.navigation.path(_ship_motor.global_position, anchor.position)
+	if route.size() < 2:
+		_lan_status.text = "Güvenli rota bulunamadı. Açık denize çıkıp yeniden deneyin."
+		_lan_status.set_meta("error", true)
+		return
+	_lan_route = route
+	_lan_route_index = 1
+	_lan_route_sector = sector.sector_id
+	_lan_route_deadline = Time.get_ticks_msec() + 180000
+	_ship_motor.apply_authoritative_command(GameplayCommand.move_to_world_position(_lan_route[_lan_route_index]))
 	_toggle_lan_menu()
+
+
+func _advance_lan_route() -> void:
+	if _lan_route.is_empty():
+		return
+	if active_sector().sector_id != _lan_route_sector or Time.get_ticks_msec() > _lan_route_deadline:
+		_lan_route.clear()
+		return
+	if _ship_motor.has_target():
+		return
+	_lan_route_index += 1
+	if _lan_route_index >= _lan_route.size():
+		_lan_route.clear()
+		return
+	_ship_motor.apply_authoritative_command(GameplayCommand.move_to_world_position(_lan_route[_lan_route_index]))
 
 
 func _lan_start_pressed() -> void:
@@ -1150,6 +1184,7 @@ func _lan_start_pressed() -> void:
 		return
 	if not _can_access_market():
 		return
+	_lan_route.clear()
 	var permission := LanPermissionGate.new().request_from_user_action()
 	if permission != LanPermissionGate.RESULT_ALLOWED:
 		_lan_status.text = "Yerel ağ iznine izin verin, sonra tekrar deneyin: " + permission

@@ -71,7 +71,7 @@ func _ready() -> void:
 	_address = LineEdit.new()
 	_address.placeholder_text = "Host IPv4 adresi (örn. 192.168.1.10)"
 	_address.custom_minimum_size.y = 60
-	_address.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DECIMAL
+	_address.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_URL
 	_address.add_theme_font_size_override("font_size", 22)
 	column.add_child(_address)
 	_join = _button(column, "IP ile / seçili odaya katıl", _join_room)
@@ -196,7 +196,7 @@ func _leave() -> void:
 
 func _exit_tree() -> void:
 	_discovery.stop()
-	if is_instance_valid(_client):
+	if is_instance_valid(_client) and _client.is_inside_tree():
 		_client.close_session()
 
 
