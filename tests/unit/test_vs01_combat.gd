@@ -46,6 +46,26 @@ func test_valid_hostile_target() -> void:
 	assert_eq(c.locked_target(A), B)
 
 
+func test_dormant_registration_preserves_weapon_shape_for_state_restore() -> void:
+	var home := SectorRuntime.new()
+	home.sector_id = "sector.vs01_home"
+	home.bounds = Rect2(-640, -360, 1280, 720)
+	assert_true(home.register_entity(B, Vector2(0, 100)))
+	var weapon := _weapon()
+	var source := CombatAuthority.new(home, SeedStreams.new(91))
+	assert_true(source.register(B, "faction.b", 50.0, weapon, 4.0, 0.05))
+	var saved := source.snapshot_state()
+
+	var away := SectorRuntime.new()
+	away.sector_id = "sector.vs01_away"
+	away.bounds = Rect2(-640, -360, 1280, 720)
+	var restored := CombatAuthority.new(away, SeedStreams.new(91))
+	assert_true(restored.register_dormant(B, "faction.b", 50.0, home.sector_id, Vector2(0, 100),
+		TargetingService.SHIP, weapon, 4.0, 0.05))
+	assert_true(restored.restore_state(saved))
+	assert_eq(restored.snapshot_state(), saved)
+
+
 func test_friendly_target() -> void:
 	c = _fixture(_weapon())
 	assert_true(_add_target(c, "entity.friend", Vector2(8, 100), "faction.a"))
