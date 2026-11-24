@@ -34,9 +34,15 @@ func _run() -> void:
 	if int(row.get("game_port", 0)) != _game_port or str(row.get("address", "")) != "127.0.0.1":
 		_abort("discovery endpoint")
 		return
+	var bootstrap := Node.new()
+	bootstrap.name = "Bootstrap"
+	add_child(bootstrap)
+	var lan_session := Node.new()
+	lan_session.name = "LanSession"
+	bootstrap.add_child(lan_session)
 	_client = SessionClient.new()
-	_client.name = "ProductionClient"
-	get_parent().add_child(_client, true)
+	_client.name = "Session"
+	lan_session.add_child(_client, true)
 	if _client.join("127.0.0.1", _game_port) != OK:
 		_abort("join")
 		return
