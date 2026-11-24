@@ -16,13 +16,14 @@ def main():
              "test_prg05_bounty_combat_proof_reward_and_intel_save_resume",
              "test_prg05_bounty_invalid_proofs_expiry_hostility_and_lan_spoof",
              "test_prg05_local_company_crew_payroll_persists_and_migrates_v1",
-             "test_prg05_company_rejects_spoofed_roles_and_atomic_insufficient_wages"]
+             "test_prg05_company_rejects_spoofed_roles_and_atomic_insufficient_wages",
+             "test_prg05_haven_market_shared_interaction_geometry"]
     markers = ["PRG05_FACTION_REPUTATION_OK", "PRG05_TRADE_ATOMIC_OK", "PRG05_CONVOY_OUTPOST_PVP_OK",
                "PRG05_PERSISTENCE_V5_OK", "PRG05_RUNTIME_DIPLOMACY_OK", "PRG05_LAN_HOST_GUARD_OK", "PRG05_CONVOY_WORLD_BRIDGE_OK", "PRG05_FAR_WORLD_BRIDGE_OK", "PRG05_MOBILE_MARKET_INTENT_OK",
                "PRG05_AI04_SCHEDULER_DELIVERY_OK", "PRG05_AI04_SCHEDULER_LOSS_OK",
                "PRG05_LAN_MARKET_ACCESS_GUARD_OK",
                "PRG05_BOUNTY_INTEL_COMBAT_SAVE_OK", "PRG05_BOUNTY_PROOF_GUARD_OK", "PRG05_COMPANY_CREW_PAYROLL_SAVE_OK",
-               "PRG05_COMPANY_CREW_HOST_GUARD_OK"]
+               "PRG05_COMPANY_CREW_HOST_GUARD_OK", "PRG05_HAVEN_INTERACTION_GEOMETRY_OK"]
     if "res://tests/unit/test_prg05_economy.gd" not in log:
         raise SystemExit("PRG-05 GUT script not executed")
     for row in names + markers:

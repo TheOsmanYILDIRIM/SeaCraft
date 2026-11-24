@@ -2,6 +2,8 @@ extends "res://tests/fixtures/vertical_slice/vertical_slice_scenario.gd"
 
 const CURRENT_NPC := "entity.net04_current"
 const BETA := "player.beta"
+const MARKET := "market.net04.economy"
+const MARKET_CREDIT := 1000
 
 var _session: SessionHost
 var _discovery: LanDiscoveryHost
@@ -10,6 +12,8 @@ var _work := ""
 var _drop_id := ""
 var _boot_ms := 0
 var _ready_counts: Dictionary = {}
+var _initial_buy_price := 0
+var _initial_quantity := 0
 
 
 func start_case(game_port: int, discovery_port: int, work: String) -> void:
@@ -36,6 +40,27 @@ func start_case(game_port: int, discovery_port: int, work: String) -> void:
 	if _session.start(game_port) != OK or not _session.bind_gameplay_authority(_combat, _loot):
 		_abort("session start")
 		return
+	var inventory := _loot.inventory_state()
+	var sector := _world.active()
+	if not sector.register_entity(BETA, _beta.global_position) or not inventory.bind_owner(BETA, 12, 1000.0):
+		_abort("market beta owner")
+		return
+	if not inventory.configure_prg05() or not inventory.register_economy_faction("faction.net04.market"):
+		_abort("market setup")
+		return
+	if not inventory.register_economy_market(MARKET, "faction.net04.market", LOOT_ITEM.stable_id, sector.sector_id, 10, 8, 20):
+		_abort("market content")
+		return
+	for owner in [PLAYER, BETA]:
+		if not inventory.grant_economy_currency_authoritative(owner, "event.net04.credit", MARKET_CREDIT).get("accepted", false):
+			_abort("market credit")
+			return
+	var guard := Prg05MarketAccessGuard.new(inventory)
+	if not guard.bind_market(MARKET, sector, _player_motor.global_position, 16.0) or not _session.bind_progression_authority(inventory) or not _session.bind_market_access_authority(guard):
+		_abort("market authority binding")
+		return
+	_initial_buy_price = int(inventory.economy_quote(PLAYER, MARKET)["buy"])
+	_initial_quantity = inventory.quantity(PLAYER, LOOT_ITEM.stable_id)
 	var player_state := _player_motor.capture_save_motion()
 	var beta_state := player_state.duplicate(true)
 	beta_state["x"] = float(player_state.get("x", 0.0)) + 32.0
@@ -83,10 +108,19 @@ func _process(_delta: float) -> void:
 	if FileAccess.file_exists(_work + "/a_done"):
 		var ledger := _session.transaction_ledger_snapshot()
 		var entries: Array = ledger["entries"]
-		if entries.size() != 1 or int(ledger["commit_sequence"]) != 1:
+		if entries.size() != 2 or int(ledger["commit_sequence"]) != 2:
 			_abort("transaction ledger duplicate")
 			return
-		print("NET04_HOST_LEDGER_OK entries=1 commit_sequence=1 reservations=%d" % _session.reservation_count())
+		var inventory := _loot.inventory_state()
+		var quote := inventory.economy_quote(PLAYER, MARKET)
+		if int(quote["stock"]) != 7 or inventory.economy_balance(PLAYER) != MARKET_CREDIT - _initial_buy_price or inventory.economy_balance(BETA) != MARKET_CREDIT or inventory.quantity(BETA, LOOT_ITEM.stable_id) != 0:
+			_abort("market state drift")
+			return
+		if inventory.quantity(PLAYER, LOOT_ITEM.stable_id) <= _initial_quantity + 1:
+			_abort("market/pickup quantity")
+			return
+		print("PRG05_LAN_ECONOMY_PROCESS_OK stock=7 transactions=2 beta_unchanged=1")
+		print("NET04_HOST_LEDGER_OK entries=2 commit_sequence=2 reservations=%d" % _session.reservation_count())
 		_discovery.stop()
 		_session.stop()
 		_clear_runtime_nodes()

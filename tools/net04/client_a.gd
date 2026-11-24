@@ -3,6 +3,8 @@ extends Node
 const PLAYER := FoundationSector.PLAYER
 const NPC := "entity.net04_current"
 const TXN := "txn.net04.lost_ack"
+const MARKET := "market.net04.economy"
+const MARKET_TXN := "txn.net04.market_buy"
 
 var _client: SessionClient
 var _discovery: LanDiscoveryClient
@@ -53,6 +55,16 @@ func _run() -> void:
 		_abort("fresh baseline truth")
 		return
 	print("NET04_A_BASELINE_READY player=%s drop=%s" % [PLAYER, drop_id])
+	var market_sequence := _client.next_sequence()
+	if not _client.send_intent(InventoryState.OP_MARKET_BUY, {"market_id": MARKET, "quantity": 1, "transaction_id": MARKET_TXN}):
+		_abort("market send")
+		return
+	if not await _wait(func() -> bool: return _client.accepted_sequences().has(market_sequence) and not _client.transaction_result(MARKET_TXN).is_empty(), "market purchase"):
+		return
+	var market_result := _client.transaction_result(MARKET_TXN)
+	if not bool(market_result.get("accepted", false)) or int(market_result.get("stock", -1)) != 7:
+		_abort("market purchase result")
+		return
 	if not _client.send_intent(SessionProtocol.PICKUP_LOOT, {"drop_id": drop_id, "transaction_id": TXN}):
 		_abort("transaction send")
 		return
@@ -100,6 +112,16 @@ func _run() -> void:
 	if int(result.get("quantity", 0)) <= 0 or _client.network_event_types().has("drop_claimed"):
 		_abort("duplicate reward or missing cached result")
 		return
+	var market_retry_sequence := _client.next_sequence()
+	if not _client.send_intent(InventoryState.OP_MARKET_BUY, {"market_id": MARKET, "quantity": 1, "transaction_id": MARKET_TXN}):
+		_abort("market reconnect retry")
+		return
+	if not await _wait(func() -> bool: return _client.accepted_sequences().has(market_retry_sequence) and not _client.transaction_result(MARKET_TXN).is_empty(), "market cached result"):
+		return
+	if _client.transaction_result(MARKET_TXN) != market_result:
+		_abort("market replay result changed")
+		return
+	print("PRG05_LAN_MARKET_RECONNECT_OK")
 	print("NET04_TRANSACTION_IDEMPOTENCY_OK transaction=%s quantity=%d" % [TXN, int(result["quantity"])])
 	print("NET04_RECONNECT_PROCESS_OK player=%s next_sequence=%d" % [PLAYER, _client.next_sequence()])
 	_touch(_work + "/a_done")

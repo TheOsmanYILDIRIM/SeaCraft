@@ -545,3 +545,24 @@ func test_prg05_company_rejects_spoofed_roles_and_atomic_insufficient_wages() ->
 	assert_eq(SessionProtocol.validate_envelope(SessionProtocol.make_envelope(2, "company_set_wage",
 		{"company_id": company, "wage": 100000})), SessionProtocol.REJECT_UNSUPPORTED_INTENT)
 	print("PRG05_COMPANY_CREW_HOST_GUARD_OK")
+
+
+func test_prg05_haven_market_shared_interaction_geometry() -> void:
+	var sector := SectorRuntime.build(load(FoundationSector.HAVEN_PATH) as SectorDefinition)
+	assert_not_null(sector)
+	var anchor := sector.anchor("anchor.haven_center")
+	assert_not_null(anchor)
+	var center := anchor.position
+	assert_true(sector.register_entity(P, center))
+	assert_true(sector.entity_within_interaction_range(P, center, center, 128.0))
+	assert_false(sector.entity_within_interaction_range(Q, center, center, 128.0))
+	assert_false(sector.entity_within_interaction_range(P, Vector2.INF, center, 128.0))
+	assert_false(sector.entity_within_interaction_range(P, center, center, INF))
+	assert_false(sector.entity_within_interaction_range(P, center + Vector2(65.0, 0.0), center, 128.0))
+	var edge := center + Vector2(128.0, 0.0)
+	assert_true(sector.move_entity(P, edge))
+	assert_true(sector.entity_within_interaction_range(P, edge, center, 128.0))
+	var outside := center + Vector2(129.0, 0.0)
+	assert_true(sector.move_entity(P, outside))
+	assert_false(sector.entity_within_interaction_range(P, outside, center, 128.0))
+	print("PRG05_HAVEN_INTERACTION_GEOMETRY_OK")

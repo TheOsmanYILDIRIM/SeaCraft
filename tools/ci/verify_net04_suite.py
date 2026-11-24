@@ -58,6 +58,9 @@ for marker in [
     "NET04_PROCESS_INTEGRATION_OK",
     "NET04_HOST_LEDGER_OK",
     "NET04_HOST_CLEAN_EXIT",
+    "PRG05_LAN_ECONOMY_PROCESS_OK",
+    "PRG05_LAN_MARKET_RECONNECT_OK",
+    "PRG05_LAN_MARKET_REMOTE_REJECT_OK",
 ]:
     if marker not in process:
         raise SystemExit(f"missing NET04 process marker: {marker}")

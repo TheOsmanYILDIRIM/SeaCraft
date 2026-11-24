@@ -2,6 +2,7 @@ extends Node
 
 const BETA := "player.beta"
 const NPC := "entity.net04_current"
+const MARKET := "market.net04.economy"
 
 var _client: SessionClient
 var _work := ""
@@ -40,6 +41,16 @@ func _run() -> void:
 	if _client.network_event_types().has("drop_claimed"):
 		_abort("historical event replay")
 		return
+	var market_sequence := _client.next_sequence()
+	if not _client.send_intent(InventoryState.OP_MARKET_BUY, {"market_id": MARKET, "quantity": 1, "transaction_id": "txn.net04.beta_remote"}):
+		_abort("remote market send")
+		return
+	if not await _wait(func() -> bool: return not _client.command_rejections().is_empty(), "remote market rejection"):
+		return
+	if not _client.command_rejections().has({"sequence": market_sequence, "reason": SessionProtocol.REJECT_AUTHORITY_COMMAND}):
+		_abort("remote market accepted or wrong rejection")
+		return
+	print("PRG05_LAN_MARKET_REMOTE_REJECT_OK")
 	print("NET04_LATE_JOIN_PROCESS_OK player=%s current_x=321.0 claimed_drop_absent=1" % BETA)
 	_touch(_work + "/b_done")
 	_client.close_session()

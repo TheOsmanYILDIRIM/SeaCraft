@@ -16,6 +16,8 @@ const ROUND_AMMO_PROFILE := preload("res://src/data/content/ammo_core_round.tres
 const EMBER_AMMO_PROFILE := preload("res://src/data/content/ammo_core_ember.tres")
 const HARPOON_PROFILE := preload("res://src/data/content/harpoon_core02_debug.tres")
 const PILOT_MARKET_ID := "market.haven.salvage"
+const PILOT_MARKET_ANCHOR := "anchor.haven_center"
+const PILOT_MARKET_RADIUS := 128.0
 
 var _combat: CombatAuthority
 var _relations := FactionRelationResolver.new(true)
@@ -45,6 +47,7 @@ var _market_panel: Prg05MarketPanel
 var _market_button: Button
 var _market_open := false
 var _market_transaction_sequence := 0
+var _market_anchor: SectorAnchor
 var _sector_geometry: Node2D
 const ROUND_AMMO := "ammo.core_round"
 const EMBER_AMMO := "ammo.core_ember"
@@ -187,6 +190,7 @@ func _physics_process(_delta: float) -> void:
 			_ship_motor.velocity, _ship_motor.has_target(), _ship_motor.get_slide_collision_count()])
 		_diag_physics_left -= 1
 	_world.active().move_entity(FoundationSector.PLAYER, position_now)
+	_refresh_market_access()
 	if _map_overlay != null:
 		_map_overlay.set_player_world_position(position_now)
 	if _npc_motor != null and _combat != null and _combat.is_alive(PRACTICE_TARGET):
@@ -730,24 +734,32 @@ func _layout_market_ui() -> void:
 	_market_panel.position = (bounds.size - _market_panel.size) * 0.5
 
 
+func _can_access_market() -> bool:
+	var sector := active_sector()
+	return sector != null and sector.sector_id == FoundationSector.HAVEN_ID and _market_anchor != null \
+		and _ship_motor != null and _ship_motor.authority_enabled \
+		and sector.entity_within_interaction_range(FoundationSector.PLAYER,
+			_ship_motor.global_position, _market_anchor.position, PILOT_MARKET_RADIUS)
+
+
 func _refresh_market_access() -> void:
 	if _market_button == null or _market_panel == null:
 		return
-	var at_haven := active_sector() != null and active_sector().sector_id == FoundationSector.HAVEN_ID
-	_market_button.disabled = not at_haven
-	if not at_haven and _market_open:
+	var allowed := _can_access_market()
+	if not allowed and _market_open:
 		_market_open = false
 		_market_panel.hide()
-		_market_button.text = "PAZAR"
-		($InputController as GameplayInputController).set_world_input_blocked(_world_map_open or _market_open)
-	if _market_open:
-		_refresh_market_quote()
+		($InputController as GameplayInputController).set_world_input_blocked(_world_map_open)
+	_market_button.disabled = not allowed
+	var next_text := "KAPAT" if _market_open else ("PAZAR" if allowed else "PAZAR UZAK")
+	if _market_button.text != next_text:
+		_market_button.text = next_text
 
 
 func _toggle_market() -> void:
 	if _market_panel == null or _market_button == null:
 		return
-	if not _market_open and (active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID):
+	if not _market_open and not _can_access_market():
 		return
 	if not _market_open and _world_map_open:
 		_toggle_world_map()
@@ -769,7 +781,7 @@ func _refresh_market_quote() -> void:
 
 func _on_market_intent(operation: String, payload: Dictionary) -> void:
 	# Offline/local host adapter. Never trust the panel for stock, price or identity.
-	if not _market_open or _loot == null or active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID:
+	if not _market_open or _loot == null or not _can_access_market():
 		return
 	if operation not in [InventoryState.OP_MARKET_BUY, InventoryState.OP_MARKET_SELL]:
 		return
@@ -848,6 +860,21 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 	_add_rectangle(geometry, sector.bounds, Color(0.035, 0.095, 0.115))
 	_pilot_water = geometry.get_child(0) as Polygon2D
 	_apply_pilot_water()
+	_market_anchor = sector.anchor(PILOT_MARKET_ANCHOR) if sector.sector_id == FoundationSector.HAVEN_ID else null
+	if _market_anchor != null:
+		var market_ring := Line2D.new()
+		market_ring.name = "MarketRange"
+		market_ring.position = _market_anchor.position
+		market_ring.width = 2.0
+		market_ring.default_color = Color(0.65, 0.8, 0.45, 0.7)
+		for index in range(65):
+			market_ring.add_point(Vector2.from_angle(TAU * float(index) / 64.0) * PILOT_MARKET_RADIUS)
+		geometry.add_child(market_ring)
+		var market_label := Label.new()
+		market_label.text = "PAZAR"
+		market_label.position = _market_anchor.position + Vector2(-26.0, -20.0)
+		market_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		geometry.add_child(market_label)
 	if is_instance_valid(_pilot_comparison):
 		_pilot_comparison.visible = sector.sector_id == FoundationSector.ID
 	for obstacle in sector.navigation.obstacle_rects():

@@ -41,12 +41,5 @@ func allows(owner_id: String, market_id: String, motor: ShipMotor) -> bool:
 	var sector: SectorRuntime = binding["sector"]
 	if sector == null or str(_inventory.economy_market_cargo_spec(market_id).get("sector", "")) != sector.sector_id:
 		return false
-	var position := motor.global_position
-	var indexed := sector.entity_position(owner_id)
-	if not position.is_finite() or not indexed.is_finite() or not sector.bounds.has_point(position):
-		return false
-	if position.distance_squared_to(indexed) > MAX_POSITION_LAG * MAX_POSITION_LAG:
-		return false
-	var center: Vector2 = binding["center"]
-	var radius := float(binding["radius"])
-	return position.distance_squared_to(center) <= radius * radius
+	return sector.entity_within_interaction_range(owner_id, motor.global_position,
+		binding["center"], float(binding["radius"]), MAX_POSITION_LAG)

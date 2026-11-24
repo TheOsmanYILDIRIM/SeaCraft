@@ -119,6 +119,22 @@ func entity_position(id: String) -> Vector2:
 	return _entities.get(id, Vector2.INF)
 
 
+# Shared offline/LAN interaction geometry. Both the live authority motor and
+# the sector index must agree; callers supply trusted content coordinates.
+func entity_within_interaction_range(id: String, position: Vector2, center: Vector2,
+		radius: float, max_position_lag: float = 64.0) -> bool:
+	if not is_finite(radius) or radius <= 0.0 or not is_finite(max_position_lag) or max_position_lag < 0.0:
+		return false
+	var indexed := entity_position(id)
+	if not position.is_finite() or not indexed.is_finite() or not center.is_finite():
+		return false
+	if not bounds.has_point(position) or not bounds.has_point(center):
+		return false
+	if position.distance_squared_to(indexed) > max_position_lag * max_position_lag:
+		return false
+	return position.distance_squared_to(center) <= radius * radius
+
+
 func snapshot_state(exclude_entity_id: String = "") -> Dictionary:
 	var entities: Array = []
 	var ids := _entities.keys()
