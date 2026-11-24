@@ -29,5 +29,6 @@ func _ready() -> void:
 			push_error("PRG05_PRODUCTION_LAN_FAILURE: invalid role")
 			get_tree().quit(2)
 			return
+	worker.name = "Worker"
 	add_child(worker)
 	worker.start_case(game_port, discovery_port, work)
