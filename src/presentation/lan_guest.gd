@@ -29,6 +29,8 @@ var _pending_operation := ""
 var _pending_payload: Dictionary = {}
 var _followed: NetworkEntityProxy
 var _deadline := 0
+var _permission_pending := false
+var _permission_epoch := 0
 
 
 func _ready() -> void:
@@ -127,15 +129,28 @@ func _draw() -> void:
 
 
 func _permit() -> bool:
-	var result := LanPermissionGate.new().request_from_user_action()
+	if _permission_pending:
+		return false
+	_permission_pending = true
+	var epoch := _permission_epoch
+	var result: String = await LanPermissionGate.new().request_and_wait(get_tree(), func() -> void:
+		_status.text = "Android yerel ağ izni bekleniyor…"
+		_join.disabled = true
+		_scan.disabled = true
+		_resume.disabled = true
+	)
+	_permission_pending = false
+	_state_changed(_client.state())
+	if epoch != _permission_epoch:
+		return false
 	if result == LanPermissionGate.RESULT_ALLOWED:
 		return true
-	_status.text = "Yerel ağ iznini verin ve tekrar deneyin: " + result
+	_status.text = LanPermissionGate.user_message(result)
 	return false
 
 
 func _scan_rooms() -> void:
-	if not _permit():
+	if not await _permit():
 		return
 	if _discovery.is_active():
 		_discovery.stop()
@@ -151,7 +166,7 @@ func _select_room(index: int) -> void:
 
 
 func _join_room() -> void:
-	if not _permit():
+	if not await _permit():
 		return
 	var address := _address.text.strip_edges()
 	if not SessionProtocol.valid_ipv4(address):
@@ -166,7 +181,7 @@ func _join_room() -> void:
 
 
 func _resume_room() -> void:
-	if not _permit() or not _client.can_resume():
+	if not _client.can_resume() or not await _permit() or not _client.can_resume():
 		return
 	_connect_result(_client.resume(_endpoint, _port))
 
@@ -181,6 +196,7 @@ func _connect_result(error: int) -> void:
 
 
 func _disconnect() -> void:
+	_permission_epoch += 1
 	_client.close_session()
 	_client.clear_resume_credentials()
 	_pending_txn = ""
@@ -218,9 +234,9 @@ func _state_changed(state: String) -> void:
 		_quote_allowed = false
 		_followed = null
 		_camera.set_follow_target(null)
-	_join.disabled = ready or state not in [SessionClient.STATE_DISCONNECTED, SessionClient.STATE_REJECTED]
+	_join.disabled = _permission_pending or ready or state not in [SessionClient.STATE_DISCONNECTED, SessionClient.STATE_REJECTED]
 	_scan.disabled = _join.disabled
-	_resume.disabled = not _client.can_resume()
+	_resume.disabled = _permission_pending or not _client.can_resume()
 	_market_button.disabled = not ready or not _quote_allowed
 	_input_controller.set_world_input_blocked(not ready or _lobby.visible)
 

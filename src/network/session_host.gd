@@ -87,6 +87,8 @@ func configure_player_motors(players: Dictionary) -> bool:
 func start(port: int) -> Error:
 	if _running or not PROTOCOL.valid_port(port) or _player_ids.is_empty():
 		return ERR_INVALID_PARAMETER
+	if not LanPermissionGate.new().can_open_lan_socket():
+		return ERR_UNAUTHORIZED
 	_peer = ENetMultiplayerPeer.new()
 	var error := _peer.create_server(port, PROTOCOL.MAX_PEERS + 1, PROTOCOL.CHANNEL_COUNT)
 	if error != OK:

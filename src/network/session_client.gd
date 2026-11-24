@@ -104,6 +104,8 @@ func quest_journal_snapshot() -> Dictionary:
 func _connect(address: String, port: int) -> Error:
 	if _state != STATE_DISCONNECTED or not PROTOCOL.valid_ipv4(address) or not PROTOCOL.valid_port(port):
 		return ERR_INVALID_PARAMETER
+	if not LanPermissionGate.new().can_open_lan_socket():
+		return ERR_UNAUTHORIZED
 	_peer = ENetMultiplayerPeer.new()
 	var error := _peer.create_client(address, port, PROTOCOL.CHANNEL_COUNT)
 	if error != OK:

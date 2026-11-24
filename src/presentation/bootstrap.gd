@@ -68,6 +68,8 @@ var _lan_status: Label
 var _lan_travel: Button
 var _lan_start: Button
 var _lan_join: Button
+var _lan_permission_pending := false
+var _lan_permission_epoch := 0
 var _lan_marker: Polygon2D
 const LAN_GAME_PORT := 17350
 const LAN_DISCOVERY_PORT := 17351
@@ -976,6 +978,8 @@ func _ensure_lan_remote_motor() -> bool:
 
 
 func start_lan_host(game_port: int, discovery_port: int = 0, advertised_address: String = "255.255.255.255") -> Dictionary:
+	if not LanPermissionGate.new().can_open_lan_socket():
+		return {"accepted": false, "reason": LanPermissionGate.RESULT_DENIED}
 	if _lan_host != null and _lan_host.is_running():
 		return {"accepted": false, "reason": "already_running"}
 	if active_sector() == null or active_sector().sector_id != FoundationSector.HAVEN_ID or _market_anchor == null:
@@ -1090,6 +1094,8 @@ func _toggle_lan_menu() -> void:
 			_toggle_market()
 		if _world_map_open:
 			_toggle_world_map()
+	if _lan_menu.visible:
+		_lan_permission_epoch += 1
 	_lan_menu.visible = not _lan_menu.visible
 	($InputController as GameplayInputController).set_world_input_blocked(_lan_menu.visible)
 	_refresh_lan_ui()
@@ -1109,10 +1115,10 @@ func _refresh_lan_ui() -> void:
 	if not _lan_menu.visible:
 		return
 	var haven := active_sector().sector_id == FoundationSector.HAVEN_ID
-	_lan_travel.disabled = running or (haven and _can_access_market())
-	_lan_start.disabled = not running and not _can_access_market()
+	_lan_travel.disabled = _lan_permission_pending or running or (haven and _can_access_market())
+	_lan_start.disabled = _lan_permission_pending or (not running and not _can_access_market())
 	_lan_start.text = "Odayı kapat" if running else "Oda oluştur"
-	_lan_join.disabled = running
+	_lan_join.disabled = _lan_permission_pending or running
 	if running:
 		var peers: Dictionary = lan_host_snapshot().get("peer_to_player", {})
 		var addresses := PackedStringArray()
@@ -1177,6 +1183,8 @@ func _advance_lan_route() -> void:
 
 
 func _lan_start_pressed() -> void:
+	if _lan_permission_pending:
+		return
 	if lan_host_snapshot().get("running", false):
 		stop_lan_host()
 		request_checkpoint()
@@ -1185,10 +1193,26 @@ func _lan_start_pressed() -> void:
 	if not _can_access_market():
 		return
 	_lan_route.clear()
-	var permission := LanPermissionGate.new().request_from_user_action()
-	if permission != LanPermissionGate.RESULT_ALLOWED:
-		_lan_status.text = "Yerel ağ iznine izin verin, sonra tekrar deneyin: " + permission
+	_lan_permission_pending = true
+	var epoch := _lan_permission_epoch
+	var permission: String = await LanPermissionGate.new().request_and_wait(get_tree(), func() -> void:
+		_lan_status.text = "Android yerel ağ izni bekleniyor…"
 		_lan_status.set_meta("error", true)
+		_refresh_lan_ui()
+	)
+	_lan_permission_pending = false
+	if epoch != _lan_permission_epoch:
+		_lan_status.remove_meta("error")
+		_refresh_lan_ui()
+		return
+	if permission != LanPermissionGate.RESULT_ALLOWED:
+		_lan_status.text = LanPermissionGate.user_message(permission)
+		_lan_status.set_meta("error", true)
+		_refresh_lan_ui()
+		return
+	if not _can_access_market():
+		_lan_status.remove_meta("error")
+		_refresh_lan_ui()
 		return
 	var result := start_lan_host(_lan_game_port, _lan_discovery_port, _lan_advertised_address)
 	if not result.get("accepted", false):
@@ -1211,6 +1235,8 @@ func _lan_start_pressed() -> void:
 
 
 func _lan_join_pressed() -> void:
+	if _lan_permission_pending:
+		return
 	if lan_host_snapshot().get("running", false):
 		return
 	# Persist only the local world before leaving it. Guest scene has no save service.

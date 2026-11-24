@@ -192,11 +192,18 @@ func test_net04_transaction_persistence_round_trip() -> void:
 
 func test_net04_permission_fallback_and_runtime_api() -> void:
 	assert_eq(PG.evaluate("Linux", PackedStringArray()), PG.RESULT_ALLOWED)
-	assert_eq(PG.evaluate("Android", PackedStringArray()), PG.RESULT_REQUEST_REQUIRED)
+	for sdk in [23, 28, 32, 33, 34, 35, 36]:
+		assert_eq(PG.evaluate("Android", PackedStringArray(), sdk), PG.RESULT_ALLOWED)
+	for sdk in [0, 37, 38]:
+		assert_eq(PG.evaluate("Android", PackedStringArray(), sdk), PG.RESULT_REQUEST_REQUIRED)
+		assert_eq(PG.evaluate("Android", PackedStringArray([PG.PERMISSION]), sdk), PG.RESULT_ALLOWED)
 	assert_eq(PG.evaluate("Android", PackedStringArray([PG.PERMISSION])), PG.RESULT_ALLOWED)
 	var source := FileAccess.get_file_as_string("res://src/network/lan_permission_gate.gd")
 	assert_true(source.contains("OS.request_permission(PERMISSION)"))
 	assert_true(source.contains("OS.get_granted_permissions()"))
+	assert_true(source.contains("on_request_permissions_result.connect"))
+	assert_true(source.contains("on_request_permissions_result.disconnect"))
+	assert_eq(await PG.new().request_and_wait(get_tree()), PG.RESULT_ALLOWED)
 	print("NET04_PERMISSION_FALLBACK_OK permission=%s" % PG.PERMISSION)
 
 
@@ -212,8 +219,8 @@ func test_net04_offline_boot_and_manual_ipv4_remain_default() -> void:
 	for forbidden in ["request_from_user_action", "start_lan_host", "change_scene_to_file"]:
 		assert_false(ready_source.contains(forbidden))
 	var host_action := bootstrap.split("func _lan_start_pressed() -> void:", false, 1)[1].split("\nfunc ", false, 1)[0]
-	assert_true(host_action.find("request_from_user_action()") >= 0)
-	assert_true(host_action.find("request_from_user_action()") < host_action.find("start_lan_host("))
+	assert_true(host_action.find("request_and_wait(") >= 0)
+	assert_true(host_action.find("request_and_wait(") < host_action.find("start_lan_host("))
 	var scene := load("res://src/presentation/bootstrap.tscn").instantiate() as Node
 	scene.set("_save_service", SaveService.new("user://net04-offline-lan-ui-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
 	add_child_autofree(scene)
