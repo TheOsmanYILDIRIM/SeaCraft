@@ -14,6 +14,12 @@ Kurallar:
 
 ---
 
+## PLAY-01 — 2026-11-25 sprite kaynak derleme düzeltmesi
+
+- Silinen eski SC-03 arşiv referansı yeni `SC03_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip` ile değiştirildi; onaylı 224 px atlas kaynak çözünürlüğü korundu. Eski arşiv geri getirilmedi; oynanış parametreleri değişmedi.
+- Kod `5f3b7e049215539d2e4961098eb6090273578992`, [CI 45688116253](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45688116253) success; GUT 425/425, 33405 assertions, PLAY-01 ve LAN regresyonları başarılı. Linux ve Android export + authenticated artifact readback başarılı. Android artifact `15058320656`, ZIP SHA256 `a14547d7214b0cdfd83706e62cdcc9c0032b8288292831b984032d5a8a36caec`; Linux artifact `15057692304`, ZIP SHA256 `33ebe85e977a05bba79b4ee8aa50a71e159aadaca913a7de076cbffc58fb5e96`.
+- Fiziksel Android oynanış kabulü `not_run`; PLAY-01 aktif, PLAY-02 başlamadı. Yeni görsellerin cihaz üzerindeki görünümü ayrıca doğrulanmadı.
+
 ## PLAY-01 — Checkpoint 2 / kıyı rotası ve bounded sıkışma kurtarma (2026-11-24)
 
 Durum: `verified_checkpoint`; PLAY-01 `active`, PLAY-02 `not_started`.

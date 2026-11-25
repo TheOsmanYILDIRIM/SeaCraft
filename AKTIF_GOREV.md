@@ -5,6 +5,12 @@ Kullanıcı 2026-11-24 oynanış öncelikli sırayı onayladı. Kanonik plan `GE
 Checkpoint 1 ve kıyı rota/sıkışma checkpoint 2 kod+CI+export düzeyinde doğrulandı. Cihaz kabulü: düz/ters yön, yakın hedef, kamera pan/pinch/merkezle, kıyı rotası, durma ve rota okunurluğu; takılma/dokunma sapması ve hareket hissi gözlemi. Hız/dönüş dengesi yalnız gerçek cihaz geri bildirimine göre.
 
 
+## PLAY-01 — 2026-11-25 sprite kaynak derleme düzeltmesi
+
+- Silinen eski SC-03 arşiv referansı yeni `SC03_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip` ile değiştirildi; onaylı 224 px atlas kaynak çözünürlüğü korundu. Eski arşiv geri getirilmedi; oynanış parametreleri değişmedi.
+- Kod `5f3b7e049215539d2e4961098eb6090273578992`, [CI 45688116253](https://github.com/TheOsmanYILDIRIM/SeaCraft/actions/runs/45688116253) success; GUT 425/425, 33405 assertions, PLAY-01 ve LAN regresyonları başarılı. Linux ve Android export + authenticated artifact readback başarılı. Android artifact `15058320656`, ZIP SHA256 `a14547d7214b0cdfd83706e62cdcc9c0032b8288292831b984032d5a8a36caec`; Linux artifact `15057692304`, ZIP SHA256 `33ebe85e977a05bba79b4ee8aa50a71e159aadaca913a7de076cbffc58fb5e96`.
+- Fiziksel Android oynanış kabulü `not_run`; PLAY-01 aktif, PLAY-02 başlamadı. Yeni görsellerin cihaz üzerindeki görünümü ayrıca doğrulanmadı.
+
 ## PLAY-01 checkpoint 2 — 2026-11-24
 
 - Bootstrap hareket komutları artık doğrudan kıyıya sürmek yerine mevcut `SectorNavigation.path()` üzerinden bounded waypoint rotası kuruyor. Erişilemez kıyı/ada hedefi reddediliyor; motor ara waypoint'leri izlerken hedef işareti kullanıcının son hedefinde kalıyor ve `Play01Route` kalan rotayı görünür gösteriyor. Sürekli slide collision durumunda 6 tick sonra, son erişilebilir konumu da kullanabilen en fazla 2 replan deneniyor; başarısızlıkta hedef güvenli biçimde iptal ediliyor. LAN rota sahipliği ve sektör geçişi helm rotasını temizliyor.
