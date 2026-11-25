@@ -22,6 +22,10 @@ EXPECTED = {
     "M02": "M02_KABUK_KISKAC_B_FINAL_GITHUB_UPLOAD.zip",
 }
 ORDER = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+# Visually checked 2026-11-25 against the exact staged contact sheet:
+# SC01 rudder and SC04 split-jaw prow point opposite their authored labels.
+# Canonical runtime cells always point along their world heading.
+SOURCE_HEADING_OFFSET = {"SC-01": 4, "SC-04": 4}
 PNG = b"\x89PNG\r\n\x1a\n"
 
 
@@ -82,14 +86,15 @@ def stage(ship, archive):
             raise ValueError(f"{ship}: refusing to upscale atlas from {cell} to {runtime_cell}")
         runtime = Image.new("RGBA", (4 * runtime_cell, 2 * runtime_cell))
         for index, direction in enumerate(ORDER):
-            x, y = (index % 4) * cell, (index // 4) * cell
+            source_index = (index + SOURCE_HEADING_OFFSET.get(ship, 0)) % len(ORDER)
+            x, y = (source_index % 4) * cell, (source_index // 4) * cell
             frame = atlas.crop((x, y, x + cell, y + cell))
             box = frame.getchannel("A").getbbox()
             if not box:
                 raise ValueError(f"{ship} {direction}: blank frame")
             if box[0] == 0 or box[1] == 0 or box[2] == cell or box[3] == cell:
                 print(f"VISUAL_PILOT_EDGE_CONTACT ship={ship} direction={direction} source_cell={cell}")
-            print(f"VISUAL_PILOT_FRAME ship={ship} direction={direction} atlas_alpha_bbox={box}")
+            print(f"VISUAL_PILOT_FRAME ship={ship} direction={direction} source_direction={ORDER[source_index]} atlas_alpha_bbox={box}")
             if runtime_cell != cell:
                 frame = frame.resize((runtime_cell, runtime_cell), Image.Resampling.LANCZOS)
             runtime.paste(frame, ((index % 4) * runtime_cell, (index // 4) * runtime_cell))

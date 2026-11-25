@@ -8,6 +8,7 @@ const GOAL := MAX_WAYPOINTS + 1
 
 var _astar := AStar2D.new()
 var _water: Rect2
+var _physical_water: Rect2
 var _obstacles: Array[Rect2] = []
 var _blocked: Array[Rect2] = []
 var _point_count: int
@@ -28,6 +29,7 @@ func configure(bounds: Rect2, fixture: SectorNavigationFixture) -> bool:
 		return false
 	if fixture.waypoints.size() > MAX_WAYPOINTS or fixture.obstacles.size() > MAX_OBSTACLES:
 		return false
+	_physical_water = bounds
 	_water = bounds.grow(-fixture.clearance)
 	if not _valid_rect(_water):
 		return false
@@ -76,7 +78,7 @@ func accessible(point: Vector2) -> bool:
 # Navigation clearance is deliberately larger than the physics collider.
 # A physically valid ship in that margin must be able to sail back in.
 func helm_path(from: Vector2, to: Vector2) -> PackedVector2Array:
-	if not _ready or not from.is_finite() or not accessible(to):
+	if not _ready or not from.is_finite() or not _physical_water.has_point(from) or not accessible(to):
 		return PackedVector2Array()
 	if accessible(from):
 		return rounded_helm_route(path(from, to))

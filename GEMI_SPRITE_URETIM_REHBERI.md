@@ -716,3 +716,9 @@ Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up
 - Kullanıcı elle hizalama yaptıysa eski JSON merkez/ölçek referansıdır; yeni crop/upscale sonuçlarıyla dünya pivotu korunur ama şekil yeniden doğrulanır. Eksik yön için karşı açıyı aynalama geçici olabilir, asimetrik nesneyi geometrik olarak doğrulamadan son kabul sayılmaz.
 - HTML'de hangi gerçek tekil PNG'lerin gömüldüğü ve dolu piksel alanları kontrol edilir; küçük preview/test canvas görsellerini upscale master diye sunma. Mobilde 8/8 yükleme ve JSON dışa aktarımı doğrulanır.
 - Oyun paketi 8 RGBA PNG, 4×2 atlas, dönüş GIF'i, manifest ve dokunulmamış radial kaynak = 12 dosya. Gerçek AI-upscale master ile interpolasyon veya boş canvas büyütmesini birbirinden açıkça ayır. Godot/Android entegrasyonu ayrı kanıttır.
+
+
+## 2026-11-25 — Runtime pruva/yön doğrulaması
+
+- Final dosya adları/atlas hücre sırası tek başına yön doğruluğu değildir. Gerçek pruva ve dümen/kıç işaretlerini 8 yönlü oyun ölçeği panosunda incele. SC-01 (dümen), SC-04 (yarık pruva) güncel final paketleri etiketlerine göre 180° ters; kaynak arşivleri korunur, runtime staging bu iki kesin paket için 4 hücre kaydırarak N–NE–E–SE–S–SW–W–NW düzenine getirir. Yeni arşiv geldiğinde yön kapısını yeniden incele; kör düzeltme uygulama.
+- Sprite yönü en yakın gerçek atlas hücresi + yalnız kalan ±22,5° görsel açı ile simülasyon heading'ine eşlenir; simülasyon ve görsel dönüş ayrı kalır. Ara rota noktaları durma hedefi değil geçiş noktasıdır. Cihaz kurulumu öncesi gerçek Godot fizik örneklerinden rota/hız/heading replay GIF'i ve tüm atlasların yön panosu kullanılır; gerçek cihaz final kabulü ayrı kalır.
