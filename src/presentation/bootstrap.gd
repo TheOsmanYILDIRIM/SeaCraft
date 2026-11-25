@@ -194,23 +194,42 @@ func _ready() -> void:
 const VISUAL_PILOT := preload("res://src/presentation/ship/visual_pilot.gd")
 var _pilot_water: Polygon2D
 var _pilot_water_enabled := false
-var _pilot_comparison: Sprite2D
+const APPROVED_SHIP_SKINS := {"SC-01": 86.0, "SC-02": 104.0, "SC-03": 132.0, "SC-04": 132.0, "SC-06": 144.0, "SC-08": 174.0}
+var _skin_selector: OptionButton
 
 
 func _setup_visual_pilot() -> void:
 	var player_marker: Polygon2D = $BoatMarker
-	_surface_sprite = VISUAL_PILOT.mount_atlas(player_marker, "SC-02", 104.0)
+	_surface_sprite = VISUAL_PILOT.mount_atlas(player_marker, "SC-01", APPROVED_SHIP_SKINS["SC-01"])
 	if _surface_sprite != null:
 		player_marker.color.a = 0.0
-	if _practice_marker != null and VISUAL_PILOT.mount_atlas(_practice_marker, "SC-03", 132.0) != null:
+	if _practice_marker != null and VISUAL_PILOT.mount_atlas(_practice_marker, "SC-04", APPROVED_SHIP_SKINS["SC-04"]) != null:
 		# Keep the marker node and its child target ring/visibility contract.
 		_practice_marker.color.a = 0.0
-	_pilot_comparison = VISUAL_PILOT.mount_atlas(self, "SC-07", 120.0)
-	if _pilot_comparison != null:
-		_pilot_comparison.frame = 2
-		_pilot_comparison.set_process(false)
-		_pilot_comparison.visible = active_sector().sector_id == FoundationSector.ID
-		_pilot_comparison.position = _ship_motor.position + Vector2(190.0, 75.0)
+	# Temporary cosmetic review selector: no progression or stat mutation.
+	_skin_selector = OptionButton.new()
+	_skin_selector.name = "ApprovedShipAppearance"
+	_skin_selector.focus_mode = Control.FOCUS_NONE
+	$UI.add_child(_skin_selector)
+	_skin_selector.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_skin_selector.offset_left = 94.0
+	_skin_selector.offset_right = 246.0
+	_skin_selector.offset_top = 24.0
+	_skin_selector.offset_bottom = 72.0
+	for id in APPROVED_SHIP_SKINS:
+		_skin_selector.add_item(str(id))
+	_skin_selector.item_selected.connect(func(index: int) -> void:
+		var id := _skin_selector.get_item_text(index)
+		var replacement := VISUAL_PILOT.mount_atlas(player_marker, id, float(APPROVED_SHIP_SKINS[id]))
+		if replacement == null:
+			return
+		if is_instance_valid(_surface_sprite):
+			_surface_sprite.hide()
+			_surface_sprite.queue_free()
+		_surface_sprite = replacement
+		_surface_sprite.visible = active_sector().mode == 0
+		player_marker.color.a = 0.0 if active_sector().mode == 0 else 1.0
+	)
 	var button := Button.new()
 	button.name = "PilotWaterButton"
 	button.text = "Deniz: mevcut"
@@ -331,7 +350,7 @@ func _start_helm_route(goal: Vector2) -> bool:
 	var sector := active_sector()
 	if sector == null or not goal.is_finite():
 		return false
-	var route := sector.navigation.path(_ship_motor.global_position, goal)
+	var route := sector.navigation.helm_path(_ship_motor.global_position, goal)
 	if route.size() < 2:
 		ANDROID_TRACE.record("navigation", "route rejected sector=%s from=%s goal=%s" % [sector.sector_id, _ship_motor.global_position, goal])
 		return false
@@ -352,7 +371,7 @@ func _issue_helm_route_leg() -> bool:
 	if _helm_route_index <= 0 or _helm_route_index >= _helm_route.size():
 		return false
 	_helm_route_collision_ticks = 0
-	return _ship_motor.apply_authoritative_command(GameplayCommand.move_to_world_position(_helm_route[_helm_route_index]))
+	return _ship_motor.set_helm_target(_helm_route[_helm_route_index], _helm_route_index < _helm_route.size() - 1)
 
 
 func _advance_helm_route() -> void:
@@ -365,10 +384,20 @@ func _advance_helm_route() -> void:
 	var position_now := _ship_motor.global_position
 	if sector.navigation.accessible(position_now):
 		_helm_last_accessible_position = position_now
+	# Pass intermediate waypoints while moving, only once the next leg is clear.
+	if _helm_route_index < _helm_route.size() - 1 and sector.navigation.accessible(position_now):
+		var waypoint := _helm_route[_helm_route_index]
+		var next_point := _helm_route[_helm_route_index + 1]
+		var lookahead := maxf(20.0, minf(36.0, _ship_motor.velocity.length() * 0.35))
+		if position_now.distance_to(waypoint) <= lookahead and sector.navigation.direct_clear(position_now, next_point):
+			_helm_route_index += 1
+			if not _issue_helm_route_leg():
+				_abort_helm_route("leg_rejected")
+			return
 	if _ship_motor.has_target():
 		if _ship_motor.get_slide_collision_count() > 0:
 			_helm_route_collision_ticks += 1
-			if _helm_route_collision_ticks >= HELM_STUCK_COLLISION_TICKS:
+			if _helm_route_collision_ticks >= maxi(HELM_STUCK_COLLISION_TICKS, 120) and absf(_ship_motor.angular_difference_to_desired()) < PI / 4.0:
 				_recover_helm_route()
 		else:
 			_helm_route_collision_ticks = 0
@@ -387,12 +416,7 @@ func _recover_helm_route() -> void:
 		_abort_helm_route("stuck")
 		return
 	var start := _ship_motor.global_position
-	if not sector.navigation.accessible(start):
-		start = _helm_last_accessible_position
-	if not start.is_finite() or not sector.navigation.accessible(start):
-		_abort_helm_route("no_accessible_replan_origin")
-		return
-	var route := sector.navigation.path(start, _helm_route_goal)
+	var route := sector.navigation.helm_path(start, _helm_route_goal)
 	if route.size() < 2:
 		_abort_helm_route("replan_failed")
 		return
@@ -1405,6 +1429,10 @@ func _setup_helm_ui() -> void:
 	_helm_route_line = Line2D.new()
 	_helm_route_line.name = "Play01Route"
 	_helm_route_line.width = 2.0
+	_helm_route_line.joint_mode = Line2D.LINE_JOINT_ROUND
+	_helm_route_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	_helm_route_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_helm_route_line.antialiased = true
 	_helm_route_line.default_color = Color(0.35, 0.9, 0.85, 0.5)
 	_helm_route_line.hide()
 	add_child(_helm_route_line)
@@ -1478,9 +1506,10 @@ func _refresh_helm_route_line(modal: bool) -> void:
 		_helm_route_line.hide()
 		return
 	_helm_route_line.show()
-	_helm_route_line.add_point(_ship_motor.global_position)
+	var remaining := PackedVector2Array([_ship_motor.global_position])
 	for index in range(_helm_route_index, _helm_route.size()):
-		_helm_route_line.add_point(_helm_route[index])
+		remaining.append(_helm_route[index])
+	_helm_route_line.points = active_sector().navigation.rounded_helm_route(remaining)
 
 
 func _setup_mode_ui() -> void:
@@ -1753,8 +1782,6 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 		label.position = mode_anchor.position + Vector2(-65, -28)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		geometry.add_child(label)
-	if is_instance_valid(_pilot_comparison):
-		_pilot_comparison.visible = sector.sector_id == FoundationSector.ID
 	for obstacle in sector.navigation.obstacle_rects():
 		_add_rectangle(geometry, obstacle, Color(0.23, 0.26, 0.23))
 		_add_coast(geometry, obstacle)

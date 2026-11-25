@@ -17,6 +17,8 @@ const ARRIVAL_SETTLE_EPSILON := 0.01
 @export var authority_enabled: bool = true
 
 var _has_target: bool = false
+var _helm_steering := false
+var _helm_transit := false
 var _target_position: Vector2 = Vector2.ZERO
 var _desired_heading: float = 0.0
 var _speed_modifiers: Dictionary = {}
@@ -57,9 +59,20 @@ func apply_authoritative_command(command: Dictionary) -> bool:
 func set_target_world_position(world_position: Vector2) -> bool:
 	if not authority_enabled or not world_position.is_finite():
 		return false
+	_helm_steering = false
+	_helm_transit = false
 	_target_position = world_position
 	_has_target = true
 	_desired_heading = global_position.angle_to_point(_target_position)
+	return true
+
+
+# Route steering is transient; ordinary AI/LAN commands retain their contract.
+func set_helm_target(world_position: Vector2, transit: bool) -> bool:
+	if not set_target_world_position(world_position):
+		return false
+	_helm_steering = true
+	_helm_transit = transit
 	return true
 
 
@@ -67,6 +80,8 @@ func cancel_target() -> void:
 	if not authority_enabled:
 		return
 	_has_target = false
+	_helm_steering = false
+	_helm_transit = false
 	_target_position = global_position
 	_desired_heading = rotation
 
@@ -106,6 +121,9 @@ func step_authoritative(delta: float, apply_collision: bool = true) -> void:
 				_desired_heading = to_target.angle()
 			_apply_turn(delta, current_speed, max_speed)
 			target_speed = _arrival_limited_speed(distance_to_target, max_speed)
+			if _helm_transit:
+				# Keep steerage through the waypoint instead of braking to zero.
+				target_speed = minf(max_speed, maxf(24.0, distance_to_target * 0.65 + 24.0))
 			var turn_error: float = absf(angular_difference_to_desired())
 			var alignment: float = clampf(1.0 - (turn_error / PI) * 0.65, 0.35, 1.0)
 			target_speed *= alignment
@@ -137,12 +155,15 @@ func step_authoritative(delta: float, apply_collision: bool = true) -> void:
 		move_and_slide()
 		if not velocity.is_finite():
 			velocity = Vector2.ZERO
+		elif _helm_steering and get_slide_collision_count() > 0:
+			var forward := Vector2.RIGHT.rotated(rotation)
+			velocity = forward * maxf(0.0, velocity.dot(forward))
 	else:
 		global_position += velocity * delta
 
 	if _has_target:
 		var remaining: float = global_position.distance_to(_target_position)
-		if remaining <= _positive_or_zero(profile.arrival_radius) + ARRIVAL_SETTLE_EPSILON and velocity.length() <= _positive_or_zero(profile.stop_speed_epsilon):
+		if not _helm_transit and remaining <= _positive_or_zero(profile.arrival_radius) + ARRIVAL_SETTLE_EPSILON and velocity.length() <= _positive_or_zero(profile.stop_speed_epsilon):
 			velocity = Vector2.ZERO
 			_has_target = false
 			_desired_heading = rotation
@@ -221,6 +242,10 @@ func _apply_turn(delta: float, current_speed: float, max_speed: float) -> void:
 	if turn_rate_radians <= MIN_POSITIVE:
 		return
 	var maneuver_factor: float = _maneuver_factor(current_speed, max_speed)
+	if _helm_steering and current_speed <= _positive_or_zero(profile.stop_speed_epsilon) and global_position.distance_to(_target_position) > profile.arrival_radius:
+		# A bow held against a wall has zero measured speed; allow bounded
+		# steering to disengage instead of permanently pushing into the wall.
+		maneuver_factor = maxf(maneuver_factor, 0.5)
 	var max_step: float = turn_rate_radians * maneuver_factor * delta
 	var difference: float = angular_difference_to_desired()
 	rotation += clampf(difference, -max_step, max_step)
@@ -319,6 +344,8 @@ static func valid_save_motion(value: Variant) -> bool:
 func restore_save_motion(motion: Dictionary) -> bool:
 	if not authority_enabled or not valid_save_motion(motion):
 		return false
+	_helm_steering = false
+	_helm_transit = false
 	global_position = Vector2(motion["x"], motion["y"])
 	rotation = motion["heading"]
 	velocity = Vector2(motion["vx"], motion["vy"])

@@ -2,6 +2,7 @@
 """Stage only approved 4×2 runtime atlases, never the source boards."""
 import argparse
 import math
+import re
 import struct
 import zipfile
 from pathlib import Path
@@ -11,8 +12,14 @@ from io import BytesIO
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src/presentation/ship/pilot_atlases"
 EXPECTED = {
+    "SC-01": "SC01_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip",
     "SC-02": "SC02_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip",
     "SC-03": "SC03_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip",
+    "SC-04": "SC04_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip",
+    "SC-06": "SC06_PERCIN_HATTI_ALIGNED_FINAL.zip",
+    "SC-08": "SC08_SUPPORT_ANCHOR_FINAL.zip",
+    "M01": "M01_TUZ_DISI_B_FINAL_160PX_BODY.zip",
+    "M02": "M02_KABUK_KISKAC_B_FINAL_GITHUB_UPLOAD.zip",
 }
 ORDER = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 PNG = b"\x89PNG\r\n\x1a\n"
@@ -35,12 +42,12 @@ def stage(ship, archive):
             if ("atlas" in name and width == height * 2
                     and height % 2 == 0 and 0 < width <= 4096):
                 matches.append((entry, height // 2))
-        if len(matches) > 1 and ship == "SC-02":
-            runtime = [match for match in matches if match[1] == 160]
-            if runtime:
-                matches = runtime
         if len(matches) > 1:
-            raise ValueError(f"{archive.name}: ambiguous atlas")
+            final = [match for match in matches if "final" in Path(match[0].filename).name.lower() or "runtime" in Path(match[0].filename).name.lower()]
+            if len(final) == 1:
+                matches = final
+            else:
+                raise ValueError(f"{archive.name}: ambiguous atlas: {[m[0].filename for m in matches]}")
         if matches:
             entry, cell = matches[0]
             atlas_source = entry.filename
@@ -49,10 +56,28 @@ def stage(ship, archive):
                     raise ValueError(f"{ship}: approved atlas has no alpha")
                 atlas = source.convert("RGBA")
         else:
-            raise ValueError(f"{archive.name}: missing approved 4x2 RGBA atlas")
-        # SC-03 is now an approved final runtime package, not the old
-        # AUTO FINAL master-frame archive. Preserve its authored cell size.
-        runtime_cell = {"SC-02": 160, "SC-03": max(224, cell), "SC-07": 224}[ship]
+            # Some approved aligned packages contain the eight masters only.
+            # Match full direction suffixes, never QA sheets or original boards.
+            frames = []
+            for direction in ORDER:
+                pattern = re.compile(r"(?:^|[_-])" + direction + r"\.png$", re.I)
+                candidates = [e for e in z.infolist() if pattern.search(Path(e.filename).name)]
+                if len(candidates) != 1:
+                    raise ValueError(f"{archive.name}: ambiguous/missing {direction}: {[e.filename for e in candidates]}")
+                with Image.open(BytesIO(z.read(candidates[0]))) as source:
+                    if source.mode != "RGBA" or source.width != source.height:
+                        raise ValueError(f"{ship} {direction}: expected square RGBA")
+                    frames.append(source.copy())
+            cell = frames[0].width
+            if not 0 < cell <= 1024 or any(f.size != (cell, cell) for f in frames):
+                raise ValueError(f"{ship}: inconsistent master sizes")
+            atlas = Image.new("RGBA", (4 * cell, 2 * cell))
+            for index, frame in enumerate(frames):
+                atlas.paste(frame, ((index % 4) * cell, (index // 4) * cell))
+            atlas_source = "approved_aligned_frames"
+        # Preserve authored final cells. Legacy 1024 masters are kept intact,
+        # rather than misinterpreting the visible hull pixel goal as cell size.
+        runtime_cell = cell
         if runtime_cell > cell:
             raise ValueError(f"{ship}: refusing to upscale atlas from {cell} to {runtime_cell}")
         runtime = Image.new("RGBA", (4 * runtime_cell, 2 * runtime_cell))
@@ -74,21 +99,18 @@ def stage(ship, archive):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--sc07", type=Path, help="Approved SC-07 final archive; omit if unavailable")
     parser.add_argument('--qa-dir', type=Path)
     args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     for ship, name in EXPECTED.items():
         (OUT / f"{ship}.png").unlink(missing_ok=True)
         stage(ship, ROOT / name)
-    if not (OUT / "SC-02.png").exists() and not (OUT / "SC-03.png").exists():
-        raise ValueError("No approved pilot atlas available")
-    if args.sc07:
-        stage("SC-07", args.sc07)
-    else:
-        # Do not publish a stale local comparison atlas in a new export.
-        (OUT / "SC-07.png").unlink(missing_ok=True)
-        print("VISUAL_PILOT_MISSING ship=SC-07")
+    for texture in OUT.glob("*.png"):
+        if texture.stem not in EXPECTED:
+            texture.unlink()
+    for ship in EXPECTED:
+        if not (OUT / f"{ship}.png").is_file():
+            raise ValueError(f"Missing approved runtime atlas: {ship}")
     if args.qa_dir:
         proof(args.qa_dir)
 
@@ -98,7 +120,7 @@ def proof(out):
     """Exact runtime textures, at game world sizes, on CPU-modelled sea backgrounds."""
     out.mkdir(parents=True, exist_ok=True)
     directions = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
-    ships = [(ship, size) for ship, size in (("SC-02", 104), ("SC-03", 132), ("SC-07", 120))
+    ships = [(ship, size) for ship, size in (("SC-01", 86), ("SC-02", 104), ("SC-03", 132), ("SC-04", 132), ("SC-06", 144), ("SC-08", 174), ("M01", 70), ("M02", 90))
              if (OUT / f"{ship}.png").is_file()]
     for factor in (1, 2):
         stride, row = 148 * factor, 146 * factor

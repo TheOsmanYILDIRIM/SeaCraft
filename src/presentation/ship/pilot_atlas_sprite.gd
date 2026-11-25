@@ -15,5 +15,9 @@ func bind_heading(source: Node2D) -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(_heading_source):
-		global_rotation = 0.0
-		frame = frame_for_heading(_heading_source.global_rotation)
+		var heading := _heading_source.global_rotation
+		frame = frame_for_heading(heading)
+		# Choose the closest authored orientation and apply only the residual.
+		# Never rotate a single side-view sprite through a full turn.
+		var authored := (float(frame) - 2.0) * PI / 4.0
+		global_rotation = wrapf(heading - authored, -PI, PI)

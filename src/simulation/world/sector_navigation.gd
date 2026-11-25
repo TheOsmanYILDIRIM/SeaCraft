@@ -73,6 +73,82 @@ func accessible(point: Vector2) -> bool:
 	return true
 
 
+# Navigation clearance is deliberately larger than the physics collider.
+# A physically valid ship in that margin must be able to sail back in.
+func helm_path(from: Vector2, to: Vector2) -> PackedVector2Array:
+	if not _ready or not from.is_finite() or not accessible(to):
+		return PackedVector2Array()
+	if accessible(from):
+		return rounded_helm_route(path(from, to))
+	var inset := _water.grow(-2.0)
+	if not inset.has_area():
+		return PackedVector2Array()
+	var origin := from.clamp(inset.position, inset.end)
+	# Recovery from the boundary margin, or from a coast clearance halo.
+	# Never teleport or choose a segment through actual land.
+	var candidates := PackedVector2Array([origin])
+	for obstacle in _blocked:
+		if obstacle.has_point(origin):
+			candidates.append(Vector2(obstacle.position.x - 2.0, origin.y))
+			candidates.append(Vector2(obstacle.end.x + 2.0, origin.y))
+			candidates.append(Vector2(origin.x, obstacle.position.y - 2.0))
+			candidates.append(Vector2(origin.x, obstacle.end.y + 2.0))
+	var best := PackedVector2Array()
+	var best_distance := INF
+	for candidate in candidates:
+		if not accessible(candidate):
+			continue
+		var clear := true
+		for land in _obstacles:
+			if _hits_rect(from, candidate, land):
+				clear = false
+				break
+		if not clear:
+			continue
+		var route := path(candidate, to)
+		if route.size() < 2:
+			continue
+		var distance := from.distance_to(candidate)
+		if distance < best_distance:
+			best_distance = distance
+			best = rounded_helm_route(route)
+	if not best.is_empty():
+		best.insert(0, from)
+	return best
+
+
+func rounded_helm_route(route: PackedVector2Array) -> PackedVector2Array:
+	if route.size() < 3:
+		return route
+	var result := PackedVector2Array([route[0]])
+	for i in range(1, route.size() - 1):
+		var corner := route[i]
+		var before := route[i - 1]
+		var after := route[i + 1]
+		var radius := minf(32.0, minf(before.distance_to(corner), after.distance_to(corner)) * 0.25)
+		var rounded := PackedVector2Array()
+		for attempt in range(5):
+			var entry := corner.move_toward(before, radius)
+			var exit := corner.move_toward(after, radius)
+			var samples := PackedVector2Array([entry])
+			for j in range(1, 5):
+				var t := float(j) / 4.0
+				samples.append(entry.lerp(corner, t).lerp(corner.lerp(exit, t), t))
+			var valid := direct_clear(result[-1], samples[0]) and direct_clear(samples[-1], after)
+			for j in range(1, samples.size()):
+				valid = valid and direct_clear(samples[j - 1], samples[j])
+			if valid:
+				rounded = samples
+				break
+			radius *= 0.5
+		if rounded.is_empty():
+			result.append(corner)
+		else:
+			result.append_array(rounded)
+	result.append(route[-1])
+	return result
+
+
 func direct_clear(from: Vector2, to: Vector2) -> bool:
 	if not accessible(from) or not accessible(to):
 		return false

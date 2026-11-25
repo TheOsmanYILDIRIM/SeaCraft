@@ -416,3 +416,29 @@ func _load_sector(path: String) -> SectorDefinition:
 		definition.neighbor_ids = PackedStringArray([B])
 		definition.transition_gates = [_edge()]
 	return definition
+
+
+
+func test_play01_boundary_clearance_margin_can_sail_back() -> void:
+	var boot := BOOT.instantiate()
+	boot.set("_save_service", SaveService.new("user://play01-edge-%d-%d" % [OS.get_process_id(), Time.get_ticks_usec()]))
+	add_child_autofree(boot)
+	boot.set_physics_process(false)
+	var ship := boot.get_node("ShipMotor") as ShipMotor
+	ship.set_physics_process(false)
+	await get_tree().physics_frame
+	ship.global_position = Vector2(-240, 346)
+	ship.rotation = PI / 2.0
+	ship.velocity = Vector2.ZERO
+	var goal := Vector2(-240, 180)
+	assert_false(boot.active_sector().navigation.accessible(ship.global_position))
+	boot._on_gameplay_command(GameplayCommand.move_to_world_position(goal))
+	assert_true(ship.has_target())
+	for i in range(1800):
+		ship.step_authoritative(1.0 / 60.0)
+		boot._advance_helm_route()
+		if not ship.has_target():
+			break
+	assert_true(boot.active_sector().navigation.accessible(ship.global_position))
+	assert_lte(ship.global_position.distance_to(goal), 18.1)
+	print("PLAY01_BOUNDARY_EGRESS_OK")
