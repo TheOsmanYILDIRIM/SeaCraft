@@ -21,6 +21,8 @@ Oyuncu açılıştan itibaren gemisini anlayarak sürer, yönünü bulur, bir NP
 
 ## Yürütme ve kanıt kuralları
 
+- **2026-11-26 cihaz geri bildirimi:** Her küçük değişiklik için kullanıcı APK indirip kurmaz. CI gerçek Godot fizik senaryoları, tüm onaylı atlasların yön panosu ve ölçülen hareket GIF/JSON replay'i zorunlu teknik inceleme yoludur. Fiziksel cihaz testi konsolide oynanış kabulünde veya cihaz-özel sorun için yapılır. Kullanıcı onayıyla güncel görseller PLAY-01 düzeltmesi içinde entegre edildi; bu, ileri mekaniklerin açılması veya cihaz kabulü anlamına gelmez.
+
 - **Tek aktif geliştirme: PLAY-01.** Bir sonraki aşamaya geçmeden önce mevcut aşamanın kullanıcı tarafından oynanış kabulü gerekir. Fiziksel kabul beklerken aynı aşamadaki bağımsız iyileştirmeler ve otomatik testler sürdürülür; yeni mekanik aşamasına atlanmaz.
 - Otomatik CI ve Android/Linux export teknik kapıdır; gerçek cihaz kontrolü ve kullanıcı deneyimi ayrı kapıdır. GUT sayısı kalite/oynanabilirlik ölçüsü değildir. Her checkpoint APK, exact commit, test kanıtı ve kısa cihaz senaryosu verir.
 - Mevcut FND/VS/CORE/AI/NET/PRG testleri ve save/network authority sözleşmeleri korunur. Yeni iş bu sistemleri görünür ve oynanabilir kılmaya odaklanır. PRG-05 fiziksel LAN kabulü kullanıcıya atanmış ayrı açık kayıt; PRG-06 askıda (mevcut Deep Haven pilotu ve kayıtlar korunur). ADV-01 başlamaz.
