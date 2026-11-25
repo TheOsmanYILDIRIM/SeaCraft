@@ -3,6 +3,7 @@ extends Node2D
 const GAME_PORT := 17350
 const DISCOVERY_PORT := 17351
 const MARKET_ID := "market.haven.salvage"
+const VISUAL_PILOT := preload("res://src/presentation/ship/visual_pilot.gd")
 var _client: SessionClient
 var _discovery := LanRoomBrowser.new()
 var _camera: GameplayCamera
@@ -337,6 +338,19 @@ func _process(_delta: float) -> void:
 				marker.polygon = PackedVector2Array([Vector2(-18, 12), Vector2(20, 0), Vector2(-18, -12)])
 				marker.color = Color.CYAN if id == _client.assigned_player_id() else Color.WHITE
 				proxy.add_child(marker)
+				var visual_id := ""
+				var visual_size := 86.0
+				match proxy.entity_kind:
+					"player":
+						visual_id = "SC-01"
+					"npc":
+						visual_id = "SC-04"
+						visual_size = 132.0
+					"monster":
+						visual_id = "M01"
+						visual_size = 70.0
+				if not visual_id.is_empty() and VISUAL_PILOT.mount_atlas(marker, visual_id, visual_size) != null:
+					marker.color.a = 0.0
 			if id == _client.assigned_player_id() and proxy != _followed:
 				_followed = proxy
 				_camera.set_follow_target(proxy)

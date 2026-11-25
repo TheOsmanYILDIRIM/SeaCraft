@@ -152,6 +152,8 @@ jobs:
           grep -Fq "PLAY01_NEAR_REVERSE_ARRIVAL_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PLAY01_COAST_ROUTE_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PLAY01_STUCK_RECOVERY_OK" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PLAY01_BOUNDARY_EGRESS_OK" "$RUNNER_TEMP/gut.log"
+          grep -Fq "PLAY01_APPROVED_ATLASES_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "test_prg06_mode.gd" "$RUNNER_TEMP/gut.log"
           grep -Fq "PRG06_MODE_GATE_OK" "$RUNNER_TEMP/gut.log"
           grep -Fq "PRG06_SHARED_SAVE_OK" "$RUNNER_TEMP/gut.log"
@@ -177,6 +179,18 @@ jobs:
             echo "GUT reported a parse/load/test/orphan failure." >&2
             exit 1
           fi
+
+      - name: Render measured helm motion replays
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/visual-pilot-env/bin/python" tools/ci/render_helm_trace.py "$RUNNER_TEMP/gut.log" "$RUNNER_TEMP/helm-replay"
+      - name: Upload helm motion replays
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaCraft-Helm-Replay-${{ github.sha }}
+          path: ${{ runner.temp }}/helm-replay/
+          if-no-files-found: error
 
       - name: NET-01 real ENet process integration
         shell: bash

@@ -80,6 +80,15 @@ func helm_path(from: Vector2, to: Vector2) -> PackedVector2Array:
 		return PackedVector2Array()
 	if accessible(from):
 		return rounded_helm_route(path(from, to))
+	# Straight return across the navigation margin is preferable to a short
+	# artificial intermediate target at the edge.
+	var direct_egress := true
+	for obstacle in _blocked:
+		if _hits_rect(from, to, obstacle):
+			direct_egress = false
+			break
+	if direct_egress:
+		return PackedVector2Array([from, to])
 	var inset := _water.grow(-2.0)
 	if not inset.has_area():
 		return PackedVector2Array()

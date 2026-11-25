@@ -37,3 +37,15 @@ func test_missing_atlas_is_not_replaced_with_a_different_ship() -> void:
 	add_child_autofree(target)
 	assert_null(PILOT.mount_atlas(target, "missing", 100.0))
 	assert_eq(target.get_child_count(), 0)
+
+
+func test_all_approved_runtime_atlases_are_available_in_staged_build() -> void:
+	# CI stages the approved ZIPs before Godot import.
+	var root := "res://src/presentation/ship/pilot_atlases/"
+	for id in ["SC-01", "SC-02", "SC-03", "SC-04", "SC-06", "SC-08", "M01", "M02"]:
+		var texture := load(root + id + ".png") as Texture2D
+		assert_not_null(texture, id)
+		if texture != null:
+			assert_eq(texture.get_width(), texture.get_height() * 2, id)
+	assert_false(ResourceLoader.exists(root + "SC-07.png"))
+	print("PLAY01_APPROVED_ATLASES_OK")

@@ -242,7 +242,7 @@ func _apply_turn(delta: float, current_speed: float, max_speed: float) -> void:
 	if turn_rate_radians <= MIN_POSITIVE:
 		return
 	var maneuver_factor: float = _maneuver_factor(current_speed, max_speed)
-	if _helm_steering and current_speed <= _positive_or_zero(profile.stop_speed_epsilon) and global_position.distance_to(_target_position) > profile.arrival_radius:
+	if _helm_steering and current_speed < _positive_or_zero(profile.minimum_maneuvering_speed) and (_helm_transit or global_position.distance_to(_target_position) > profile.arrival_radius):
 		# A bow held against a wall has zero measured speed; allow bounded
 		# steering to disengage instead of permanently pushing into the wall.
 		maneuver_factor = maxf(maneuver_factor, 0.5)

@@ -1400,6 +1400,8 @@ func _lan_start_pressed() -> void:
 		_lan_marker.polygon = PackedVector2Array([Vector2(-18, 12), Vector2(20, 0), Vector2(-18, -12)])
 		_lan_marker.color = Color(0.3, 0.85, 0.9)
 		add_child(_lan_marker)
+		if VISUAL_PILOT.mount_atlas(_lan_marker, "SC-01", 86.0) != null:
+			_lan_marker.color.a = 0.0
 	request_checkpoint()
 	_refresh_lan_ui()
 
@@ -1509,7 +1511,7 @@ func _refresh_helm_route_line(modal: bool) -> void:
 	var remaining := PackedVector2Array([_ship_motor.global_position])
 	for index in range(_helm_route_index, _helm_route.size()):
 		remaining.append(_helm_route[index])
-	_helm_route_line.points = active_sector().navigation.rounded_helm_route(remaining)
+	_helm_route_line.points = remaining
 
 
 func _setup_mode_ui() -> void:
@@ -1782,6 +1784,21 @@ func _build_sector_geometry(sector: SectorRuntime) -> void:
 		label.position = mode_anchor.position + Vector2(-65, -28)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		geometry.add_child(label)
+	# Existing monster-territory anchors are visual QA only until actual
+	# monster entities are spawned by the authoritative encounter system.
+	var monster_anchor := sector.anchor("anchor.foundation_monster") if sector.sector_id == FoundationSector.ID else sector.anchor("anchor.outer_monster") if sector.sector_id == FoundationSector.OUTER_ID else null
+	if monster_anchor != null:
+		var preview := Node2D.new()
+		preview.name = "ApprovedMonsterPreview"
+		preview.position = monster_anchor.position
+		geometry.add_child(preview)
+		var monster_id := "M01" if sector.sector_id == FoundationSector.ID else "M02"
+		if VISUAL_PILOT.mount_atlas(preview, monster_id, 70.0 if monster_id == "M01" else 90.0) != null:
+			var preview_label := Label.new()
+			preview_label.text = monster_id + " · GÖRSEL TEST"
+			preview_label.position = Vector2(-65.0, 35.0)
+			preview_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			preview.add_child(preview_label)
 	for obstacle in sector.navigation.obstacle_rects():
 		_add_rectangle(geometry, obstacle, Color(0.23, 0.26, 0.23))
 		_add_coast(geometry, obstacle)

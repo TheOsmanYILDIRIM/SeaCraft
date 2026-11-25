@@ -329,12 +329,25 @@ func test_play01_bootstrap_routes_tap_around_fixture_coast() -> void:
 	assert_eq(marker.global_position, goal)
 	assert_true(route_line.visible)
 	var max_collisions := 0
+	var transit_count := 0
+	var trace: Array = []
+	var route_points: Array = []
+	for p in planned:
+		route_points.append([p.x, p.y])
 	for _i in 2400:
+		var previous_index := int(boot.get("_helm_route_index"))
 		ship.step_authoritative(1.0 / 60.0)
 		max_collisions = maxi(max_collisions, ship.get_slide_collision_count())
 		boot._advance_helm_route()
+		if int(boot.get("_helm_route_index")) > previous_index:
+			transit_count += 1
+			assert_gt(ship.velocity.length(), 0.5, "Intermediate waypoint must not stop the ship")
+		if _i % 8 == 0 or not ship.has_target():
+			trace.append([_i, ship.global_position.x, ship.global_position.y, ship.rotation, ship.velocity.x, ship.velocity.y])
 		if (boot.get("_helm_route") as PackedVector2Array).is_empty() and not ship.has_target():
 			break
+	assert_gte(transit_count, 2)
+	print("PLAY01_TRACE " + JSON.stringify({"scenario": "coast", "route": route_points, "samples": trace}))
 	boot._refresh_helm()
 	assert_lte(ship.global_position.distance_to(goal), 18.1)
 	assert_eq(max_collisions, 0)
@@ -434,11 +447,18 @@ func test_play01_boundary_clearance_margin_can_sail_back() -> void:
 	assert_false(boot.active_sector().navigation.accessible(ship.global_position))
 	boot._on_gameplay_command(GameplayCommand.move_to_world_position(goal))
 	assert_true(ship.has_target())
+	var trace: Array = []
+	var route_points: Array = []
+	for p: Vector2 in boot.get("_helm_route"):
+		route_points.append([p.x, p.y])
 	for i in range(1800):
 		ship.step_authoritative(1.0 / 60.0)
 		boot._advance_helm_route()
+		if i % 8 == 0 or not ship.has_target():
+			trace.append([i, ship.global_position.x, ship.global_position.y, ship.rotation, ship.velocity.x, ship.velocity.y])
 		if not ship.has_target():
 			break
+	print("PLAY01_TRACE " + JSON.stringify({"scenario": "boundary", "route": route_points, "samples": trace}))
 	assert_true(boot.active_sector().navigation.accessible(ship.global_position))
 	assert_lte(ship.global_position.distance_to(goal), 18.1)
 	print("PLAY01_BOUNDARY_EGRESS_OK")
