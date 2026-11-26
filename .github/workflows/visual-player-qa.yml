@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/evidence"
-          xvfb-run -a -s '-screen 0 1280x720x24' godot --path . --resolution 1280x720 --fixed-fps 60 --script res://tools/ci/visual_player_qa.gd -- "${{ matrix.profile }}" "$RUNNER_TEMP/evidence" "${{ matrix.seed }}" 2>&1 | tee "$RUNNER_TEMP/evidence/godot.log"
+          xvfb-run -a -s '-screen 0 1280x720x24' godot --path . --audio-driver Dummy --resolution 1280x720 --fixed-fps 60 --script res://tools/ci/visual_player_qa.gd -- "${{ matrix.profile }}" "$RUNNER_TEMP/evidence" "${{ matrix.seed }}" 2>&1 | tee "$RUNNER_TEMP/evidence/godot.log"
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' "$RUNNER_TEMP/evidence/godot.log"; then exit 1; fi
       - name: Encode actual captures and build frame inspection sheets
         if: always()

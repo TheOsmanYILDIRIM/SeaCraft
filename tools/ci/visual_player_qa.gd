@@ -236,7 +236,7 @@ func _battle_step(reckless: bool, i: int) -> void:
 	else:
 		var tangent := offset.normalized().orthogonal()
 		for direction in [1.0, -1.0]:
-			var goal := motor.global_position + tangent * 160.0 * direction
+			var goal: Vector2 = motor.global_position + tangent * 160.0 * float(direction)
 			if scene.active_sector().navigation.accessible(goal) and scene._target_at(goal).is_empty():
 				if _world_tap(goal, "broadside_maneuver"):
 					break
