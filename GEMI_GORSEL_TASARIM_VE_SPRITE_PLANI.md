@@ -17,7 +17,7 @@
 
 **Kamera:** Ortografik paralel projeksiyon, yatay düzlemden **55°**, roll **0°**. Aynı kamera; sadece gemi yaw yapar. Pruva–kıç su hattı ekseni ekran yönünü belirler, direk ucu belirlemez. N ekran yukarı, E sağ; sektörler 45°. N/S’de borda örtülebilir; ekstra kamera eğimiyle görünür yapılmaz. Blok projeksiyonu: ekran +x sağ, +y aşağı; zemin y izdüşümü `sin(55°) × y`, yükseklik yukarı `cos(55°) × z`. Yön kılavuzu için hedef ekran açısı φ, +x’ten saat yönünde ölçüldüğünde yatay blok yaw’ı `atan2(sin φ / sin 55°, cos φ)`; böylece çapraz okuma tam ekran 45° kalır. E/W tam su hattı uzunluğu kalibrasyonudur; N/S doğal önden kısalır.
 
-**Işık:** Üst-sol/NW plan yönünden sabit geniş soğuk ana ışık, yaklaşık 60° yükseklik; yumuşak diffüz fırtına öncesi gökyüzü dolgu, kontrollü ıslak specular; kaynak gemiyle dönmez. Temas/AO yalnız yüzey üzerinde; gemi dışı gölge, yansıma, köpük, duman, sis, glow ve su sprite’a gömülmez. Güverte, borda, yelken farklı değer kütleleri; kömür siyahı kontrastı tamamen yutmasın. Kontur çizme; değer ve hacim ile kenar tarif et.
+**Işık:** CD/ayna üretiminde yatay simetrik, geniş diffüz soğuk ışık; ayrı sekiz render yönteminde üst-sol/NW plan yönünden sabit geniş soğuk ana ışık, yaklaşık 60° yükseklik; yumuşak diffüz fırtına öncesi gökyüzü dolgu, kontrollü ıslak specular; kaynak gemiyle dönmez. Temas/AO yalnız yüzey üzerinde; gemi dışı gölge, yansıma, köpük, duman, sis, glow ve su sprite’a gömülmez. Güverte, borda, yelken farklı değer kütleleri; kömür siyahı kontrastı tamamen yutmasın. Kontur çizme; değer ve hacim ile kenar tarif et.
 
 **Renk/yoğunluk:** Kömür, koyu eskimiş kahve, soğuk gri, navy, kirli mavi-yeşil, mat bronz, zeytin, kemik, kül. Boğuk amber, kurumuş kan kırmızısı, hastalıklı teal/yeşil ve morumsu siyah yalnız vurgu; vurgu yaklaşık en çok dolu alanın %3’ü, emissive %0,5’i. Önce gövde ve arma kütlesi, sonra port/işlev, sonra perçin ve lif. İnce halat mobilde kaynar/titreşirse ayrıntıyı azalt, ana silueti değil. Karanlık/sis atmosferi oyun sahnesine aittir; sprite çevresi boş ve true RGBA.
 
@@ -149,7 +149,7 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ## 4. Ölçek ve tek yön standardı
 
-**Sekiz ayrı onaylı render; teslimde sıfır ayna.** Geometriyi iki yanda simetrik bloklamak serbest. E↔W, NE↔NW, SE↔SW aynalanmaz: üst-sol sabit ışığı ve karşı borda örtüşmesini tersler, flama ve yazıyı çevirir, sancak/iskele top ve isabet soketlerini değiştirir; asimetrik kargo, pruva süsü ve Solgun Omurga kıç yarığı yanlış tarafa geçer. GPT Image tutarlılığı için aynı ölçülü referans ve onaylı NE master, her bir yönde ayrı poz/edit; atlas dışarıda monte edilir.
+**Sekiz onaylı oyun yönü; simetrik gemilerde 5 özgün + 3 yatay yansıma (CD, 2026-11-26).** Yeni base gövdelerde pruva–kıç eksenine göre iskele/sancak simetrisi varsayılandır; pruva ile kıç aynı değildir. Beş özgün görünüşten E↔W, NE↔NW, SE↔SW çiftlerinin eksik üyeleri yatay yansıma ile tamamlanır; N ve S bağımsızdır. Simetrik güverte, arma, yelken eğrisi, top/aksesuar ve yumuşak iki taraflı ışık gerekir. Okunur yazı, tek taraflı hasar, asimetrik kargo veya SC-15'in kanonik çökmüş kıçı gibi kimlik öğeleri aynalanmaz; böyle durumlarda ilgili yönler ayrı üretilir veya kullanıcı onayıyla tasarım revize edilir. Eski onaylı sekiz yönlü kaynaklar korunur. Atlas her durumda dışarıda 8 yön olarak monte edilir.
 
 **Hareket 360°**, görsel sektör N=0°, NE=45°, E=90°, SE=135°, S=180°, SW=225°, W=270°, NW=315°. En yakın sektör, ±22,5° sınır; titreşim için mevcut sektörden çıkışta 3° görsel histerezis. Yön atlasını gerçek açıda tekrar döndürme veya iki görüntüyü crossfade etme. Wake, mermi, gerçek atış ve fizik sprite açısına kilitlenmez.
 
@@ -223,19 +223,19 @@ Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final
 
 ## 8. GPT Image hattı
 
-**Zorunlu çıktı kuralı:** GPT Image ile üretilen her master, hero, concept/reference, tek yön ve 8-yön radial pano **STRICT 1:1 SQUARE IMAGE** olmalıdır. Width = height şartı promptun başında ve sonunda açıkça yazılır. Kare olmayan 4×2 atlaslar GPT Image içinde üretilmez; harici kodla monte edilir.
+**Zorunlu çıktı kuralı:** GPT Image ile üretilen her master, hero, concept/reference, tek yön ve 5-yön CD / 8-yön radial pano **STRICT 1:1 SQUARE IMAGE** olmalıdır. Width = height şartı promptun başında ve sonunda açıkça yazılır. Kare olmayan 4×2 atlaslar GPT Image içinde üretilmez; harici kodla monte edilir.
 
 **İlk master promptu düzenleme değildir:** İlk gemi masterında henüz görsel referans yoksa `attached reference`, `same vessel as attached`, `edit`, `modify` veya benzeri referans/düzenleme dili kullanma. Doğrudan `Create ... in a STRICT 1:1 SQUARE FORMAT.` ile sıfırdan üretim iste. Referans dili yalnız gerçek referans görseli eklendiği sonraki aşamalarda kullanılır.
 
 | Yaklaşım | Karar |
 |---|---|
-| Tek istekle 8 yön sheet | Hayır: sıra, perspektif, ölçek, parça sayısı ve kenar kalitesi aynı anda kayar. Tek kareyi düzeltmek zorlaşır. |
+| Tek istekle 5 yön CD sheet | Yeni simetrik base gövdelerde varsayılan: gerçek 3D kılavuz, içe bakan pruvalar ve silüet odaklı kompakt yerleşim. Tek karede 8 ayrı görünüş asimetrik/istisnai gövdeler için seçenek; süreklilik QA zorunlu. |
 | Tek master → ayrı yön renderı | Nihai aşamada evet; yalnız tek açı gizli bordayı tanımlamaz, ortografik kılavuzla kilitle. |
-| Önce 4 yön → kalanlar | Ana eksen testi olarak iyi; 4 render + 4 mirror teslimi reddedilir. Tüm sekiz yön aynı kaynaklardan üretilir. |
+| Önce 4 yön → kalanlar | Tek başına yeterli değil; N/S ayrı olduğu için 5 özgün görünüş gerekir. 5+3 yatay yansıma yalnız simetri ve dönüş QA ile kabul edilir. |
 | Orthographic concept → yönler → atlas | **Seçilen hat:** ölçülü konsept ve NE kilidi, ayrı yönler, harici montaj. |
 
 1. Gövde başına **1 concept sheet**: top plan, iskele/sancak profil, baş/kıç; L/B, su hattı/pivot, ayrı numaralı mast-kumaş-port/soket listesi, asimetri, renk ve trim. GPT Image konsepti ölçü kılavuzu olarak önerir; çizgi/ölçü elle düzeltilir. Aynı kamera altında sekiz projeksiyon bloğu bu kılavuzdan hazırlanır; gerekirse kaba 3D proxy yalnız referans, oyun varlığı değil.
-2. NE hero renderını kabul et; **sekiz ana renderdan birincisidir**. Her yeni tekil istek aynı concept, NE hero ve hedef yöndeki blokla başlar; bir önceki yön tek referans olmaz. E/W port ve uzunluk; N/S pruva/kıç kütlesi; çaprazlarda yelken occlusion. Farklı mast sayısı, bez kesiti, port, kamera açısı veya tarafa yanlış düşen kargoda sadece geçersiz yönü düzelt. Sabit metre/px ilişkisi; hücreye ayrı “fit” yok. H/S’yi ancak ana sekiz yön geçince türet.
+2. Simetrik gemilerde kanonik kimlik + normal/renk kodlu CD referansları + malzeme atlası + gerekli arma modülleriyle doğrudan beş görünüşlü kare kaynak üret. Tekil concept/NE hero gerektiğinde yardımcıdır, zorunlu ikinci üretim değildir. Asimetrik istisnada ayrı sekiz yön yöntemi kullanılabilir. E/W port ve uzunluk; N/S pruva/kıç kütlesi; çaprazlarda yelken occlusion kontrol edilir. Farklı mast sayısı, bez kesiti, port, kamera veya tarafa yanlış düşen kargoda geçersiz kaynak düzeltilir. Sabit metre/px ilişkisi; hücreye ayrı fit yok. H/S ancak ana sekiz oyun yönü geçince türetilir.
 3. Modelin gerçek alfa desteği varsa şeffaf PNG iste; yoksa düz tek renk matte üstünde tek gemi, dış işlemle temiz alfa. Boyanmış dama/pus gerçek alfa değildir. Kenardaki halat/metal/delikler matte testinden geçer, kırpılmış parça kabul edilmez. Source çözünürlüğü normalize edilir; montaj, yön sırası ve padding harici yapılır. Modelin poz ölçüsünü veya sürümün şeffaflık özelliğini varsayma. [OpenAI Image generation kılavuzu](https://developers.openai.com/api/docs/guides/image-generation).
 4. Sırayla concept fizik/ölçü, NE malzeme, iki borda parça kimliği, baş/kıç düşey okuma, tam atlas, alfa/pivot/soket, 360° önizleme ve Android düşük zoom. Çalışma kaydında model/ayar, revizyon, referansın kaynağı ve haklar; dosya kimliği ör. `SC-02_base_NE.png`, `SC-02_base_atlas.png`. Dilim (minimum/tam) paketinden bağımsız aynı varlık adı ve cell standardı.
 
@@ -290,7 +290,7 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 
 ## SPRITE PRODUCTION MATRIX
 
-8 px iç padding ve 4×2 aynı yön sırası. H ve S de 8 yön ve ana hücre ölçüsünde. Toplamlar concept dâhil kabul görselidir; maskeler ve ortak efekt atlasları ayrı muhasebedir.
+8 px iç padding ve 4×2 aynı yön sırası. H ve S de 8 yön ve ana hücre ölçüsünde. Toplamlar concept dâhil kabul görselidir; maskeler ve ortak efekt atlasları ayrı muhasebedir. Ana yön adedi final oyun karelerini sayar; CD ile özgün render adedi beşe iner.
 
 | Gemi | Ana yön | Source / kare | Başlangıç hücre bütçesi | Başlangıç 4×2 sheet px | Tam ekler | Tam gövde renderı | Tam concept dahil | Minimum concept dahil |
 |---|---:|---|---|---|---|---:|---:|---:|
@@ -300,7 +300,7 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 | SC-01 · Sis İğnesi | 8 | 1024×1024 | 160×160 | 640×320 | 1 ref | 8 | 9 | 9 |
 | SC-04 · Yarık Çene | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref + 1 maske atlası | 8 | 9 | 9 |
 | SC-06 · Perçin Hattı | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref | 8 | 9 | 9 |
-| SC-11 · Dikiş Feneri | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref + 1 maske atlası | 8 | 9 | 9 |
+| SC-11 · Dikiş Feneri | 8 (5+3) | 1024×1024 | 224 px gövde → 288×288 hücre | 1152×576 | 1 ref + 1 maske atlası | 8 | 9 | 9 |
 | SC-14 · Dip Çanı | 8 | 1024×1024 | 384×384 | 1536×768 | 1 ref + 8 H + 8 S | 24 | 25 | 17 |
 | SC-05 · Kör Mühür | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref + 1 maske atlası | 8 | 9 | 0 |
 | SC-07 · Akıntı Bıçağı | 8 | 1024×1024 | 224×224 | 896×448 | 1 ref | 8 | 9 | 0 |
@@ -313,7 +313,7 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 
 ## GPT IMAGE PRODUCTION ORDER
 
-İlk üç satırın concept ve NE hero’ları birlikte kilitlenir; ardından sırayla 8-yön pilot sheetleri onaylanır. Üç pilot mobil kapıyı geçmeden kalanlara çıkılmaz. Her satır üretim sırası: **concept → NE → E → W → N → S → SE → SW → NW**; atlas sırası **N, NE, E, SE / S, SW, W, NW**. Önce minimumu bitir, sonra tam paketi tamamla.
+Üretim önceliği aşağıdaki roster sırasıdır; mevcut kabul edilmiş paketler tekrar üretilmez. Yeni simetrik base gövdelerde **CD 5 özgün görünüş → 3 yatay yansıma → 8 yön QA → final paket**; asimetrik istisnada concept/NE hero ve ayrı sekiz yön kullanılabilir. Atlas sırası değişmez: **N, NE, E, SE / S, SW, W, NW**. Minimum/tam kapsamı ve oyun geliştirme kabul kapıları ayrıdır.
 
 | Sıra | Gemi | Önce concept/NE’de kilitlenecek şekil | 8-yön teslim kapısı |
 |---:|---|---|---|
@@ -332,3 +332,10 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 | 13 | SC-12 · Kervan Kandili | sehpa, iki kapak, 4 port ve arka köprü | Tam base |
 | 14 | SC-13 · Kara Mihver | ikiz fener, çift teras, 10 port, uzun üç direk | Tam base; base sonrası maske |
 | 15 | SC-15 · Solgun Omurga | kıç asimetrisi, iki sağlam ve bir kırık direk, 3 kaburga | Tam base → tam S |
+
+
+## 2026-11-26 — CD kaynak yerleşimi ve SC-11 pilotu
+
+- Kare 1:1, 55° gerçek ortografik kamera, sıfır roll, 45° dünya heading farkları; beş görünüşün pruvaları ortak odak bölgesine bakar. Radial konumlar üst-orta, üst-sol, sağ-orta, alt-sol, alt-orta; ortak ölçek, değişken radyal uzaklık ve güvenli alfa aralığı. Yerleşim etiketi yön değildir: üst-orta=S, üst-sol=SE, sağ-orta=W, alt-sol=NE, alt-orta=N (gerçek pruva yönü). Yatay yansıma ile E, NW, SW tamamlanır. Her yeni kaynakta bu eşleme görsel olarak yeniden doğrulanır.
+- Normal ve renk kodlu CD kılavuzları mevcut GLB'den kodla üretilir. Ayrı SeaCraft malzeme/texture atlası ve modüler arma kütüphanesi aynen kullanılır; CD değişikliği kaynak pano yerleşimidir, runtime 4×2 formatını değiştirmez. Ayrıntılı operasyon: [Gemi üretim rehberi](GEMI_SPRITE_URETIM_REHBERI.md).
+- SC-11 kullanıcı manuel hizalama ve Puppet Warp pilotu: [final kaynak ZIP](SC11_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip), 288² hücre, 1152×576 atlas, E/W 223/225 px yaklaşık gövde ölçüsü, 16 px minimum alfa-0 pay, 102 dünya birimi. 5 özgün + E/NW/SW türetilmiş; NW yerel nokta düzeltmesi. 12 dosya, ShowLook v3. Kaynak paket GitHub'da doğrulandı; Godot/Android entegrasyonu ve çapraz landmark projeksiyon ölçümleri henüz doğrulanmadı.

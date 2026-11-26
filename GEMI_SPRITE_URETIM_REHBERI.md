@@ -108,7 +108,7 @@ Her yön promptunda açıkça bulunmalı:
 - same apparent world scale
 - same deck-to-hull-side balance
 - same physical vessel
-- no mirroring
+- no mirroring (yalnız ayrı render/asimetrik istisna; CD simetrik gemilerde 3 yatay yansıma uygulanır)
 - no redesign
 - true transparent RGBA background
 
@@ -474,7 +474,7 @@ SC-03 üzerinde ayrıca boy/en ekseni ve elle landmark işaretleme deneyleri yap
 
 ## 15. GPT Image prompt ve 1:1 kare çıktı kuralı
 
-Tüm GPT Image üretim isteklerinde **ABSOLUTE OUTPUT REQUIREMENT = STRICT 1:1 SQUARE IMAGE** yazılır. Bu kural master/hero, tek yön sprite, concept/reference ve 8-yön radial referans panosu için aynıdır. Genişlik ve yükseklik eşit olmalıdır. 4×2 final atlas gibi kare olmayan paketler GPT Image içinde üretilmez; ayrı kod/normalizasyon aşamasında monte edilir.
+Tüm GPT Image üretim isteklerinde **ABSOLUTE OUTPUT REQUIREMENT = STRICT 1:1 SQUARE IMAGE** yazılır. Bu kural master/hero, tek yön sprite, concept/reference ve 5-yön CD / 8-yön radial referans panosu için aynıdır. Genişlik ve yükseklik eşit olmalıdır. 4×2 final atlas gibi kare olmayan paketler GPT Image içinde üretilmez; ayrı kod/normalizasyon aşamasında monte edilir.
 
 İlk master/hero görseli **sıfırdan üretim** olarak istenir. İlk promptta “attached reference”, “same vessel as attached”, “edit”, “modify”, “use reference 1/2” gibi düzenleme çağrıştıran dil kullanılmaz. Önce gemi doğrudan tarif edilerek tek 1:1 master üretilir. Referans kullanan dil yalnız ikinci ve sonraki aşamalarda, gerçekten görsel referans eklendiğinde kullanılır.
 
@@ -544,7 +544,7 @@ Doğrulama kuralı: bütün final yönler aynı canvas boyutunda RGBA kalmalı v
 **Üretim kararı:** yeni gemilerde ortak tema için varsayılan \`v3\`; v1/v2 yalnız geriye dönük karşılaştırma ve look-development teşhisi için korunur. Stil referansı ayrı girdidir; araç referans görselini repoya gömmek zorunda değildir.
 
 
-## 17. Radial pano ekstraksiyonu ve değişmez üretim hattı
+## 17. Eski 8-yön radial pano ekstraksiyonu (CD için §21)
 
 8 yönün tek kare radial panoda üretildiği durumda kesim için artık sohbet içinde gemiye özel kod yazılmaz.
 
@@ -693,7 +693,7 @@ Bu nedenle ekstraksiyon sonrasında, normalizasyon/ShowLook/final küçültmeden
 
 SC-02/SC-03 üretiminde kullanılan ortak GLB modeli `sample_2026-11-22T165909.224.glb` **oyun gemisi değildir**; yalnızca ortografik kamera, yön ve gövde süreklilik referansıdır. İki ayrı pano hazırlanır: **normal/dokulu** (8 yönün kamera/boş merkez/radial yerleşimi) ve **renkli tanısal** (pruva-kıç, iki borda, arma alanının farklı yönlerde aynı fiziksel yapı olması). Renkli örneğin paleti, gerçek gemiye taşınmaz. Modelin tek birleşik mesh olması nedeniyle renk sınırları yaklaşık konumsal ayrımdır, özgün parça ID verisi değildir.
 
-Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up → Z-up dönüşümü; sabit 55° ortografik kamera, sekiz 45° yön, 1280² pano, %90 dünya ölçeği ve alfa-temas denetimi. Python + NumPy/Pillow/Trimesh/Numba CPU rasterizer ile aynı girdilerden iki çalıştırmada byte düzeyinde aynı çıktı ve **8/8 ayrı alfa bileşeni** ölçüldü. Orijinal tarihî pano ile piksel eşitliği iddia edilmez. *Önce repoya yüklenmiş* `SeaCraft_SC03_RefKod_Model_Ciktilar_Dokumantasyon.zip` ilk renderer taslağını içerdiğinden tekrar üretim kodu için güvenilir referans olarak kullanılmamalı; düzeltilmiş yerel teslim `SeaCraft_3D_Referans_Ve_Gemi_Pipeline_DOGRULANMIS.zip` ile değiştirilmelidir (bu ikinci ZIP'in repoya yüklendiği henüz doğrulanmadı).
+Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up → Z-up dönüşümü; sabit 55° ortografik kamera, sekiz 45° yön, 1280² pano, %90 dünya ölçeği ve alfa-temas denetimi. Python + NumPy/Pillow/Trimesh/Numba CPU rasterizer ile aynı girdilerden iki çalıştırmada byte düzeyinde aynı çıktı ve **8/8 ayrı alfa bileşeni** ölçüldü. Orijinal tarihî pano ile piksel eşitliği iddia edilmez. *Önce repoya yüklenmiş* `SeaCraft_SC03_RefKod_Model_Ciktilar_Dokumantasyon.zip` ilk renderer taslağını içerdiğinden tekrar üretim kodu için güvenilir referans olarak kullanılmamalı; düzeltilmiş yerel teslim `SeaCraft_3D_Referans_Ve_Gemi_Pipeline_DOGRULANMIS.zip` ile değiştirilmelidir (bu ikinci ZIP SeaCraft/main'de mevcut; 2026-11-26 kontrolü).
 
 **Bağımsız renksiz 2×2 clay arma modülleri:** SQ-1=tek kare, SQ-2=çift kare, GF-1=gaff, JB-1=flok, LT-1=latin. Bir gemi için birleşik arma renderı zorunlu değil; ihtiyaç listesi belirlenir ve yalnız eksik modül üretilir. SC-03 reçetesi **ön SQ-1 + ana SQ-1 + kıç LT-1**; kısa-geniş tüccar oranları promptla uyarlanır, otomatik SQ-1B açılmaz. Bu arma modülleri gemi-özel nihai sprite değildir.
 
@@ -710,10 +710,10 @@ Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up
 - SC-01 Sis İğnesi: SW yönü ilk hizalamada eksikti; sağlam kaynaktan kurtarılarak çapraz yönlere göre düzeltildi. SC01_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip SeaCraft/main'de.
 
 ### Kalıcı görsel QA ve çözünürlük kararları
-- Bundan sonraki üretim promptları tam sekiz yönlü radial 1:1 kare çıktının ÜÇ AYRI GPT Image varyantını ister: tam üç bağımsız resim, kolaj değil. Kullanıcı birini seçmeden pipeline'a geçme.
+- Yeni simetrik gemilerde §21 CD beş görünüşlü 1:1 kare çıktı varsayılandır. Üç ayrı varyant istendiğinde tam üç bağımsız resim üret, kolaj değil; kullanıcı seçimi/onayı olmadan final pipeline'a geçme. SC-11 tek CD pilotu kullanıcı tarafından kabul edildi.
 - Esas ölçü PNG canvas çözünürlüğü değil, nesnenin alfa bounding box genişlik/yüksekliğidir. 256×256 tuvalde örneğin 75×127 dolu piksel kalite kaybıdır; 1024×1024 boş çalışma tuvali yeni detay üretmez.
 - Radial orijinal korunur. Her yön gerçek nesne sınırına göre ve şeffaf payla ayrılır. Tekil AI upscale gerektiğinde her yönün gerçek detay ve anatomisi ayrı kontrol edilir. Sabit kareye hem x hem y ölçekleyerek nesneyi ezmek yasak; en-boy oranı korunur.
-- Kullanıcı elle hizalama yaptıysa eski JSON merkez/ölçek referansıdır; yeni crop/upscale sonuçlarıyla dünya pivotu korunur ama şekil yeniden doğrulanır. Eksik yön için karşı açıyı aynalama geçici olabilir, asimetrik nesneyi geometrik olarak doğrulamadan son kabul sayılmaz.
+- Kullanıcı elle hizalama yaptıysa eski JSON merkez/ölçek referansıdır; yeni crop/upscale sonuçlarıyla dünya pivotu korunur ama şekil yeniden doğrulanır. CD simetrik gövdelerde üç eksik yön yatay yansıma ile tamamlanır; asimetrik nesneyi geometrik olarak doğrulamadan aynalama final kabul sayılmaz.
 - HTML'de hangi gerçek tekil PNG'lerin gömüldüğü ve dolu piksel alanları kontrol edilir; küçük preview/test canvas görsellerini upscale master diye sunma. Mobilde 8/8 yükleme ve JSON dışa aktarımı doğrulanır.
 - Oyun paketi 8 RGBA PNG, 4×2 atlas, dönüş GIF'i, manifest ve dokunulmamış radial kaynak = 12 dosya. Gerçek AI-upscale master ile interpolasyon veya boş canvas büyütmesini birbirinden açıkça ayır. Godot/Android entegrasyonu ayrı kanıttır.
 
@@ -722,3 +722,36 @@ Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up
 
 - Final dosya adları/atlas hücre sırası tek başına yön doğruluğu değildir. Gerçek pruva ve dümen/kıç işaretlerini 8 yönlü oyun ölçeği panosunda incele. SC-01 (dümen), SC-04 (yarık pruva) güncel final paketleri etiketlerine göre 180° ters; kaynak arşivleri korunur, runtime staging bu iki kesin paket için 4 hücre kaydırarak N–NE–E–SE–S–SW–W–NW düzenine getirir. Yeni arşiv geldiğinde yön kapısını yeniden incele; kör düzeltme uygulama.
 - Sprite yönü en yakın gerçek atlas hücresi + yalnız kalan ±22,5° görsel açı ile simülasyon heading'ine eşlenir; simülasyon ve görsel dönüş ayrı kalır. Ara rota noktaları durma hedefi değil geçiş noktasıdır. Cihaz kurulumu öncesi gerçek Godot fizik örneklerinden rota/hız/heading replay GIF'i ve tüm atlasların yön panosu kullanılır; gerçek cihaz final kabulü ayrı kalır.
+
+
+## 21. CD beş görünüşlü simetrik gemi üretimi — 2026-11-26 (yeni varsayılan)
+
+Bu bölüm eski sekiz özgün render, aynalama yasağı ve zorunlu concept/hero sırası ile çelişen yerlerde yeni simetrik base gemiler için önceliklidir. Asimetrik kanonik hasar, boss/enkaz, okunur amblem, tek taraflı ekipman veya farklı borda kimliği zorunluysa ayrı görünüş üret; karakteristiği sessizce silme. Eski kabul edilmiş paketler korunur.
+
+### Kaynak pano / referanslar
+
+- Gerçek 55° ortografik, sıfır roll, 45° dünya heading adımları, STRICT 1:1 square başta ve sonda; beş özgün görünüş aynı fiziksel gemi ve ortak ölçekte. CD silüet odaklı radial yerleşimde ortak odak korunur, uzaklıklar değişebilir; gemiler temas etmez ve kırpılmaz. Iskele/sancak simetrisi, iki yan için yumuşak dengeli ışık; pruva-kıç simetrisi değil. Flama, yazı, hasar, yelken eğrisi ve güverte donanımı yansımaya uygun olmalı.
+- Referans yükleme sırası: (1) `CD_normal_2048.png` normal 3D kamera/yerleşim, (2) `CD_colored_2048.png` renk kodlu geometri, (3) `SeaCraft_texture_atlas_source.png` ayrı malzeme atlası, (4+) kanonik gemi fişinin SQ/GF/JB/LT arma modülleri. İlk iki referansta proxy gemi kimliğini ve tanısal renkleri kopyalama. Texture atlası değişmedi; runtime atlası da 4×2 kaldı.
+- CD referans geliştirme arşivi `SeaCraft_CD_5Yon_Referans.zip` (yerel teslim; GitHub'da henüz mevcut değil): 1280²/2048² normal ve renkli, şeffaf 2048² sürümler, `generate_cd.py`, `CD_report.json`. Girdi: repo kökündeki `SeaCraft_3D_Referans_Ve_Gemi_Pipeline_DOGRULANMIS.zip`. Kullanım: `python generate_cd.py original.zip output_directory`. Python NumPy/SciPy/Pillow/Trimesh/Numba. Raporun yerleşim pozisyonları N,NW,E,SW,S; oyun heading'i tersidir. Örnek GLB'de aynı boy eski panoya göre 1.7888× doğrusal ölçek, sıfır alfa çakışması ve 2048²'de 23.7 px en küçük maske aralığı ölçüldü; bu her yeni gemide garanti değildir.
+
+| CD konumu | Gerçek pruva yönü / oyun PNG | Türetilen yön |
+|---|---|---|
+| Üst orta | S | — |
+| Üst sol | SE | SW (yatay ayna) |
+| Sağ orta | W | E (yatay ayna) |
+| Alt sol | NE | NW (yatay ayna) |
+| Alt orta | N | — |
+
+Konum adı ile oyun heading adını karıştırma; her kaynakta pruva/dümen üzerinden doğrula. Yansıma daima yataydır; 180° görüntü dönüşü veya N/S yansıtma yapılmaz. Alternatif yerleşimlerde her yansıma çiftinin tek üyesi ve N/S zorunludur.
+
+### İşleme ve manuel düzeltme
+
+1. Kaynak alfa bileşenlerinden tam beş bağımsız nesneyi ayır; yönleri pruvaya göre eşle, eksik üç yönü yatay yansıt ve sekiz RGBA elde et. Mevcut `tools/sprite_radial_extract.py` sekiz bileşen bekler; CD desteği kanonik araçta henüz yok. CD için sekizli ekstraktörü kör çalıştırma; yeni kalıcı araç değişikliği yapılırsa CD ve eski sekizli fixture testleri zorunlu. Temas/eksik arma varsa yeniden üret, kopuk parçayı komşuya sızdırma.
+2. Kaynak çözünürlüğü ve anatomiyi kontrol et; gereken durumda AI upscale uyarısı. Ortak dünya ölçeği ve su hattı pivotu, N Lab/LUT ve ShowLook v3 korunur. Kullanıcı onaylı manuel ayarlar varsa geometri yeniden otomatik normalize edilmez; son renk işlemi geometriyi değiştirmez.
+3. Manuel HTML'de x/y/scale yanında `beam` = geminin projekte pruva-kıç eksenine dik yerel en düzeltmesi; canvas X stretch değildir. Sadece kullanıcı kontrolünde, ölçülü geometri düzeltmesi. `warp` eski fırça işlemleri; `pins` Puppet Warp kaynak/ hedef noktaları (`x,y,tx,ty,r,fixed`). Sabit noktalar korunacak bölgelerde, hareketli noktalar pruva gibi hedefte; yumuşak etki alanı. Zoom/pan yalnız görüntüleme, sprite transformu değil. Özgün yüksek çözünürlüklü kaynaktan yeniden örnekle, deformasyon birikimli bulanıklık/katlanma yapmamalı. JSON'da eski alanlar ve yeni pinler saklanır, final export aynı dönüşümü kullanır. Bu özellikler SC-11 yerel HTML pilotunda denenmiştir; repo `tools/sprite_manual_aligner_template.html` henüz bu modları içermiyor. Kanonik araca aktarım ayrı teknik iştir; mobil gerçek cihaz performansı doğrulanmadı.
+4. Kullanıcının son JSON'u final kabul girdisidir; sekiz yönü tek ortak katsayıyla, (512,512) master pivotunu C/2'ye taşıyarak paketle. Pruva/kıç, yerel en, gövde ölçeği, dönme sıçraması, kırpılma, yansıma kaynaklı fener/arma detayları, alfa kenarı ve atlas hücre eşitliği kontrol edilir. Önizleme zoom'u veya preview çözünürlüğü final geometriye yazılmaz. Son GIF final ShowLook PNG'lerden.
+5. 12 dosya ZIP değişmez: 8 RGBA, 4×2 atlas N NE E SE / S SW W NW, final GIF, manifest, dokunulmamış beşli radial kaynak. Manifestte kaynak görünüş ve yansıma eşlemesi, manuel düzeltme yöntemi, kaynak/son bbox, ortak ölçek, gerçek gövde hedefi, pivot, padding ve ölçüm sınırları bulunur. Ara JSON/HTML/debug final ZIP'e eklenmez.
+
+### SC-11 Dikiş Feneri — doğrulanmış paket örneği
+
+`SC11_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip` SeaCraft/main'de, blob `9ed1f91504eb3c94e9cadf586897f6431e857795` (yerel ZIP ile aynı Git blob; SHA-256 `0fdd43c420aa96b7c4b36186790774cbd2dcca566b39011d0ec11b1bca40cc22`). 1254² beşli kaynak, 5+3 (E/NW/SW yansıma), NE/NW yerel en, NW dört Puppet Warp noktası ve manuel hizalama kabulü. ShowLook v3, SC-03 E stil örneği; 288² final hücre / 1152×576 atlas, E/W yaklaşık 223/225 px gövde (224 hedef), 16 px min alfa-0 pay, 144/144 final pivot, 102 dünya uzunluğu. ZIP 12 dosya ve CRC kontrolü geçti; AI upscale uygulanmadı. Çapraz landmark oranları bağımsız ölçülmedi, yeni N-LUT uygulanmadı (pilot manifesti), Godot/Android kabulü yok. Bu pilot yeni yöntem için görsel örnektir, tüm gemilerde otomatik başarı garantisi değildir.
