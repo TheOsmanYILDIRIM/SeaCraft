@@ -42,3 +42,7 @@ Baseline inspected: 7ad98e1b9644fd8d70869ad46c24d6b05d8a2a67. Existing CI green 
 5. Exported desktop smoke with real screen capture/input, then consolidated physical Android + two-device LAN run. No per-small-fix APK installs; keep device-specific checks open until hardware evidence. PRG06 remains paused; do not advance PLAY02 without device acceptance.
 
 Passing all existing tests or adding a matrix row is not completion. Test coverage and current status are reported per scenario and evidence level, not by assertion count.
+
+## Rendered player behavior QA
+
+Separate workflow `visual-player-qa.yml` runs seven independently seeded scripted player profiles against the shipped Bootstrap scene using the actual Godot input dispatch, physics and Compatibility renderer in Xvfb. Navigator, reverse, edges, spam, explorer, duelist and reckless each have isolated saves; they are independent simulated players, not seven concurrent network peers. Each 15–20 simulated-second session captures actual viewport pixels at 5 FPS, saves an MP4, all-frame contact sheets and action/physics/damage JSON. The software renderer is not an Android performance test. Failed routes or missing combat evidence fail that profile without hiding its evidence. Visual review is separate from the automatic pass: inspect actual frames for bow alignment, sprite snapping, coast clipping, HUD overlap, and visible firing/hit feedback; no drawn trajectory substitute. Missing VFX and controls are findings, not presumed successes. Existing GUT/LAN/export gates remain unchanged.

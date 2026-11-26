@@ -1,0 +1,76 @@
+name: Player behavior and rendered visual QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'project.godot'
+      - 'tools/ci/visual_player_*'
+      - 'tools/ci/stage_ship_visual_pilot.py'
+      - '.github/workflows/visual-player-qa.yml'
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {profile: navigator, seed: 101}
+          - {profile: reverse, seed: 202}
+          - {profile: edges, seed: 303}
+          - {profile: spam, seed: 404}
+          - {profile: explorer, seed: 505}
+          - {profile: duelist, seed: 606}
+          - {profile: reckless, seed: 707}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot and renderer dependencies
+        run: |
+          set -euxo pipefail
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/godot.zip" https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          echo "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  $RUNNER_TEMP/godot.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP"
+          install -m 755 "$RUNNER_TEMP/Godot_v4.7.2-stable_linux.x86_64" "$RUNNER_TEMP/godot"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb ffmpeg libgl1-mesa-dri
+          python3 -m venv "$RUNNER_TEMP/qa-env"
+          "$RUNNER_TEMP/qa-env/bin/pip" install --disable-pip-version-check Pillow==11.3.0
+      - name: Stage approved sprites and import actual project
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/qa-env/bin/python" tools/ci/stage_ship_visual_pilot.py --qa-dir "$RUNNER_TEMP/atlas-qa"
+          godot --headless --editor --path . --quit 2>&1 | tee "$RUNNER_TEMP/import.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' "$RUNNER_TEMP/import.log"; then exit 1; fi
+      - name: Drive shipped scene and capture rendered pixels at 5 FPS
+        id: capture
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          xvfb-run -a -s '-screen 0 1280x720x24' godot --path . --resolution 1280x720 --fixed-fps 60 --script res://tools/ci/visual_player_qa.gd -- "${{ matrix.profile }}" "$RUNNER_TEMP/evidence" "${{ matrix.seed }}" 2>&1 | tee "$RUNNER_TEMP/evidence/godot.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed to load script' "$RUNNER_TEMP/evidence/godot.log"; then exit 1; fi
+      - name: Encode actual captures and build frame inspection sheets
+        if: always()
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/evidence"
+          test -f trace.json
+          ffmpeg -hide_banner -loglevel error -framerate 5 -i frame_%05d.png -c:v libx264 -pix_fmt yuv420p -movflags +faststart replay.mp4
+          "$RUNNER_TEMP/qa-env/bin/python" "$GITHUB_WORKSPACE/tools/ci/visual_player_review.py" .
+      - name: Upload visual evidence even on behavioral failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeaCraft-Player-QA-${{ matrix.profile }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/evidence/trace.json
+            ${{ runner.temp }}/evidence/godot.log
+            ${{ runner.temp }}/evidence/replay.mp4
+            ${{ runner.temp }}/evidence/review-*.jpg
+          if-no-files-found: error
