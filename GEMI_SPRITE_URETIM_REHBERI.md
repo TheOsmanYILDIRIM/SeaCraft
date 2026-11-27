@@ -2,7 +2,7 @@
 
 Bu belge, `GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md` içindeki kanonik kuralları değiştirmez. Amaç, SC-02 · Kül Dikişi pilot üretiminde fiilen çalışan görsel üretim hattını ve tekrar edilmemesi gereken hataları operasyonel bir rehber olarak kaydetmektir.
 
-**Güncel üretim, montaj ve prompt varsayılanı: §24 (son bölüm); parametrik referans §22, HTML v6.** Önceki tek yön ve ortak proxy yöntemleri tarihsel/istisnai kurtarma yöntemleridir.
+**Güncel üretim ve montaj: §24; tek kanonik prompt standardı §24D/L; referans/atlas §24I; parametrik referans §22, montaj HTML v6.** Önceki tek yön ve ortak proxy yöntemleri tarihsel/istisnai kurtarma yöntemleridir.
 
 ## 1. Başlangıç: önce kimlik, sonra çok yönlü kamera referansı
 
@@ -46,7 +46,7 @@ Sıra:
 
 SC-02 pilotunda “ortografik gibi” görünen ama kıçı büyütüp pruvası küçülen çıktılar reddedildi.
 
-## 2. Her yön için üç referans kullan
+## 2. Her yön için üç referans kullan — tarihsel tek-yön kurtarma yöntemi (varsayılan değil)
 
 Her yeni yön isteğinde üç referans rolü açıkça ayrılmalıdır:
 
@@ -94,7 +94,7 @@ Bir önceki onaylı komşu yön:
 
 Bir önceki yön **tek referans değildir**; master + hedef kamera ref + komşu yön birlikte kullanılır.
 
-## 3. Promptların sabit omurgası
+## 3. Tek-yön kurtarma promptları — tarihsel (güncel genel şablon §24D/L)
 
 Her yön promptunda açıkça bulunmalı:
 
@@ -768,15 +768,15 @@ Konum adı ile oyun heading adını karıştırma; her kaynakta pruva/dümen üz
 
 - Tek parametrik Three.js gövde motoru; 6 pruva + 6 kıç profili, 21 arma, bağımsız top portları, 18 dekorasyon modülü, 15 düzenlenebilir gemi reçetesi. Gemiye özel gövde/arma/donanım montajı aynı fiziksel modelden render edilir. Bunlar **oyun içi 3D modeller değil**, GPT Image için geometrik kılavuzlardır. Reçeteyi kanonik gemi fişine göre kontrol et, gerekirse düzenle ve JSON sakla. SC-15 ve tek taraflı montajlar için sekiz bağımsız yön.
 - Ship Builder v0.5 kaynak ve çevrimdışı HTML arşivi: `SeaCraft_ShipBuilder_v0.5_SOURCE.zip` (repo kökünde doğrulandı; Git blob 329a55fcd2dd2f16363085df8445b1ca7ecbafbe). SHA-256 `d88b4d1be9be84e66377827760f86266cc17f01a676ca987e69549c5932a8257`. Arşivi aç, `SeaCraft_ShipBuilder_v05/offline.html` çalıştır. Kaynak modülleri, Three.js MIT lisansı, worker, testler ve SC-02 pilotu içeride; tekrar üretim README'de. Üretilmiş filo GLB/PNG'leri arşiv boyutunu azaltmak için çıkarıldı (SC-02 PNG'leri korunur). Android gerçek cihaz testi yapılmadı. V0.5 önizleme Web Worker'da, final referans 2048²; renkli/renksiz aynı yerleşim.
-- **Varsayılan yalnız iki görsel:** (1) gemiye özel malzeme renkli CD (`reference_material.png` veya HTML Malzeme CD PNG), fiziksel yapı/kamera/yerleşim için; (2) orijinal `SeaCraft_texture_atlas_source.png`, malzeme ve sanat dili için. Renk kodlu CD **zorunlu değildir**; yalnız karmaşık/asimetrik geometride parça veya yön karışıklığı görülürse üçüncü yardımcı ref olarak eklenir ve promptta doğru numarası belirtilir; tanısal renkler sanata geçmez. Arma artık birleşik modelde olduğundan ayrı yelken görselleri ve başka geminin proxy'si varsayılan olarak yüklenmez.
+- **Varsayılan iki görsel:** (1) gemiye özel, parça türleri yüksek kontrastla ayrılmış renk kodlu CD; (2) §24I'deki onaylı SeaCraft Master Material Reference Atlas V3. Tanısal renkler final sanata geçmez. Ayrı proxy/yelken referansı veya gerçekçi renkli CD zorunlu değildir; renksiz CD yalnız iç QA içindir.
 - Tek istek, tek kare, simetrik gemide 5 yön (üst sol SE, üst orta S, sağ orta W, alt sol NE, alt orta N); 55° true orthographic, zero roll, ortak fiziksel ölçek, içe bakan pruvalar, temassız ve kırpılmamış silüetler. Asimetride 8 yönü açıkça iste, yansıtma yapma.
 - Tarihsel pilot kuralı; güncel üç bağımsız üretim için §24H/L geçerlidir. 3D kılavuzun sade render estetiği kopyalanmaz; geometri korunarak gerçekçi ahşap işçiliği, bez ve metal detayları sanat aşamasında eklenir.
 
 ### Prompt yazma ilkeleri
 
-NPC sınıfı yaşayan dünyanın parçasıdır, rastgele jenerik tekne veya benzersiz boss değildir. Önce kısa, inandırıcı kullanım geçmişi (işlev, bakım, onarım); sonra uzaktan ve küçük parçada dahi tanınan **2–3 güçlü imza**: siluet/baş-kıç, borda renk şeridi, yelken yaması, işlevsel ekipman gibi. İmza gemi fişine uygun olmalı; sıradan sınıf aynı haritada 10–20 kez görüldüğünde abartılı veya yapay görünmemeli. Diğer ayrıntılar doğal işlevden gelsin; gereksiz süs, karmaşık halat, aşırı hasar, gürültülü mini detay ve yeni siluet parçaları ekleme. Boss/legendary gemilerin kanonik özel unsurlarını ise koru. Referansın belirlediği geometriyi uzun promptla yeniden tasarlatma; yalnız kimlik, kritik sayılar, negatif kısıtlar ve QA koşullarını yaz. Renkli referans eklenmediyse promptta ondan söz etme.
+NPC sınıfı yaşayan dünyanın parçasıdır, rastgele jenerik tekne veya benzersiz boss değildir. Önce kısa, inandırıcı kullanım geçmişi (işlev, bakım, onarım); sonra uzaktan ve küçük parçada dahi tanınan **2–3 güçlü imza**: siluet/baş-kıç, borda renk şeridi, yelken yaması, işlevsel ekipman gibi. İmza gemi fişine uygun olmalı; sıradan sınıf aynı haritada 10–20 kez görüldüğünde abartılı veya yapay görünmemeli. Diğer ayrıntılar doğal işlevden gelsin; gereksiz süs, karmaşık halat, aşırı hasar, gürültülü mini detay ve yeni siluet parçaları ekleme. Boss/legendary gemilerin kanonik özel unsurlarını ise koru. Referansın belirlediği geometriyi uzun promptla yeniden tasarlatma; güncel envanter, kısa yön betimleri, gemiye özel malzeme/onarım ve pozitif kısıtları §24D/L'ye göre yaz. Yüklenmeyen referansa atıf yapma.
 
-### Kullanıma hazır İngilizce SC-02 örneği (iki referans)
+### Tarihsel İngilizce SC-02 pilot promptu (V3 öncesi; yeni üretimde kopyalanmaz)
 
 ```text
 SC-02 — KÜL DİKİŞİ / ASH STITCH
@@ -841,7 +841,7 @@ Kullanıcı tek GPT Image üretiminde renkli CD vermeden başarılı görsel eld
 ### A. Gemi üretim aşamaları (yeni varsayılan)
 
 1. Kanonik SC fişinden rol, işlevsel geçmiş, gövde oranı, mast/yelken/top sayısı, asimetri, 2–3 güçlü görsel imza ve negatif kısıtları al. Sıradan NPC sınıfı yaşayan ve bakımlı gemi görünümünde olsun; uzaktan tanınsın ama boss gibi benzersizleşmesin.
-2. Parametrik Ship Builder'da gövde, pruva/kıç, arma, top portları ve donanımı aynı fiziksel modelde kur. Tüm halat kategorilerini aç ve gerçek bağlantıları kontrol et. 55° gerçek ortografik, zero roll, ortak ölçek, kare kompakt 5 CD (asimetride 8). Malzeme renkli gemiye özel CD ve orijinal SeaCraft malzeme atlası zorunlu; renk kodlu CD yalnız karışıklık varsa. Ayrı proxy/yelken görselleri veya zorunlu concept/hero üretimi yok.
+2. Parametrik Ship Builder'da gövde, pruva/kıç, arma, top portları ve donanımı aynı fiziksel modelde kur. Tüm halat kategorilerini aç ve gerçek bağlantıları kontrol et. 55° gerçek ortografik, zero roll, ortak ölçek, kare kompakt 5 CD (asimetride 8). Yüksek kontrastlı, parça türlerine göre renk kodlu gemiye özel CD ve onaylı V3 malzeme atlası kullanılır (§24I). Ayrı proxy/yelken görselleri veya zorunlu concept/hero üretimi yok.
 3. §24H/L uyarınca aynı tasarım için üç bağımsız GPT Image isteğiyle üç ayrı kare kaynak pano üret; önce yön, fiziksel bütünlük, görünür toplar, yelkenler, alfa, küçük ölçek okunurluğu kontrol edilir. Sonuç iyiyse gereksiz upscale, N-LUT, ShowLook, beam/warp uygulanmaz; gerçek çözünürlük ve su hattı ölçümleri yapılır. İhtiyaç varsa eski kalite kapıları korunur.
 4. Kaynağı kayıpsız koru. 5 bağımsız görünüşü ayır: üst-sol SE, üst-orta S, orta-sağ W, alt-sol NE, alt-orta N (her kaynakta pruvayı görerek doğrula). Aynı master koordinatları ve ortak ölçekle normalize et. Her görünüşü ayrı ayrı bbox-fit etme. Simetrik gemide yalnız N, NE, SE, S, W düzenlenir; E=W, SW=SE, NW=NE yatay yansımalarıdır.
 5. [Kanonik montaj/hizalama HTML v6](tools/sprite_manual_aligner_template.html) aç. Gemiye özel, beş PNG gömülü HTML teslim edilebilir; genel şablonda 5 yön PNG yükle. Asimetrik SC-15 ve gerçek farklı bordalı gemide 8 ayrı modu seç ve 8 kaynak yükle. Dönüş/ghost ile kontrol et, gerekliyse hizala. Beşli modda X ters işaret; Y, uniform scale ve beam aynı; warp x/dx, pin x/tx, montaj x, ok, maske ve iskele/sancak top ID'leri yansır. Üç türetilmiş yönü ayrıca düzenleme. 8 yön playback ve atlas daima korunur.
@@ -870,42 +870,48 @@ Yangın, hasar, tamir, büyü, batma ve temas gölgesi için her gemide ayrı el
 
 JSON: `direction_mode: five|eight`, `frames` (8), `mounts.schema: seacraft-mounts-v1`, `mounts.derived: {E: W, SW: SE, NW: NE}` (five; eight'de boş), `p` merkezli 1024 kaynak koordinatı, `aligned` 1024 hücre sol-üst koordinatı, `masks/aligned_masks`, `render_layer` top için opsiyonel. Son oyun hücresine aynı final dönüşümü uygula. PNG arma dokusu JSON'a gömülmez; texture seçimi runtime'a aittir.
 
-### D. Genel GPT Image prompt omurgası (yeni gemiler)
+### D. Genel GPT Image prompt omurgası (güncel; tek şablon)
+
+Aşağıdaki iskelet doldurulur; köşeli parantezler ve alternatif açıklamalar final promptta kalmaz. Kısa, İngilizce, pozitif ve somut ifadeler kullan; uzun tekrarları ve gereksiz negatif listeleri kaldır. §24L doğrulama adımları promptun kendisine kopyalanmaz.
 
 ```text
+3 tane alternatif ürettir GPT Image'a ayrı istekler olarak at. Use identical instructions and references for all three independent attempts.
+
 [SHIP ID — NAME / CLASS]
-Create ONE premium production-quality SeaCraft ship sprite sheet.
+Create ONE premium game-ready SeaCraft ship sprite sheet with photographic materials.
 STRICT 1:1 SQUARE IMAGE.
 
 IDENTITY
-[Short believable functional history and role from canonical ship sheet.]
-A lived-in, maintained, recognizable recurring NPC ship class, unless explicitly a unique canonical boss. Balance individuality and simplicity. [2–3 restrained, readable visual signatures.] Prefer readable silhouette and material masses, not excessive miniature detail.
+[One short role/history paragraph and 2–3 distinct, plausible visual signatures.]
 
-REFERENCE 1 — SHIP-SPECIFIC MATERIAL-COLORED 3D CD GUIDE
-Authoritative physical hull, proportions, mast and sail geometry, deck equipment, weapons and port positions, camera, scale and layout. Preserve exact underlying structure, refine into believable handcrafted nautical artwork, not a simplified 3D render.
-REFERENCE 2 — ORIGINAL SEACRAFT MATERIAL ATLAS
-Authoritative art direction, wood, iron, canvas, rope, palette, brightness, texture density and weathering.
+REFERENCES
+REFERENCE 1 — SHIP-SPECIFIC COLOR-CODED GEOMETRY GUIDE
+Authoritative physical structure, camera, scale and arrangement. [Short legend of the actual reference colors.] Replace diagnostic colors with the specified realistic materials.
+REFERENCE 2 — SEACRAFT MASTER MATERIAL ATLAS V3
+Authoritative material appearance only. Use selected swatches for texture, tone and finish, not as literal patterns or object designs.
 
-PHYSICAL STRUCTURE
-[Exact ship-specific mast/sail/weapon counts, important functional elements, negatives.] Preserve gaff/yard/boom/rig shapes, natural occlusion and restrained functional rigging. Leave masthead / designated flag attachment available. No flag or pennant fabric, no faction symbols, heraldic decals or painted identity emblems on sailcloth; these are independent runtime layers. Permanent class-specific repair patches, seam work, wood trim, structural carvings and neutral material coloration remain, if specified by the ship sheet. Do not invent objects or ports.
+EXACT PHYSICAL INVENTORY
+[Verified counts and positions of hull, deck/rails/stanchions, masts, bowsprit, spars, sails, weapons, ports, steering, hatches, paired equipment, decorations and relevant rigging. State physical totals separately from view visibility.]
 
-ART DIRECTION
-Realistic handcrafted maritime game art, restrained historical stylization, aged wood, natural cloth, oxidized iron. Balanced neutral light, natural contact shadows, readable materials matching the atlas. No exaggerated AO, gloss, damage, ornament or clutter.
+MATERIALS AND CHARACTER
+[Selected materials, their locations, intended tone/finish, and ship-specific signatures. Specify any repairs, patches, seams, carvings or trophies concretely; keep otherwise clean. Smooth woven linen, subtle geometry-specific seams, soft fabric folds; no paper-like, veined or lace-like pattern. Dark low-saturation oak and dull oxidized copper when specified.]
 
-FIVE-VIEW CONSISTENCY
-Exactly five complete views of ONE physical vessel: upper left SE, upper middle S, middle right W, lower left NE, lower middle N. Fixed true orthographic camera, 55° elevation, zero roll, same scale, only heading changes. Same geometry, equipment, material placement and signatures in every view. Bilateral symmetry suitable for horizontal mirroring. Maximize object coverage without touching or clipping.
-[For genuine asymmetric ships replace this paragraph with eight separate views and no mirroring; match the supplied eight-direction guide.]
+VIEW-BY-VIEW GEOMETRY AND VISIBILITY
+Upper left — SE: [Bow down-right; observed near/far weapon visibility, sail projection and distinguishing equipment.]
+Upper middle — S: [Bow down; corresponding visibility.]
+Middle right — W: [Bow left; corresponding visibility.]
+Lower left — NE: [Bow up-right; corresponding visibility.]
+Lower middle — N: [Bow up; corresponding visibility.]
+[Replace with all eight actual reference positions for a genuinely asymmetric ship.]
 
-OUTPUT
-Transparent RGBA; no water, foam, wake, external shadows, scenery, text, labels, flag fabric, faction emblems, VFX, normal/depth maps, low-poly style or extra ships. No baked combat damage except a specifically requested canonical damage state.
+CAMERA AND OUTPUT
+Fixed true orthographic camera matching the reference elevation (approximately 55 degrees), zero roll, same physical scale. Radial arrangement exactly as in reference; keep bowsprit tips separated and silhouettes complete. Balanced diffuse light, readable materials, subtle contact shadows. Transparent RGBA with only the isolated ship sprites; sails unbranded, flag attachment points empty for runtime overlays.
 STRICT 1:1 SQUARE IMAGE.
 
 REFERENCE UPLOAD ORDER
-1. Ship-specific material-colored 3D CD guide.
-2. Original SeaCraft material atlas.
+1. Ship-specific high-contrast color-coded geometry guide.
+2. SeaCraft Master Material Reference Atlas V3.
 ```
-
-Only if needed add diagnostic colored CD as reference 3, explicitly for continuity, not artistic colors. Promptta yüklenmeyen referanstan söz etme. Gemiye özel fişten gerekli sayılar ve işlevsel geçmiş alınır; SC-02 örneği §22'de korunur.
 
 ### E. SC-02 kullanıcı montaj kabulü ve kaynak bağı
 
@@ -923,13 +929,17 @@ Kullanıcı ayrı yön PNG'lerinin gereksiz tekrar olduğunu belirtti. SC-02 12�
 
 **2026-11-27 güncel üretim önceliği:** SC-14 Dip Çanı raid boss üretimi askıda; raid oynanışı yokken erken surface gemilerine öncelik ver. Mevcut SC-01/02/03/04/06/08/11 kaynak paketleri korunur. Sonraki eksik normal gemiler SC-05 (devriye), SC-07 (takip), ardından ihtiyaca göre SC-12 (konvoy), SC-09 (havan) ve SC-10 (boarding); özel mekanik gerektiren gemiler ilgili oynanış ihtiyacına bağlı. SC-13/14/15 ileri içeriktir. Roster kapsamı ve PLAY yürütme sırası değişmez.
 
-- Her gemi için yaratıcı tasarım kararlarını prompt yazarı belirler: 3D referans fiziksel iskelet ve kamera kılavuzudur; sanatsal farklar parça, konum, ölçülü biçim, malzeme ve negatif sınırlarla tarif edilir. GPT Image'a açık uçlu yeniden tasarım bırakılmaz; kaba kutumsu geometriyi kopyalama zorunluluğu yoktur. Tüm sabit/hareketli halatlar, kumaş bağlantıları ve donanım referansta açık tutulur. Malzeme CD okunaklı aydınlatılmış olmalı; renksiz CD üretim girdisi olarak kullanılmaz.
-- Promptun başına kısa orkestrasyon talimatı: **3 tane alternatif ürettir GPT Image'a ayrı istekler olarak at.** Her üç istek aynı prompt, aynı iki referans ve aynı tasarımla yapılır. Bunlar tasarım varyantı değil bağımsız denemelerdir; üç ayrı kare PNG, her biri kendi beş görünüşünü içerir. Tek panoda üç alternatif yok. Araç yalnız bir çıktı verirse kalan iki deneme ayrı çağrıyla istenir; üretilmemiş çıktı tamamlandı sayılmaz. Seçim yön tutarlılığı ve sanat kalitesine göre.
+- Her gemi için yaratıcı tasarım kararlarını prompt yazarı belirler: 3D referans fiziksel iskelet ve kamera kılavuzudur; sanatsal farklar parça, konum, ölçülü biçim, malzeme ve negatif sınırlarla tarif edilir. GPT Image'a açık uçlu yeniden tasarım bırakılmaz; kaba kutumsu geometriyi kopyalama zorunluluğu yoktur. Tüm sabit/hareketli halatlar, kumaş bağlantıları ve donanım referansta açık tutulur. Yüksek kontrastlı CD okunaklı, nötr aydınlatılmış olmalı; gerçekçi doku, yakın renkler ve renksiz CD üretim girdisi olarak kullanılmaz.
+- Promptun başına kısa orkestrasyon talimatı: **3 tane alternatif ürettir GPT Image'a ayrı istekler olarak at.** Her üç istek aynı prompt, aynı iki referans ve aynı tasarımla yapılır. Bunlar tasarım varyantı değil bağımsız denemelerdir; üç ayrı kare PNG, her biri kendi beş (gerçek asimetride sekiz) görünüşünü içerir. Tek panoda üç alternatif yok. Araç yalnız bir çıktı verirse kalan iki deneme ayrı çağrıyla istenir; üretilmemiş çıktı tamamlandı sayılmaz. Seçim yön tutarlılığı ve sanat kalitesine göre.
 - SC-14 mevcut denemeleri onaylı final paket değildir; ileri raid ihtiyacına kadar saklanır. Yeni sıradaki SC-05 Kör Mühür. Bu karar runtime, mevcut ZIP'ler ve mekanik planını değiştirmez.
 
-### I. Malzeme renkli referans zorunluluğu
+### I. Referanslar ve Master Material Atlas V3 — güncel kesin kural
 
-**Güncel kesin referans kuralı (2026-11-27):** Kullanıcıya ve GPT Image'a renksiz/clay CD verilmez. Referans 1 her zaman okunaklı, malzeme renkli gemiye özel CD (Ship Builder Malzeme CD PNG; tüm halat kategorileri açık), referans 2 orijinal SeaCraft malzeme atlasıdır. Ahşap, demir, yelken, pruva ve donanım ayrımı görünür olmalıdır. Renksiz çıktı yalnız iç teknik QA için kullanılabilir; üretim girdisi değildir. Eski renksiz varsayılanlar geçersizdir.
+- Referans 1: Builder'ın aynı fiziksel modelden ürettiği yüksek kontrastlı parça renkli CD (v0.12 yerel sürümde `reference_material.png`). Renkler tanısal, final palet değildir: gövde kahverengi, güverte açık sarı/oker, ana yelken kırmızı, üst yelken mavi, flok yeşil, direk mor, top kömür gri, donanım turuncu, dekor turkuaz. Gerçek çıktı farklı renk kodları kullanıyorsa legend'ı gerçek renderdan doğrula. Parça türleri arasında net ayrım ve nötr ışık; renkler gerçekçi doku gibi birbirine yaklaşmamalı. Tüm halat kategorileri açık; renksiz/clay çıktı yalnız iç QA.
+- Simetri gerçek pruva–kıç eksenindeki geometri ve fiziksel donanım düzeninden gelir; merkezî simetrik nesne asimetri değildir. Direk, merkezî ambar, dümen gibi işlevi gerektiren parçalar ortada; diğer uygun donanım, bobin, süs ve trofeler karşılıklı çiftler halinde. Tek taraflı gerçek hasar/donanım varsa sekiz özgün yön. Mevcut Builder motoru güncellenir; paralel/sıfırdan üretim kodu yazılmaz. v0.12 HTML ve Python yerel test edilmiş sürümdür; GitHub aktarımı bu belgeyle yapılmış sayılmaz.
+- Referans 2: **SeaCraft Master Material Reference Atlas V3**, kullanıcı onaylı `127746.png`, 1536×1536 RGB, SHA-256 `386498eb059d52ec1311fd4d3651c83c3153e78ae4ef07c82240bf7bf89f317e`, beklenen Git blob `cb64ee8ace9e0ed3b8128f68bb84321c4b2fab99`. Eski `SeaCraft_texture_atlas_source.png` V1 tarihsel girdidir; V2 altılı atlas geçiş örneğidir. V3'ün repo yüklemesi henüz doğrulanmadığı için eski dosya yeni atlas diye kullanılmaz. Yeni dosya yüklenince kimliği hash ile doğrula.
+- V3: 3 sütun × 4 satır; üstten alta ve soldan sağa: (1) koyu gövde meşesi, güverte meşesi, koyu ceviz; (2) doğal keten, koyu lacivert-gri bez, kenevir halat; (3) dövülmüş demir, oksitli bakır, eskimiş pirinç; (4) eskimiş deri, kemik, deniz kabuğu. Yamasız, logosuz, kuru/mat, düşük doygunluklu, temiz yüzey örnekleri; nesne/anatomi kataloğu değil. Her gemi yalnız ihtiyacı olan malzemeleri kullanır. Gemiye özel dikiş, hasar, tamir, süs, patina ve trofeler promptta tanımlanır. Kumaş kıvrımı/ahşap damar düzeni birebir kopyalanmaz. Demir örneği taşsı okunabildiğinden dövülmüş metal ve kontrollü metalik yansıma özellikle belirtilir.
+- V3 tümüyle tek atlas olarak kullanılır; eski V1'in sol üst çeyreğini kırpma/yamayı çıkarma önerisi artık gereksizdir. Kullanılacak malzemeyi ve gerekirse satır/sütununu promptta belirt; ıslaklık, ağır pas, yosun ve organik deformasyon yalnız gemi fişi gerektirirse. Atlasın kendisine tekrar hasar, ekipman, sembol veya yama ekleme. Onaylı eski sprite'lar değiştirilmez.
 
 ### J. SC-05 Kör Mühür — kullanıcı montajı ve final paket
 
@@ -943,13 +953,15 @@ Kullanıcıya verilen `SC05_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip`: dört dosya
 
 SC-02 ve SC-05 yeniden paketlendi; mevcut atlas/GIF/orijinal PNG ve onaylı JSON baytları değişmedi, üç yansıma eşitliği ve koordinat dönüşümü doğrulandı. SC-02 yeni ZIP 3.662.309 bayt, Git blob `a2c19ed0ed3139ca69ca6dea697f9eeffeaba3fc`, SHA-256 `647751eec688c6ddb835e1023db935fff0b5b7588aecf9f416a22d17e94833cd`; 62 kayıt. SC-05 yeni ZIP 3.982.239 bayt, Git blob `f3412de1c459a3c39c0e8cf96e2e8eac6f896fb4`, SHA-256 `343f6ae9f83db8706fd2178b1b44d6083cfb77c81d88b4b9045e47c1bfdbd2d1`; 104 kayıt. Kullanıcı aynı isimle yeni ZIP'leri yükleyecek. Önceki dış JSON'lar yalnız geçiş yedeği olarak tutulur, yeni ZIP'lerin Git blob ve gömülü JSON hash doğrulaması ardından kaldırılır. Eski §24G/J kanıtları tarihseldir.
 
-### L. Builder v0.11 ve elle yazılan üretim promptu — güncel kesin kural
+### L. Elle yazılan üretim promptu ve SC-16 dersleri — güncel kesin kural
 
-Bu bölüm §22 ve §24A/D/H ile çelişen prompt hükümlerine üstün gelir. Builder/Agent otomatik promptu üretim hattında kullanılmaz; prompt yazarı her gemi için onaylı reçete, malzemeli render, projected_mounts.json ve kanonik gemi fişini okuyarak özgün İngilizce prompt hazırlar. Otomatik montaj yalnız başlangıç tahminidir; mevcut manuel montaj/hizalama ve görsel kabul yeterlidir, ek otomasyon şart değildir.
+§24D/I tek güncel şablon ve referans sözleşmesidir; önceki prompt örnekleri tarihsel. Otomatik Builder/Agent promptu kullanılmaz. Kullanıcı görselleri GPT Image'da üretir; asistan mevcut Builder ile referansı kodlar, reçeteyi ve elle yazılmış promptu teslim eder. Manuel montaj düzeltmesi yeterlidir.
 
-1. Promptun ilk satırı: `3 tane alternatif ürettir GPT Image'a ayrı istekler olarak at.` Üç ayrı çağrı, aynı prompt ve aynı referanslar; tasarım değişmez. Her çıktı tek 1:1 kare, simetrikte beş, asimetride sekiz bağımsız görünüş. Tek kare içinde üç alternatif veya üç farklı gemi yasak. Eksik çıktı tamamlanır.
-2. Referans 1 malzemeli gemiye özel CD, referans 2 orijinal SeaCraft malzeme atlası; gerekirse üçüncü tanısal renk kodlu CD. Renksiz referans kullanıcıya veya GPT Image'a verilmez. Referans sırası prompt sonunda açıkça yazılır.
-3. Üretimden önce gerçek fiziksel envanter çıkar: tüm top/namlu, top portu (boş/dolu ayrımı), iskele/sancak/baş/kıç toplamları, direkler, seren/gaff/boom, her yelken ve flok, halatlar, üst yapı, güverte donanımı, dekorasyon, sabit onarım/hasar ve bayrak bağlantıları. Reçete ve kanonik fiş çelişirse sayı uydurma; üretim öncesi çöz. Port sayısı top sayısı değildir. Montaj kayıtları yön tekrarları nedeniyle fiziksel toplam olarak sayılmaz; benzersiz fiziksel ID'leri kullan.
-4. Promptta `EXACT PHYSICAL INVENTORY` bölümü zorunlu: her öğenin gerçek adedi, konumu, tarafı, tipi ve varsa simetrisi. Özellikle toplam top sayısı ve her bordadaki gerçek adet ayrı yazılır; baş/kıç topları ayrıca sayılır. Görünmeyen fiziksel toplar silinmez, görünür olmayan namlular zorla çizilmez.
-5. `VIEW-BY-VIEW GEOMETRY AND VISIBILITY` bölümü zorunlu: referansın her bağımsız yönünü kendi başlığı ve pano konumuyla tarif et. Her yön için pruva/kıç yönü, görünen borda, perspektif kısalması, görünür top/namlu ve port adedi (kısmen örtülenler ayrı), örtülü toplar, direk/yelken yüzleri ve örtüşmeleri, gövde/üst yapı/donanım/dekorasyon görünürlüğü ayrı yazılır. Render ve montaj verisinden kontrol et; rear katmanı tek başına kesin piksel görünürlüğü değildir. Her yüzü ayrıntılı tanımla, ancak referansta olmayan öğeyi icat etme. Beşli modda E=W, SW=SE, NW=NE yansımalarının taraf değişimini belirt; sekizli modda sekizinin tamamını bağımsız tarif et.
-6. `ART DIRECTION`, `OUTPUT`, `REFERENCE UPLOAD ORDER` bölümlerinde malzeme, okunaklılık, 55° ortografik kamera, ortak fiziksel ölçek, alfa ve mevcut dinamik arma/efekt kısıtlarını koru. Üç çıktıyı yön/öğe sayısı ve görsel tutarlılıkla karşılaştır; en iyi aday manuel montaja gider. Otomatik promptun arayüz/koddan kaldırılması ayrı uygulama değişikliğidir.
+1. §24H'deki üç ayrı aynı tasarım isteği korunur. Başlık/sonda kare çıktı, aynı iki gerçek referans, aynı fiziksel gemi. Tasarım varyantları değil üç bağımsız deneme. Asistan kullanıcı adına görsel üretmez.
+2. Önce kanonik fiş, gerçek reçete, renk kodlu render ve mevcut projected_mounts.json üzerinden fiziksel envanteri doğrula. Gövde/güverte, korkuluk ve stanchion, direk, civadra, seren/gaff/boom, yelken/flok, toplar ve boş/dolu portlar, dümen/tiller, kapak, halat bobini ve diğer donanım/dekorların gerçek adet ve konumlarını çıkar. Topların toplamı ile iskele/sancak/baş/kıç dağılımı ayrı; port sayısı top sayısı değildir, yön başına tekrar eden montaj kayıtları fiziksel toplam değildir. Reçete/fiş çelişirse sayı uydurma. Sanatsal ilaveyi (örn. ahşap oyma) açıkça ayrı tasarım talimatı olarak belirt.
+3. Kesin fiziksel envanteri kısa pozitif ifadelerle yaz (örn. "six open-deck cannons, three per broadside" yerine art arda gereksiz ZERO listeleri yok). Rol/geçmiş kısa, 2–3 okunur imza; her gemiye özgü malzeme ve özellikler. Önceki uzun SC-16 promptuna göre yaklaşık %40 kısaltma hedefi, zorunlu envanter veya yön bilgisi kaybı pahasına değil. Aynı talimatı başlıklar arasında tekrar etme.
+4. Her gerçek bağımsız yönün pano yeri, pruva yönü, yakın/uzak borda görünürlüğü, doğal foreshortening, görünen/örtülü top/portlar, yelken ve ayırt edici donanım kısa somut cümlelerle tarif edilir. İskele/sancak ancak render koordinatlarıyla doğrulanırsa kullan; belirsizse near/far side kullan. Render ve montaj bilgisi birlikte incelenir; rear etiketi tek başına piksel görünürlüğü kanıtı değildir. W'de kenardan görülen üst kare yelkeni belirginleştirmeyi, örtülü namluları/bobinleri zorla görünür yapmayı veya rigging tel sayısını isteme. Fiziksel nesneler örtülünce yok olmaz. Beşli simetrik mod E=W, SW=SE, NW=NE; sekizli gerçek asimetri ayrı.
+5. "Game-ready sprite rendering with photographic materials" kullan; fotogerçekçi sahne veya basit 3D estetiği isteme. 55° Builder kamera standardı değişmez; promptta "matching the reference elevation (approximately 55 degrees)" de, AI'ya dereceyi yeniden hesaplatma. Sabit ortografik, zero roll, ortak ölçek, referansa birebir radyal düzen ve ayrık civadra uçları. Şeffaf yalnız gemi sprite'ı; bayrak/arma kumaşı ve runtime efektleri ayrı; su, iz, dış gölge, etiket, ilave gemi gibi kritik negatifler tek kısa çıktı cümlesinde.
+6. V3 atlas malzeme görünümü içindir; dikdörtgen yama, dikiş deseni, kat izi veya plaka şablonu kopyalanmaz. Keten doğal düz dokuma, yumuşak kıvrım, ince yelken geometrisine uygun dikiş; damarlı, kâğıt/dantel benzeri desen yok. Yama sadece fiş gerektirirse: küçük, düzensiz, konumu ve adedi belirtilmiş (SC-16 için en çok 1–2/yelken; her yelkende zorunlu değil). Diğer gemilerin eski yama imzaları korunur. Koyu meşe düşük doygunluk, yeni tahta yalnız biraz daha açık (turuncu değil); bakır mat kahverengi-yeşil (parlak cyan değil). Tüm gemilere aynı renkleri/süsleri zorunlu kılma.
+7. SC-16 özel örneği: altı açık güverte topu, üçer bordada; tek direk, gaff ana yelken, küçük üst kare, üçgen flok, civadra, direkli korkuluk, tahta güverte, tek merkezî kapak, iki düz halat spirali başa yakın simetrik yerleşimde, kıç tiller/dümen. S ve N'de bobinlerin fiziksel konumu korunur, yalnız referans doğal olarak gösteriyorsa görünür. Dar üst borda tahtasında 2–3 kavisli diş izi grubu, tamir edilmiş ve küçük mat bakır kuşakla destekli; dikdörtgen yama paneli değil. Küçük simetrik ahşap yaratık çenesi mevcut sanatsal imza; gerçek büyük av trofesi değil. Bu örneğin geometrisi diğer gemilere genellenmez.
+8. Üç çıktıyı seçerken baş/kıç şekli, yön projeksiyonu ve ortak gövde boyu, yelken biçimleri/yükseklikleri, altı vb. doğru fiziksel silah toplamı, paired ekipman sürekliliği, atlas tonuna uyum, kopyalanmış yama/desen ve alfa ayrımını kontrol et. Aynı gövdeyi ve okunur silueti koruyan aday öncelikli. Sadece doğrulanmış ihtiyaç için upscale/warp; manuel hizalama ve canlı montaj QA korunur. SC-16 ilk sonuç `127743.png` tasarım açısından umut verici fakat S kıç, W basıklığı, bobin/yelken sürekliliği ve açık ton nedeniyle final kabulü değildir. Yeni atlas ve kısa prompt ile yeniden üretim beklenir.
