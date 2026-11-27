@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Stage only approved 4×2 runtime atlases, never the source boards."""
 import argparse
+import hashlib
+import json
 import math
 import re
 import struct
@@ -27,6 +29,36 @@ ORDER = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 # Canonical runtime cells always point along their world heading.
 SOURCE_HEADING_OFFSET = {"SC-01": 4, "SC-04": 4}
 PNG = b"\x89PNG\r\n\x1a\n"
+
+
+def validate_embedded_mounts(z, ship, atlas_source, cell):
+    """New packages bind mount data to the exact authored atlas; legacy stays readable."""
+    names = z.namelist()
+    if "manifest.json" not in names:
+        return
+    m = json.loads(z.read("manifest.json"))
+    if m.get("package_format") != "seacraft-atlas-mounts-v2":
+        if "mounts.json" in names:
+            raise ValueError(f"{ship}: unbound mounts.json")
+        return
+    if len(names) != 5 or len(set(names)) != 5 or set(names) != set(m["package_members"]):
+        raise ValueError(f"{ship}: invalid v2 archive members")
+    if m["ship_id"] != ship or m["runtime_atlas"] != atlas_source or m["cell_px"] != cell or m["direction_order"] != list(ORDER):
+        raise ValueError(f"{ship}: atlas metadata mismatch")
+    b = m["mounts"]
+    if b["file"] != "mounts.json" or b["location"] != "inside_archive":
+        raise ValueError(f"{ship}: mounts must be embedded")
+    atlas_hash = hashlib.sha256(z.read(atlas_source)).hexdigest()
+    raw = z.read("mounts.json")
+    if atlas_hash != m["runtime_atlas_sha256"] or atlas_hash != b["atlas_sha256"] or hashlib.sha256(raw).hexdigest() != b["sha256"]:
+        raise ValueError(f"{ship}: atlas/mount checksum mismatch")
+    data = json.loads(raw)
+    mounts = data["mounts"]
+    if data["frames"] != m["alignment"] or mounts["schema"] != "seacraft-mounts-v1" or set(mounts["frames"]) != set(ORDER):
+        raise ValueError(f"{ship}: mount schema/alignment mismatch")
+    if sum(len(v) for v in mounts["frames"].values()) != b["count"]:
+        raise ValueError(f"{ship}: mount count mismatch")
+    print(f"VISUAL_PILOT_MOUNTS_OK ship={ship} count={b['count']}")
 
 
 def stage(ship, archive):
@@ -79,6 +111,7 @@ def stage(ship, archive):
             for index, frame in enumerate(frames):
                 atlas.paste(frame, ((index % 4) * cell, (index // 4) * cell))
             atlas_source = "approved_aligned_frames"
+        validate_embedded_mounts(z, ship, atlas_source, cell)
         # Preserve authored final cells. Legacy 1024 masters are kept intact,
         # rather than misinterpreting the visible hull pixel goal as cell size.
         runtime_cell = cell
