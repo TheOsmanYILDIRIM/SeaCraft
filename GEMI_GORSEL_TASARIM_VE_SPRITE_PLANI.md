@@ -197,10 +197,10 @@ Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final
 | Muzzle flash | Hayır | 1–3 kare ortak VFX; delik katmanına göre occlusion. |
 | Hit reaction | Hayır | Yerel shader kararması ve kısa kıymık/splash; gövde sıçramaz. |
 | Smoke | Hayır | Düşük alfa kısa döngü/partikül; filo üstünde spawn bütçesi. |
-| Fire | Hayır | Ayrı muted amber VFX, slotlara bağlı; halo yok. |
+| Fire | Hayır | Ayrı muted amber VFX, uygun gövde/güverte bölgelerinden otomatik; elle slot zorunlu değil; halo yok. |
 | Damaged state | Hayır | Decal/maske, yalnız SC-08 ve SC-14 için tam pakette ayrı H atlası. |
 | Sinking | Hayır | Su hattı maskesi, lokal eğim, enkaz; seçili 3 türde ayrıca S atlası. |
-| Repair effect | Hayır | Tamir soketinde kıvılcım/halat/simge, ayrı VFX. |
+| Repair effect | Hayır | Gövde merkezi çevresinde ayrı VFX; özel tamir soketi isteğe bağlı. |
 | Boarding state | Hayır | Kanca uçları arasında runtime halat, varsa tabla overlay, gövde tekrar çizilmez. |
 | Buff/debuff | Hayır | Yüzeyde maske/decal ve küçük biçim kodlu simge; sadece renge güvenme. |
 | Shadow | Hayır | Su hattı merkezli yumuşak parametrik gölge. |
@@ -234,7 +234,7 @@ Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final
 | Önce 4 yön → kalanlar | Tek başına yeterli değil; N/S ayrı olduğu için 5 özgün görünüş gerekir. 5+3 yatay yansıma yalnız simetri ve dönüş QA ile kabul edilir. |
 | Orthographic concept → yönler → atlas | İstisnai kurtarma hattı; yeni varsayılan gemiye özel parametrik CD → tek GPT Image pano → harici montaj. |
 
-1. Gövde başına **1 concept sheet**: top plan, iskele/sancak profil, baş/kıç; L/B, su hattı/pivot, ayrı numaralı mast-kumaş-port/soket listesi, asimetri, renk ve trim. GPT Image konsepti ölçü kılavuzu olarak önerir; çizgi/ölçü elle düzeltilir. Aynı kamera altında sekiz projeksiyon bloğu bu kılavuzdan hazırlanır; gerekirse kaba 3D proxy yalnız referans, oyun varlığı değil.
+1. Kanonik gemi fişi ve parametrik 3D referans zorunlu; **ayrı concept sheet yalnız gerektiğinde**: top plan, iskele/sancak profil, baş/kıç; L/B, su hattı/pivot, ayrı numaralı mast-kumaş-port/soket listesi, asimetri, renk ve trim. GPT Image konsepti ölçü kılavuzu olarak önerir; çizgi/ölçü elle düzeltilir. Aynı kamera altında sekiz projeksiyon bloğu bu kılavuzdan hazırlanır; gerekirse kaba 3D proxy yalnız referans, oyun varlığı değil.
 2. Simetrik gemilerde kanonik kimlik + gemiye özel birleşik renksiz parametrik CD + orijinal malzeme atlasıyla doğrudan tek beş görünüşlü kare kaynak üret. Renk kodlu CD yalnız ihtiyaçta yardımcı referanstır; ayrı arma görselleri varsayılan değildir. Güncel Ship Builder ve prompt sözleşmesi [üretim rehberi §22](GEMI_SPRITE_URETIM_REHBERI.md#22-gemiye-özel-parametrik-ship-builder--2026-11-27-güncel-varsayılan). Tekil concept/NE hero gerektiğinde yardımcıdır, zorunlu ikinci üretim değildir. Asimetrik istisnada ayrı sekiz yön yöntemi kullanılabilir. E/W port ve uzunluk; N/S pruva/kıç kütlesi; çaprazlarda yelken occlusion kontrol edilir. Farklı mast sayısı, bez kesiti, port, kamera veya tarafa yanlış düşen kargoda geçersiz kaynak düzeltilir. Sabit metre/px ilişkisi; hücreye ayrı fit yok. H/S ancak ana sekiz oyun yönü geçince türetilir.
 3. Modelin gerçek alfa desteği varsa şeffaf PNG iste; yoksa düz tek renk matte üstünde tek gemi, dış işlemle temiz alfa. Boyanmış dama/pus gerçek alfa değildir. Kenardaki halat/metal/delikler matte testinden geçer, kırpılmış parça kabul edilmez. Source çözünürlüğü normalize edilir; montaj, yön sırası ve padding harici yapılır. Modelin poz ölçüsünü veya sürümün şeffaflık özelliğini varsayma. [OpenAI Image generation kılavuzu](https://developers.openai.com/api/docs/guides/image-generation).
 4. Sırayla concept fizik/ölçü, NE malzeme, iki borda parça kimliği, baş/kıç düşey okuma, tam atlas, alfa/pivot/soket, 360° önizleme ve Android düşük zoom. Çalışma kaydında model/ayar, revizyon, referansın kaynağı ve haklar; dosya kimliği ör. `SC-02_base_NE.png`, `SC-02_base_atlas.png`. Dilim (minimum/tam) paketinden bağımsız aynı varlık adı ve cell standardı.
@@ -243,7 +243,7 @@ Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final
 
 > One isolated SeaCraft vessel, [ship ID/class], same vessel as attached orthographic reference and NE hero. Lock [L/B, waterline and bow/stern], [exact deck and mast IDs], [sail shapes, cloth and attachment points], [port/starboard port and weapon layout], [fixed silhouette and asymmetry]. Rotate ship in yaw only to [target heading and blockout]. Orthographic, 55° above horizontal, roll zero, fixed upper-left broad cold light. Real wet timber, aged rope, oxidized metal, heavy muted sailcloth, [muted palette and restrained eerie motif]. Match [waterline pivot, calibrated E/W length, attachment landmarks]. Render one full object, isolated, true transparent RGBA when supported. No sea, sky, halo, haze, foam, wake, cast shadow, grid, text, extra masts or ports. Natural occlusion. State [base/H/S]: only [approved structural delta]; follow [ship-specific negative constraints].
 
-Fişten rol ve sabit geometriler, yelken/port sayıları ve biçimleri, taraf kimliği, palet, motif, özel negatifler; matristen boy ve hücre; concept’ten kayıt noktası alınır. “Aynı seed” ölçü kontrolünün yerine geçmez.
+Yeni varsayılan genel prompt ve montaj sözleşmesi [üretim rehberi §24](GEMI_SPRITE_URETIM_REHBERI.md). Fişten rol ve sabit geometriler, yelken/port sayıları ve biçimleri, taraf kimliği, palet, motif, özel negatifler; matristen boy ve hücre; concept’ten kayıt noktası alınır. “Aynı seed” ölçü kontrolünün yerine geçmez.
 
 ## 9. Üretim hesabı
 
@@ -313,7 +313,7 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 
 ## GPT IMAGE PRODUCTION ORDER
 
-Üretim önceliği aşağıdaki roster sırasıdır; mevcut kabul edilmiş paketler tekrar üretilmez. Yeni simetrik base gövdelerde **CD 5 özgün görünüş → 3 yatay yansıma → 8 yön QA → final paket**; asimetrik istisnada concept/NE hero ve ayrı sekiz yön kullanılabilir. Atlas sırası değişmez: **N, NE, E, SE / S, SW, W, NW**. Minimum/tam kapsamı ve oyun geliştirme kabul kapıları ayrıdır.
+Üretim önceliği aşağıdaki roster sırasıdır; mevcut kabul edilmiş paketler tekrar üretilmez. Yeni simetrik base gövdelerde **CD 5 özgün görünüş → 5 yön hizalama/montaj ve canlı efekt QA → 3 otomatik yatay yansıma → 8 yön QA → final paket + ayrı montaj JSON**; asimetrik istisnada concept/NE hero ve ayrı sekiz yön kullanılabilir. Atlas sırası değişmez: **N, NE, E, SE / S, SW, W, NW**. Minimum/tam kapsamı ve oyun geliştirme kabul kapıları ayrıdır.
 
 | Sıra | Gemi | Önce concept/NE’de kilitlenecek şekil | 8-yön teslim kapısı |
 |---:|---|---|---|
@@ -343,3 +343,9 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 ## 2026-11-27 — Gemiye özel parametrik referans ve NPC sanat kimliği
 
 - Tek parametrik Ship Builder ile gövde, arma, port ve donanım aynı fiziksel modelde birleştirilir; 15 gemi bağımsız mesh değil düzenlenebilir reçetedir. 3D yalnız referans; runtime 2D kalır. İki görsel varsayılan: renksiz gemiye özel CD + orijinal malzeme atlası. Renkli CD yalnız gerektiğinde; ortak yanlış gövde/ayrı arma görselleri zorunlu değil. İlk SC-02 tek üretim kullanıcı tarafından görsel olarak beğenildi; final sprite QA ayrıdır. NPC sınıfları için kısa işlevsel geçmiş, 2–3 okunaklı imza, doğal ve ölçülü ayrıntı; yaygın sınıfı boss gibi benzersizleştirme. Kanonik gemi fişleri ve eski onaylı oyun paketleri korunur. Ayrıntı ve hazır iki referanslı SC-02 promptu: [üretim rehberi §22](GEMI_SPRITE_URETIM_REHBERI.md#22-gemiye-özel-parametrik-ship-builder--2026-11-27-güncel-varsayılan).
+
+## 2026-11-27 — Dinamik arma ve montaj kabulü (güncel)
+
+- [Kanonik üretim rehberi §24](GEMI_SPRITE_URETIM_REHBERI.md) ve [HTML v6](tools/sprite_manual_aligner_template.html): beş özgün yönde hizalama ve montaj; diğer üçü otomatik yansır. Asimetrik gemilerde sekiz bağımsız yön. Her yeni gemide top ağız/yön, ön/arka efekt katmanı, uygun bayrak/flama noktaları, görünür yelken UV yüzeyleri, gerekiyorsa örtüşme maskeleri, baş/kıç su hattı canlı önizlemede kontrol edilir. Yangın/hasar/tamir için elle ayrı nokta zorunlu değildir. 12 dosya ana sprite ZIP'i korunur; montaj JSON ayrı üretim girdisidir.
+- GPT Image ana sprite'ına faction arması, sancak/flama kumaşı veya efekt basılmaz; mast ve bağlantı yüzeyleri hazır, kumaş nötr. Kalıcı sınıf imzası (ör. SC-02 kül grisi onarım yaması ve mavi şerit) kalır. Flama ince, sancak daha geniş ve genelde kıçta, yelken arması bağımsız UV katman. Düz şeffaf PNG, tüm uygun şablonlarda tekrar kullanılabilir. Öncelik mobil performans ve modülerlik; runtime paylaşılan cache/atlas veya GPU shader, her kare yeniden hesaplama yok.
+- SC-02 kullanıcı montajı tamamlandı: [62 montajlı son JSON](SC02_montaj_guncel.json), GUN-61 SE/SW arka katman. Onaylı koordinatlar yeniden elle düzenlenmez. Eski runtime ZIP'i değiştirilmedi; yeni runtime entegrasyonu ve cihaz kabulü ayrı.

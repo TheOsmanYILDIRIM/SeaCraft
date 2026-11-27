@@ -2,6 +2,8 @@
 
 **Güncel geliştirme sırası:** `GELISTIRME_GOREV_PLANI.md` PLAY-01…10; önce 15 dakikalık surface oynanış. PRG-06 pilotu korunmuş fakat ileri içerik askıda. CI teknik kabul, cihaz oynanış kabulü ayrıdır.
 
+**Güncel gemi hazırlama:** [Beş yönlü montaj/hizalama HTML v6](tools/sprite_manual_aligner_template.html) · [SC-02 montaj JSON](SC02_montaj_guncel.json) · üretim rehberi §24 (iki referans, dinamik arma, canlı efekt QA).
+
 **Görsel üretim:** [Gemi tasarım planı](GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md) · [Gemi üretim rehberi](GEMI_SPRITE_URETIM_REHBERI.md) · [Canavar tasarım planı](CANAVAR_GORSEL_TASARIM_VE_SPRITE_PLANI.md) · [Canavar üretim rehberi](CANAVAR_SPRITE_URETIM_REHBERI.md). Canavar belgeleri tasarım sözleşmesidir; runtime ilerleme sırasını değiştirmez.
 
 Godot **4.7.2-stable** foundation for an offline-first 2D/2.5D maritime game targeting desktop and Android.

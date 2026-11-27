@@ -2,7 +2,7 @@
 
 Bu belge, `GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md` içindeki kanonik kuralları değiştirmez. Amaç, SC-02 · Kül Dikişi pilot üretiminde fiilen çalışan görsel üretim hattını ve tekrar edilmemesi gereken hataları operasyonel bir rehber olarak kaydetmektir.
 
-**Güncel üretim ve prompt varsayılanı: [§22 Gemiye özel parametrik Ship Builder](#22-gemiye-özel-parametrik-ship-builder--2026-11-27-güncel-varsayılan).** Önceki tek yön ve ortak proxy yöntemleri tarihsel/istisnai kurtarma yöntemleridir.
+**Güncel üretim, montaj ve prompt varsayılanı: §24 (son bölüm); parametrik referans §22, HTML v6.** Önceki tek yön ve ortak proxy yöntemleri tarihsel/istisnai kurtarma yöntemleridir.
 
 ## 1. Başlangıç: önce kimlik, sonra çok yönlü kamera referansı
 
@@ -307,7 +307,7 @@ GIF önizleme için şeffaf palet güvenilir değildir; istemciye göre siyahla�
   6. dönüş önizlemesi
 - Final onay, tek kare güzelliğiyle değil sekiz karenin **aynı fiziksel gemi** gibi dönmesiyle verilir.
 
-## 10. Önerilen sonraki gemi akışı
+## 10. Tarihsel çok-istekli gemi akışı (istisna; güncel §24)
 
 ```text
 A. master concept + pivot/waterline işareti
@@ -322,12 +322,12 @@ I. contact-sheet + rotation preview
 J. final 4×2 atlas ve Android düşük-zoom kontrolü
 ```
 
-Bu hat, SC-02 pilotunda yaşanan kamera, ölçek, renk ve merkezleme tekrarlarını azaltmak için sonraki tüm gemilerde varsayılan üretim prosedürüdür.
+Bu tarihsel hat yalnız tek pano üretimi başarısız olduğunda istisnai kurtarma yöntemidir; güncel varsayılan §24.
 
 
-## 11. Mobil manuel hizalama aracı — isteğe bağlı QA/debug
+## 11. Tarihsel mobil hizalama (güncel montaj aracı §24)
 
-Kanonik üretim akışı artık manuel hizalama gerektirmez. `tools/sprite_normalize.py` içindeki su/gövde support-anchor sistemi varsayılan final hizalamayı üretir. Mobil manuel araç yalnız görsel QA, hata ayıklama veya olağan dışı bir gemide birkaç piksellik residual ince ayar gerektiğinde kullanılır:
+Otomatik support-anchor ile geometrik residual düzeltme gerekmezse manuel hizalama yapılmaz; yeni gemilerde montaj kontrolü §24 uyarınca zorunludur. `tools/sprite_normalize.py` içindeki su/gövde support-anchor sistemi varsayılan final hizalamayı üretir. Mobil manuel araç yalnız görsel QA, hata ayıklama veya olağan dışı bir gemide birkaç piksellik residual ince ayar gerektiğinde kullanılır:
 
 `tools/sprite_manual_aligner_template.html`
 
@@ -349,7 +349,7 @@ Kullanım kuralı:
 - kaydedilen JSON = yalnız manuel araca gerçekten başvurulduysa yeniden üretilebilir düzeltme kaydı
 - PNG'lerdeki ölçek ve LUT işlemleri HTML'e girmeden önce tamamlanmış olmalı
 
-SC-02 manuel pilot tarihsel bir ara adımdır. SC-03 doğrulamasından sonra normal üretimde her gemi için manuel işaretleme veya manuel X/Y/scale ayarı zorunlu değildir.
+SC-02 eski hizalama pilotu tarihsel ara adımdır. Yeni montaj işaretleri ile gerekli olmayan X/Y/scale düzeltmeleri ayrı değerlendirilir (§24).
 
 
 ## 12. Kanonik otomatik normalizasyon aracı
@@ -418,7 +418,7 @@ Yalnız QA'da belirgin residual sıçrama görülürse isteğe bağlı olarak `t
 
 SC-03 sırasında tespit edilen kritik hata: normalize edilmiş kareler 1024×1024 olsa bile negatif compositing offset alfa içeriğini tuval dışında bırakabiliyordu. Kare dosya olmak tek başına kırpılmadığı anlamına gelmez. Bu nedenle `compose_no_crop()` güvenlik kapısı kanonik aracın zorunlu parçasıdır.
 
-## 13. Manuel hizalama template'i — isteğe bağlı tek QA aracı
+## 13. Tarihsel manuel hizalama template sözleşmesi (güncel §24)
 
 Manuel müdahale gerekirse kullanılacak tek HTML:
 
@@ -439,7 +439,7 @@ Template kuralları:
 - final 4×2 atlas dışa aktarır;
 - kaynak alfa ekran kenarına değiyorsa `KAYNAK KENARA DEĞİYOR` uyarısı verir. Bu uyarı HTML'in kırptığı anlamına gelmez; PNG'nin kendisinin daha önce kesilmiş olabileceğini bildirir.
 
-**Kural:** Normal üretimde HTML açmak zorunlu değildir. Manuel QA gerekirse gemiden gemiye yeni HTML üretme; yalnız bu tek template'i kullan/geliştir ve GitHub'daki dosyayı güncelle.
+**Güncel kural:** Yeni gemide HTML montaj QA zorunlu; hizalama düzeltmesi yalnız gerektiğinde. Tek genel template güncellenir; gemiye özel gömülü HTML aynı template'ten hazırlanabilir (§24).
 
 
 ## 14. Su temaslı destek anchor sistemi
@@ -765,7 +765,7 @@ Konum adı ile oyun heading adını karıştırma; her kaynakta pruva/dümen üz
 ### Referans üretimi ve yükleme
 
 - Tek parametrik Three.js gövde motoru; 6 pruva + 6 kıç profili, 21 arma, bağımsız top portları, 18 dekorasyon modülü, 15 düzenlenebilir gemi reçetesi. Gemiye özel gövde/arma/donanım montajı aynı fiziksel modelden render edilir. Bunlar **oyun içi 3D modeller değil**, GPT Image için geometrik kılavuzlardır. Reçeteyi kanonik gemi fişine göre kontrol et, gerekirse düzenle ve JSON sakla. SC-15 ve tek taraflı montajlar için sekiz bağımsız yön.
-- Ship Builder v0.5 kaynak ve çevrimdışı HTML arşivi: `SeaCraft_ShipBuilder_v0.5_SOURCE.zip` (repo köküne kullanıcı yüklemesi bekleniyor; henüz GitHub'da doğrulanmadı). SHA-256 `d88b4d1be9be84e66377827760f86266cc17f01a676ca987e69549c5932a8257`. Arşivi aç, `SeaCraft_ShipBuilder_v05/offline.html` çalıştır. Kaynak modülleri, Three.js MIT lisansı, worker, testler ve SC-02 pilotu içeride; tekrar üretim README'de. Üretilmiş filo GLB/PNG'leri arşiv boyutunu azaltmak için çıkarıldı (SC-02 PNG'leri korunur). Android gerçek cihaz testi yapılmadı. V0.5 önizleme Web Worker'da, final referans 2048²; renkli/renksiz aynı yerleşim.
+- Ship Builder v0.5 kaynak ve çevrimdışı HTML arşivi: `SeaCraft_ShipBuilder_v0.5_SOURCE.zip` (repo kökünde doğrulandı; Git blob 329a55fcd2dd2f16363085df8445b1ca7ecbafbe). SHA-256 `d88b4d1be9be84e66377827760f86266cc17f01a676ca987e69549c5932a8257`. Arşivi aç, `SeaCraft_ShipBuilder_v05/offline.html` çalıştır. Kaynak modülleri, Three.js MIT lisansı, worker, testler ve SC-02 pilotu içeride; tekrar üretim README'de. Üretilmiş filo GLB/PNG'leri arşiv boyutunu azaltmak için çıkarıldı (SC-02 PNG'leri korunur). Android gerçek cihaz testi yapılmadı. V0.5 önizleme Web Worker'da, final referans 2048²; renkli/renksiz aynı yerleşim.
 - **Varsayılan yalnız iki görsel:** (1) gemiye özel renksiz CD (`clay.png` veya HTML'den renksiz PNG), fiziksel yapı/kamera/yerleşim için; (2) orijinal `SeaCraft_texture_atlas_source.png`, malzeme ve sanat dili için. Renk kodlu CD **zorunlu değildir**; yalnız karmaşık/asimetrik geometride parça veya yön karışıklığı görülürse üçüncü yardımcı ref olarak eklenir ve promptta doğru numarası belirtilir; tanısal renkler sanata geçmez. Arma artık birleşik modelde olduğundan ayrı yelken görselleri ve başka geminin proxy'si varsayılan olarak yüklenmez.
 - Tek istek, tek kare, simetrik gemide 5 yön (üst sol SE, üst orta S, sağ orta W, alt sol NE, alt orta N); 55° true orthographic, zero roll, ortak fiziksel ölçek, içe bakan pruvalar, temassız ve kırpılmamış silüetler. Asimetride 8 yönü açıkça iste, yansıtma yapma.
 - Önce bir çıktı üret. Başarılıysa gereksiz varyant isteme. 3D kılavuzun sade render estetiği kopyalanmaz; geometri korunarak gerçekçi ahşap işçiliği, bez ve metal detayları sanat aşamasında eklenir.
@@ -793,7 +793,7 @@ REFERENCE 2 — ORIGINAL SEACRAFT MATERIAL ATLAS
 Authoritative wood, metal, sailcloth, rope, texture density, palette, brightness and surface finish.
 
 PHYSICAL STRUCTURE
-One slender low wooden hull, exactly one mast, one four-sided aft gaff mainsail, one narrow triangular forward jib, four exposed deck cannons in two symmetric broadside pairs. Modest functional deck equipment as in the reference. No enclosed gun deck or cannon ports. Preserve gaff, boom and jib geometry; restrained functional rigging. No flag fabric; masthead ready for a separate animated pennant.
+One slender low wooden hull, exactly one mast, one four-sided aft gaff mainsail, one narrow triangular forward jib, four exposed deck cannons in two symmetric broadside pairs. Modest functional deck equipment as in the reference. No enclosed gun deck or cannon ports. Preserve gaff, boom and jib geometry; restrained functional rigging. No flag fabric or faction emblems on sails; masthead ready for a separate animated pennant. Keep the permanent ash-gray repair patch.
 
 ART DIRECTION
 Aged dark oak, weathered linen, oxidized iron, subtle ash-blue accents and believable craftsmanship. Balanced neutral illumination, natural material brightness and subtle contact shadows consistent with the atlas. Avoid exaggerated ambient occlusion, weathering, gloss, clutter, excessive ropes and oversized ornaments. Recognizable at small gameplay scale.
@@ -815,13 +815,13 @@ REFERENCE UPLOAD ORDER
 Kullanıcı tek GPT Image üretiminde renkli CD vermeden başarılı görsel elde etti ve görsel sonucu beğendi. Kaynak `127644.png`, 1254×1254 RGBA, SHA-256 `8ff45ad0a102510dd74e755da3904730ead84e6d74d8f84fd64a1ca9774704ed`; kaynak arşivinde `pilot/SC-02_GPT_Image_first_pass.png`. Alfa>127 ile beş büyük bağımsız bileşen, yaklaşık %28,08 doluluk; küçük kopuk alfa pikselleri mevcut. Tek direk/gaff/flok, açık dört top düzeni, mavi şerit, onarım yaması, pruva ve kıç okunabilir. Yama ayrıntısında küçük farklar ve N/S tam-alfa bbox yükseklikleri 564/641 px; bbox tek başına su hattı ölçeği kanıtı değildir. Ortak gövde uzunluğu, pivot, alfa kenarı, küçük oyun ölçeği ve 8 yön dönüş QA henüz geçilmedi. Önce ölç; gerekiyorsa düzelt; sırf eski işlem hattı var diye otomatik büyütme, beam/warp, N-LUT veya ShowLook uygulama. Renk ve boyut zaten kabul sınırındaysa geometriyi/renkleri koruyarak normalizasyon/montaj yap; kaynak çözünürlüğü yetersizse mevcut upscale kapısı geçerlidir. Görsel kaynak beğenisi final oyun paketi kabulü değildir. Mevcut onaylı SC-02 ZIP korunur.
 
 
-## 23. Sprite hizalama + montaj ve canlı efekt kontrolü — 2026-11-27
+## 23. Sprite hizalama + montaj ve canlı efekt kontrolü — önceki sürüm (güncel §24)
 
 **Kanonik araç:** [tools/sprite_manual_aligner_template.html](tools/sprite_manual_aligner_template.html). Tek dosya, çevrimdışı, harici bağımlılık yok. Önceki 8 PNG / yön / x-y-scale / ghost / dönüş / JSON / atlas işlevleri korunur; SC-11 yerel pilotunun bağımsız viewport zoom/pan, yerel beam, fırça warp ve Puppet Warp yetenekleri taşındı. Yeni gemi için kaynaklar aynı 1024 master koordinat sisteminde hazırlanır, tek dünya ölçeği korunur. Her gemi için bağımsız fit yapılmaz. Yeni üretimde kullanıcıya 8 kaynak PNG gömülü aynı şablon verilebilir; generik repo şablonu gemi PNG'si içermez.
 
 ### Montaj iş akışı
 
-- Montaj ve hizalama sekmeleri aynı tuvali kullanır. Önce kaynakları yükle, yönü seç, gerektiğinde hizala. Montaj sekmesinde varsayılan Seç/taşı modudur. Mevcut noktayı tutup sürükle; boş alanda görünüm kaydırılır, iki parmakla yakınlaştırılır. Yeni parça yalnız tür seçilip + Ekle'ye basıldığında oluşturulur; gereken noktalar tamamlanınca otomatik seç/taşı moduna dönülür. Nokta türleri: **top namlusu** iki nokta (ağız, görsel ateş yönü); **flama/sancak** iki nokta (montaj, kumaşın yönü ve uzunluğu); **yelken** dört köşe (üst sol, üst sağ, alt sağ, alt sol), üçgen flok için üç köşe (tepe ve taban köşeleri); pruva, kıç, yangın, tamir, pivot ve su hattı tek nokta. Parça ID'sini yönler arasında sabit tut; iskele/sancak kimliklerini doğrula. Örtülü top görünürmüş gibi işaretlenmez; gizli olarak kaydet veya ilgili görünüşte atla.
+- Montaj ve hizalama sekmeleri aynı tuvali kullanır. Önce kaynakları yükle, yönü seç, gerektiğinde hizala. Montaj sekmesinde varsayılan Seç/taşı modudur. Mevcut noktayı tutup sürükle; boş alanda görünüm kaydırılır, iki parmakla yakınlaştırılır. Yeni parça yalnız tür seçilip + Ekle'ye basıldığında oluşturulur; gereken noktalar tamamlanınca otomatik seç/taşı moduna dönülür. Nokta türleri: **top namlusu** iki nokta (ağız, görsel ateş yönü); **flama/sancak** iki nokta (montaj, kumaşın yönü ve uzunluğu); **yelken** dört köşe (üst sol, üst sağ, alt sağ, alt sol), üçgen flok için üç köşe (tepe ve taban köşeleri); pruva, kıç, yangın, tamir, pivot ve su hattı tek nokta. Parça ID'sini yönler arasında sabit tut; iskele/sancak kimliklerini doğrula. Örtülü top için güncel §24'teki arka katman kullanılmalı; hidden yalnız devre dışı bırakma içindir.
 - Parça listesi: ID düzenleme, gizle/göster, Tek nokta veya Tüm parça modunda doğrudan sürükleme (maske köşeleri de taşınabilir), silme, istenirse karşı yön yansıtma. Ayna işlemi yalnız gerçek simetrik kaynaklarda; N/S ayrı, asimetrik gemide otomatik ayna kullanılmaz. Ayna geometrisinin ve top taraflarının gerçek kaynak üzerinde gözle QA'sı zorunlu.
 - Şeffaf arma PNG yükle; aynı resim her tanımlı yüzeye UV eşlemesiyle uyarlanır. Yelken maske + ile seçili yelken üzerinde dört köşeli dışlama alanı ekle (halat, direk vb.); mevcut luminans/alfa otomatik maskesi yalnız sezgiseldir. Flama/sancak ve yelken arması bağımsız, flama için 60, yelken için 24 fazlı önbellekli preview; seçili parçanın arma boyutu ve kumaş rengi ayrı. PNG dosyası kullanıcı tarafından seçilir, JSON içine gömülmez. Top testinde tek seçili veya tüm görünür namlulara namlu parlaması/duman/mermi görseli; pruva/kıç ve diğer efektler yerleşim göstergesi. Noktalar ve efektler bağımsız kapatılabilir.
 - Arayüz Montaj / Hizalama / Dosya olarak ayrılır; arma ve maske ayrıntıları katlanır. Dönüş kontrolü her sekmede erişilebilir, 6–60 yön FPS seçeneği ve canlı efekt FPS göstergesi vardır. Nokta sürüklemede render requestAnimationFrame ile birleştirilir, ana tuval/arka plan gereksiz yeniden çizilmez; sürüklenen yelkenin pahalı UV cache güncellemesi bırakınca yapılır. Mobil boyutlu Chromium'da tek nokta ve tüm parça taşıma, dokunmatik sürükleme, ekleme sonrası seç/taşı, JSON ve sekme testleri geçti; efekt çizimi yaklaşık 60 FPS ölçüldü. Bu fiziksel cihaz performansı veya 60 FPS garantisi değildir. Animasyon overlay canvas'ta; ana sprite/warp canvas'ı hareketli efekt için yeniden çizilmez. UV katmanı değişiklikte hazırlanır, tekrar çizimde hazır faz seçilir. Runtime için öneri ortak gemi sınıfı × arma cache/atlası veya shader; bu HTML önizleme motoru Godot'a entegre değildir. Tarayıcıda gerçek PNG yükleme, 8 yön, animasyon/ana tuval ayrımı, manuel maske, ayna, eski JSON, pin kaynak↔hedef dönüşümü ve 4096×2048 ana atlas dışa aktarımı test edildi. Test fiziksel Android/Godot performansı değildir. Tam gemi/halat derinlik örtüşmesi ve fizik kumaş simülasyonu yok.
@@ -830,4 +830,81 @@ Kullanıcı tek GPT Image üretiminde renkli CD vermeden başarılı görsel eld
 
 - Normal `sprite_manual_alignment.json` eski `fps, frames` alanlarını korur; ek `mounts` nesnesi aynı kayıtla taşınır. Ayrı `sprite_mounts.json` da çıkar/geri yüklenir.
 - `schema: seacraft-mounts-v1`, `space: source-local-1024-centered`, `aligned_space: cell-1024-top-left`. `frames[N|NE|E|SE|S|SW|W|NW]` bir parça dizisidir. Her parçada `id, kind, p, hidden, mirror, size, color, masks, aligned, aligned_masks`. `p` kaynak, `aligned` son hücre koordinatlarıdır; x/y/scale, yerel beam ve ters warp/pin alanından hesaplanır. Yön oku için ikinci nokta kullanılır; son hücre C ise koordinatı C/1024 ile dönüştür. Kaynak PNG seti ve yön etiketleriyle bağlıdır. Kullanıcı JSON'u final onay girdisi; son hizalama/warp sonrasında JSON'u yeniden çıkar. Yeni gemi sprite kaynağı değişirse eski koordinatları doğrulamadan kullanma.
-- Ana atlas efektleri ve işaretleri içermez. Eski oyun ZIP'i/atlas düzeni değiştirilmez; montaj JSON'u ek geliştirme/entegrasyon girdisi olarak ayrı tutulur. Runtime tüketicisi ve paket sözleşmesi uyarlaması ayrı bir iş. Kullanıcı SC-02 için başlangıç işaretlerini görsel olarak doğrulamalı; görünmeyen yelken yüzeyleri için arma çizilmez. Bu karar mevcut PLAY-01 veya Godot dosyalarını değiştirmez.
+- Ana atlas efektleri ve işaretleri içermez. Eski oyun ZIP'i/atlas düzeni değiştirilmez; montaj JSON'u ek geliştirme/entegrasyon girdisi olarak ayrı tutulur. Runtime tüketicisi ve paket sözleşmesi uyarlaması ayrı bir iş. SC-02 kullanıcı montajı artık §24'te kayıtlı; görünmeyen yelken yüzeyleri için arma çizilmez. Bu karar mevcut PLAY-01 veya Godot dosyalarını değiştirmez.
+
+## 24. Güncel uçtan uca üretim, montaj ve dinamik arma standardı — 2026-11-27
+
+**Bu bölüm önceki §10–13, §18, §21–23'ün çelişen iş akışlarına üstün gelir.** Geometrik düzeltme gerekmiyorsa manuel X/Y/scale/beam/warp zorunlu değildir; yeni gemilerde montaj ve canlı efekt QA zorunludur. Eski onaylı runtime ZIP'ler geriye dönük değiştirilmez.
+
+### A. Gemi üretim aşamaları (yeni varsayılan)
+
+1. Kanonik SC fişinden rol, işlevsel geçmiş, gövde oranı, mast/yelken/top sayısı, asimetri, 2–3 güçlü görsel imza ve negatif kısıtları al. Sıradan NPC sınıfı yaşayan ve bakımlı gemi görünümünde olsun; uzaktan tanınsın ama boss gibi benzersizleşmesin.
+2. Parametrik Ship Builder'da gövde, pruva/kıç, arma, top portları ve donanımı aynı fiziksel modelde kur. Halat açılırsa gerçek bağlantıları kontrol et. 55° gerçek ortografik, zero roll, ortak ölçek, kare kompakt 5 CD (asimetride 8). Renksiz gemiye özel CD ve orijinal SeaCraft malzeme atlası yeterli; renk kodlu CD yalnız karışıklık varsa. Ayrı proxy/yelken görselleri veya zorunlu concept/hero üretimi yok.
+3. Tek GPT Image isteğiyle kare kaynak pano üret. Bir başarılı üretim yeterli; önce yön, fiziksel bütünlük, görünür toplar, yelkenler, alfa, küçük ölçek okunurluğu kontrol edilir. Sonuç iyiyse gereksiz upscale, N-LUT, ShowLook, beam/warp uygulanmaz; gerçek çözünürlük ve su hattı ölçümleri yapılır. İhtiyaç varsa eski kalite kapıları korunur.
+4. Kaynağı kayıpsız koru. 5 bağımsız görünüşü ayır: üst-sol SE, üst-orta S, orta-sağ W, alt-sol NE, alt-orta N (her kaynakta pruvayı görerek doğrula). Aynı master koordinatları ve ortak ölçekle normalize et. Her görünüşü ayrı ayrı bbox-fit etme. Simetrik gemide yalnız N, NE, SE, S, W düzenlenir; E=W, SW=SE, NW=NE yatay yansımalarıdır.
+5. [Kanonik montaj/hizalama HTML v6](tools/sprite_manual_aligner_template.html) aç. Gemiye özel, beş PNG gömülü HTML teslim edilebilir; genel şablonda 5 yön PNG yükle. Asimetrik SC-15 ve gerçek farklı bordalı gemide 8 ayrı modu seç ve 8 kaynak yükle. Dönüş/ghost ile kontrol et, gerekliyse hizala. Beşli modda X ters işaret; Y, uniform scale ve beam aynı; warp x/dx, pin x/tx, montaj x, ok, maske ve iskele/sancak top ID'leri yansır. Üç türetilmiş yönü ayrıca düzenleme. 8 yön playback ve atlas daima korunur.
+6. Montaj sekmesinde seç/taşı varsayılan, + Ekle yalnız yeni parça için. Noktayı sürükle; Tek nokta/Tüm parça, boş alan pan, pinch zoom. Efektleri açık tutarak gerekli montajları aşağıdaki sözleşmeye göre onayla. Montaj JSON'unu son hizalama/warp sonrasında kaydet. Yeniden üretimde kaynak seti değişmediyse onaylı koordinatları içe aktar; kullanıcıya tekrar işaretletme.
+7. 8 yön dönüş, gerçek su hattı/pivot, alfa-0 padding, ölçülü ortak boyut ve canlı efekt QA. Ana atlası efektsiz çıkar. Son küçültme gerekiyorsa ana atlas ile tüm aligned koordinatlara aynı ortak dönüşümü uygula; yalnız C/1024 yeterli değilse pivot/öteleme de dahil et. 12 dosya oyun sprite ZIP sözleşmesi korunur; yeni montaj JSON'u ayrı zorunlu üretim sidecar'ıdır. Runtime tüketicisi ve yeni oyun entegrasyonunun kabulü ayrıca doğrulanacaktır.
+
+### B. Zorunlu ve otomatik montajlar
+
+| Tür | İşaret | QA |
+|---|---|---|
+| Ön top | 1 namlu ağzı, 2 ateş yönü | Alev/duman/mermi ön katmanda; tek top veya tüm toplar |
+| Arka top | Aynı iki nokta, görünmeyen namlunun makul projeksiyonu | Efekt gövde arkasında alpha ile örtülür; gizle ile karıştırma |
+| Flama | Direk tepesi ve uzanım yönü/uzunluğu | İnce dalgalanan kumaş; uygun gemide |
+| Sancak | Gerçek bağlanma noktası (genellikle kıç) ve uzanım | Geniş faction/klan bayrağı; isteğe bağlı, her gemide şart değil |
+| Yelken | Dört UV köşesi (üst sol → üst sağ → alt sağ → alt sol); flok için üç köşe | Tek düz şeffaf arma PNG yüzeye uyarlanır; görünmeyen/kenardan yüzeyde arma yok |
+| Maske | Yelken önündeki halat/direk için gerektiğinde dört köşeli dışlama | Arma örtüşen donanımın önüne basılmaz |
+| Baş ve kıç | Gövdenin suyla birleştiği baş/kıç noktası, civadra/direk ucu değil | Su aç/kapat, hız kontrolü, hareketli baş köpüğü ve kıç izi |
+
+Topların fiziksel kimlikleri görünüşler arasında tutarlı olmalı; simetrik yansımada PORT↔STARBOARD. Örtülü namlu da atış efekti üretir; `render_layer: "rear"` veya `"front"` (eski kayıtta alan yoksa front). `hidden` parçayı devre dışı bırakır, örtülmüş namlu demek değildir. Ön/arka seçeneği mevcut topa da uygulanabilir. Yönlere göre özel ek top gerekirse kullanıcı seçer; mevcut onaylı kayda tahmini noktalar zorla eklenmez.
+
+Yangın, hasar, tamir, büyü, batma ve temas gölgesi için her gemide ayrı elle nokta zorunlu değil: runtime'da uygun gövde/güverte bölgeleri, gerçek mermi temas noktası, destek pivotu veya su hattından otomatik hesaplanması planlanır. HTML'deki opsiyonel fire/repair/pivot/water işaretleri gelişmiş istisna/debug içindir. Bu otomatik efekt bölgeleri henüz Godot'ta uygulanmış sayılmaz.
+
+### C. Performans ve veri
+
+Öncelik mobil performans, ikinci öncelik modülerlik. Ana sprite statik, kumaş/arma/ateş/su bağımsız katman. Düz PNG arma farklı en-boy oranında yüklenebilir; şablon UV/maske bir kere tanımlanır, arma veya parametre değişince cache hazırlanır. v6 HTML: 72 bayrak fazı, 36 yelken fazı, 24 su fazı, 36 top efekti fazı; ayrı ön/arka tuval, hazır küçük animasyon kareleri. Yelken dış silueti sabit, hareket içeride; fizik kumaş simülasyonu yok. Oyun hedefi sınıf×arma×yön paylaşımlı atlas veya düşük maliyetli GPU UV shader; her gemi/her kare yeniden raster/UV hesaplama yok. HTML prototipinin faz sayıları runtime zorunluluğu değildir; cihaz bütçesine göre LOD ve cache sınırı seçilir. Godot/Android entegrasyonu ve performans henüz ayrı kabul gerektirir.
+
+JSON: `direction_mode: five|eight`, `frames` (8), `mounts.schema: seacraft-mounts-v1`, `mounts.derived: {E: W, SW: SE, NW: NE}` (five; eight'de boş), `p` merkezli 1024 kaynak koordinatı, `aligned` 1024 hücre sol-üst koordinatı, `masks/aligned_masks`, `render_layer` top için opsiyonel. Son oyun hücresine aynı final dönüşümü uygula. PNG arma dokusu JSON'a gömülmez; texture seçimi runtime'a aittir.
+
+### D. Genel GPT Image prompt omurgası (yeni gemiler)
+
+```text
+[SHIP ID — NAME / CLASS]
+Create ONE premium production-quality SeaCraft ship sprite sheet.
+STRICT 1:1 SQUARE IMAGE.
+
+IDENTITY
+[Short believable functional history and role from canonical ship sheet.]
+A lived-in, maintained, recognizable recurring NPC ship class, unless explicitly a unique canonical boss. Balance individuality and simplicity. [2–3 restrained, readable visual signatures.] Prefer readable silhouette and material masses, not excessive miniature detail.
+
+REFERENCE 1 — SHIP-SPECIFIC NEUTRAL 3D CD GUIDE
+Authoritative physical hull, proportions, mast and sail geometry, deck equipment, weapons and port positions, camera, scale and layout. Preserve exact underlying structure, refine into believable handcrafted nautical artwork, not a simplified 3D render.
+REFERENCE 2 — ORIGINAL SEACRAFT MATERIAL ATLAS
+Authoritative art direction, wood, iron, canvas, rope, palette, brightness, texture density and weathering.
+
+PHYSICAL STRUCTURE
+[Exact ship-specific mast/sail/weapon counts, important functional elements, negatives.] Preserve gaff/yard/boom/rig shapes, natural occlusion and restrained functional rigging. Leave masthead / designated flag attachment available. No flag or pennant fabric, no faction symbols, heraldic decals or painted identity emblems on sailcloth; these are independent runtime layers. Permanent class-specific repair patches, seam work, wood trim, structural carvings and neutral material coloration remain, if specified by the ship sheet. Do not invent objects or ports.
+
+ART DIRECTION
+Realistic handcrafted maritime game art, restrained historical stylization, aged wood, natural cloth, oxidized iron. Balanced neutral light, natural contact shadows, readable materials matching the atlas. No exaggerated AO, gloss, damage, ornament or clutter.
+
+FIVE-VIEW CONSISTENCY
+Exactly five complete views of ONE physical vessel: upper left SE, upper middle S, middle right W, lower left NE, lower middle N. Fixed true orthographic camera, 55° elevation, zero roll, same scale, only heading changes. Same geometry, equipment, material placement and signatures in every view. Bilateral symmetry suitable for horizontal mirroring. Maximize object coverage without touching or clipping.
+[For genuine asymmetric ships replace this paragraph with eight separate views and no mirroring; match the supplied eight-direction guide.]
+
+OUTPUT
+Transparent RGBA; no water, foam, wake, external shadows, scenery, text, labels, flag fabric, faction emblems, VFX, normal/depth maps, low-poly style or extra ships. No baked combat damage except a specifically requested canonical damage state.
+STRICT 1:1 SQUARE IMAGE.
+
+REFERENCE UPLOAD ORDER
+1. Ship-specific neutral 3D CD guide.
+2. Original SeaCraft material atlas.
+```
+
+Only if needed add diagnostic colored CD as reference 3, explicitly for continuity, not artistic colors. Promptta yüklenmeyen referanstan söz etme. Gemiye özel fişten gerekli sayılar ve işlevsel geçmiş alınır; SC-02 örneği §22'de korunur.
+
+### E. SC-02 kullanıcı montaj kabulü ve kaynak bağı
+
+[SC02_montaj_guncel.json](SC02_montaj_guncel.json) — kullanıcının son `sprite_manual_alignment (9).json` kaydından 62 montaj, 12 yön FPS, 5+3. Tüm hizalama/koordinatlar korundu; SE ve SW GUN-61 arka top olarak işaretlendi. 5 özgün kaynak 1024×1024 PNG (kullanıcının v6 SC-02 düzenleme HTML'si içinde); kaynak `127644.png` ilk üretim, §22. Bu koordinatlar eski runtime SC02 ZIP'ine doğrudan uygulanmaz. Eşleşen 5 master PNG SHA-256: N `86b1aa45f1fd9fbf0390ad3efac9d49bba2a304c5443b58fff14b80c0fe0df09`; NE `8e09fb071f2f0365a61285da1a553bc0a2b9da3f7c3834a38d889ea6081ef6fd`; SE `4a4475b7d9e59f5f353a9538944275414fb837dbbfa6e349ab0762295e834a2c`; S `661df3eb798f629371b1955524aa651fec6cf8cd376df32c442eccdc0a215735`; W `f8481a709a667999b5e3372379b6c11fff0ba2fb58c69be815ebc1ab5ac08a15`. Master PNG'ler bu commit'te ayrıca yüklenmemiştir; gömülü SC-02 HTML teslimi saklanmalıdır. Kullanıcı montajı tamamladı, tekrar işaretleme istenmez. Mobil viewport Chromium: beş PNG yükleme, 8 yön türetme, 62 kaydın kaynak/son koordinatlarının geri okunması, 12 FPS ayarı ve arka top seçim/efekt tuvali testi geçti. Final yeni oyun ZIP'i/gerçek Godot ve Android testi ayrı, henüz yapılmadı.
