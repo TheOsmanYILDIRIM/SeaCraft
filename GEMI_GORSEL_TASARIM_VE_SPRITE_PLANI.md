@@ -313,7 +313,9 @@ Minimum gövde atlasları 8 temel + SC-14 S; tam 15 temel + 2 H + 3 S. **Ortak A
 
 ## GPT IMAGE PRODUCTION ORDER
 
-Üretim önceliği aşağıdaki roster sırasıdır; mevcut kabul edilmiş paketler tekrar üretilmez. Yeni simetrik base gövdelerde **CD 5 özgün görünüş → 5 yön hizalama/montaj ve canlı efekt QA → 3 otomatik yatay yansıma → 8 yön QA → final paket + ayrı montaj JSON**; asimetrik istisnada concept/NE hero ve ayrı sekiz yön kullanılabilir. Atlas sırası değişmez: **N, NE, E, SE / S, SW, W, NW**. Minimum/tam kapsamı ve oyun geliştirme kabul kapıları ayrıdır.
+**2026-11-27 güncel üretim önceliği:** SC-14 Dip Çanı raid boss üretimi askıda; raid oynanışı yokken erken surface gemilerine öncelik ver. Mevcut SC-01/02/03/04/06/08/11 kaynak paketleri korunur. Sonraki eksik normal gemiler SC-05 (devriye), SC-07 (takip), ardından ihtiyaca göre SC-12 (konvoy), SC-09 (havan) ve SC-10 (boarding); özel mekanik gerektiren gemiler ilgili oynanış ihtiyacına bağlı. SC-13/14/15 ileri içeriktir. Roster kapsamı ve PLAY yürütme sırası değişmez.
+
+Aşağıdaki tarihsel roster sırası kapsam ve tasarım fişlerini gösterir; güncel öncelik yukarıdadır. Mevcut kabul edilmiş paketler tekrar üretilmez. Yeni simetrik base gövdelerde **CD 5 özgün görünüş → 5 yön hizalama/montaj ve canlı efekt QA → 3 otomatik yatay yansıma → 8 yön QA → final paket + ayrı montaj JSON**; asimetrik istisnada concept/NE hero ve ayrı sekiz yön kullanılabilir. Atlas sırası değişmez: **N, NE, E, SE / S, SW, W, NW**. Minimum/tam kapsamı ve oyun geliştirme kabul kapıları ayrıdır.
 
 | Sıra | Gemi | Önce concept/NE’de kilitlenecek şekil | 8-yön teslim kapısı |
 |---:|---|---|---|
