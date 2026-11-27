@@ -620,15 +620,14 @@ Normalize aracının otomatik anchor sonucu **nihai gerçek kabul değildir**; r
 
 ### Final ZIP sözleşmesi
 
-Kullanıcıya verilen final gemi ZIP'i yalnız şu teslim dosyalarını içerir:
+Güncel final gemi ZIP'i (atlas-only-v1) dört dosya içerir:
 
-- 8 final yön PNG: `N, NE, E, SE, S, SW, W, NW`
-- 1 final 4×2 atlas PNG
-- 1 final rotation GIF
-- 1 `manifest.json`
-- 1 **orijinal üretim kaynağı** (radial pano / tekil ana kaynak PNG; kayıpsız, yeniden işlenmemiş)
+- 1 final kayıpsız RGBA 4×2 atlas PNG (N NE E SE / S SW W NW).
+- 1 final rotation GIF (görsel QA, atlas hücrelerinden üretilir).
+- 1 `manifest.json` (ölçüler, pivot, yön sırası, kaynak ve atlas bütünlüğü).
+- 1 orijinal üretim kaynağı PNG (kayıpsız, yeniden işlenmemiş).
 
-Toplam standart içerik: **12 dosya**.
+Toplam **4 dosya**. Ayrı sekiz yön PNG'si yalnız çalışma/QA girdisidir; final ZIP'e eklenmez. Atlas hücreleri tekil PNG ile piksel düzeyinde aynı olmalı. Gerektiğinde hücreyi `col=i%4, row=floor(i/4)` ile kayıpsız kes; yeniden ölçekleme yapma. Asimetrik gemiler de aynı sekiz hücreli atlası kullanır. Montaj/hizalama JSON'u §24 uyarınca ayrı zorunlu sidecar, ZIP içinde mükerrer tutulmaz. Eski 12 dosyalı paketler geçerli, geriye dönük yeniden paketleme zorunlu değil.
 
 `manifest.json` en az şunları kaydeder:
 
@@ -650,6 +649,7 @@ Final ZIP'e **girmez**:
 - LUT/`.cube` dosyaları
 - profile/validation ara JSON'ları
 - çalışma klasörleri
+- ayrı final yön PNG'leri (atlasla mükerrer)
 - debug veya manuel hizalama dosyaları
 
 Bu ara çıktılar QA sırasında tutulabilir ancak kullanıcıya teslim edilen final ZIP'in parçası değildir.
@@ -667,7 +667,7 @@ Dünya boyu, 1× ekranda gösterilen boy, kaynak nesne çözünürlüğü, final
 - Final hücreyi hedef gövde yoğunluğundan SONRA seç: tüm yönlerin ortak pivot etrafındaki alfa>0 sınırları + dört kenarda en az 8 px alpha-0. Gerekirse tüm seti daha büyük ortak hücreye geçir; hedefi sessizce küçültme. Gemi hasar/maskeleri varsa aynı dönüşüm ve hücre. Dünya boyunu korumak için runtime sunum ölçeği = dünya gövde uzunluğu / final referans gövde px; pivot-relative socket'lere de aynı dönüşüm uygulanır. Fizik/hitbox değişmez.
 - Hedef E/W uzunluğu ±%3 ve diğer yönlerin kılavuz projeksiyon oranları kontrol edilir; final bbox, kaynak gerçek detay yoğunluğu, padding, atlas hücre eşitliği ve dönüş QA ölçülmeden teslim yok. Kaynak yetersizse kullanıcıya AI upscale gerekli bildir; interpolasyon veya boş tuval büyütme yeni detay değildir.
 - HTML'de düşük çözünürlüklü (örn. 256²) gömülü önizleme serbest; aynı sanal 1024 koordinatı ve aynı çerçeve dönüşümü korunur. JSON final yüksek çözünürlüklü kaynaklara uygulanır; preview PNG final kaynak değildir. Final GIF final PNG'lerden, ayrı HD GIF temiz yüksek çözünürlüklü hizalanmış kaynaklardan yapılır. HD incelemede tüm karelere ortak sıkı güvenli tuval kullanılır; dev boş canvas yasak.
-- Manifestte dünya uzunluğu, target_body_px, measured_body_px_per_direction, source_bbox_per_direction, final_bbox_per_direction, effective_fill_ratio (bbox genişlik/hücre, yükseklik/hücre), cell_px, atlas_px, ortak katsayı, pivot, runtime_world_per_texel ve varsa upgrade_reason kaydedilir. 12 dosya ZIP standardı değişmez. Eski paketler bu kapı yeniden ölçülmeden geçmiş sayılmaz.
+- Manifestte dünya uzunluğu, target_body_px, measured_body_px_per_direction, source_bbox_per_direction, final_bbox_per_direction, effective_fill_ratio (bbox genişlik/hücre, yükseklik/hücre), cell_px, atlas_px, ortak katsayı, pivot, runtime_world_per_texel ve varsa upgrade_reason kaydedilir. Güncel dört dosyalı atlas-only ZIP standardı geçerlidir. Eski paketler bu kapı yeniden ölçülmeden geçmiş sayılmaz.
 
 
 
@@ -717,7 +717,7 @@ Doğrulanmış yeniden üretim: GLB'nin gömülü dokusu + geometrisi; glTF Y-up
 - Radial orijinal korunur. Her yön gerçek nesne sınırına göre ve şeffaf payla ayrılır. Tekil AI upscale gerektiğinde her yönün gerçek detay ve anatomisi ayrı kontrol edilir. Sabit kareye hem x hem y ölçekleyerek nesneyi ezmek yasak; en-boy oranı korunur.
 - Kullanıcı elle hizalama yaptıysa eski JSON merkez/ölçek referansıdır; yeni crop/upscale sonuçlarıyla dünya pivotu korunur ama şekil yeniden doğrulanır. CD simetrik gövdelerde üç eksik yön yatay yansıma ile tamamlanır; asimetrik nesneyi geometrik olarak doğrulamadan aynalama final kabul sayılmaz.
 - HTML'de hangi gerçek tekil PNG'lerin gömüldüğü ve dolu piksel alanları kontrol edilir; küçük preview/test canvas görsellerini upscale master diye sunma. Mobilde 8/8 yükleme ve JSON dışa aktarımı doğrulanır.
-- Oyun paketi 8 RGBA PNG, 4×2 atlas, dönüş GIF'i, manifest ve dokunulmamış radial kaynak = 12 dosya. Gerçek AI-upscale master ile interpolasyon veya boş canvas büyütmesini birbirinden açıkça ayır. Godot/Android entegrasyonu ayrı kanıttır.
+- Tarihsel oyun paketi 12 dosyaydı; güncel §18 atlas-only standardı 4 dosyadır. Gerçek AI-upscale master ile interpolasyon veya boş canvas büyütmesini birbirinden açıkça ayır. Godot/Android entegrasyonu ayrı kanıttır.
 
 
 ## 2026-11-25 — Runtime pruva/yön doğrulaması
@@ -752,7 +752,7 @@ Konum adı ile oyun heading adını karıştırma; her kaynakta pruva/dümen üz
 2. Kaynak çözünürlüğü ve anatomiyi kontrol et; gereken durumda AI upscale uyarısı. Ortak dünya ölçeği ve su hattı pivotu, N Lab/LUT ve ShowLook v3 korunur. Kullanıcı onaylı manuel ayarlar varsa geometri yeniden otomatik normalize edilmez; son renk işlemi geometriyi değiştirmez.
 3. Manuel HTML'de x/y/scale yanında `beam` = geminin projekte pruva-kıç eksenine dik yerel en düzeltmesi; canvas X stretch değildir. Sadece kullanıcı kontrolünde, ölçülü geometri düzeltmesi. `warp` eski fırça işlemleri; `pins` Puppet Warp kaynak/ hedef noktaları (`x,y,tx,ty,r,fixed`). Sabit noktalar korunacak bölgelerde, hareketli noktalar pruva gibi hedefte; yumuşak etki alanı. Zoom/pan yalnız görüntüleme, sprite transformu değil. Özgün yüksek çözünürlüklü kaynaktan yeniden örnekle, deformasyon birikimli bulanıklık/katlanma yapmamalı. JSON'da eski alanlar ve yeni pinler saklanır, final export aynı dönüşümü kullanır. Bu özellikler SC-11 yerel HTML pilotunda denenmiştir; repo `tools/sprite_manual_aligner_template.html` bu modları §23 itibarıyla içerir. Tarayıcı testi ile gerçek Android performans kabulü ayrı tutulur.
 4. Kullanıcının son JSON'u final kabul girdisidir; sekiz yönü tek ortak katsayıyla, (512,512) master pivotunu C/2'ye taşıyarak paketle. Pruva/kıç, yerel en, gövde ölçeği, dönme sıçraması, kırpılma, yansıma kaynaklı fener/arma detayları, alfa kenarı ve atlas hücre eşitliği kontrol edilir. Önizleme zoom'u veya preview çözünürlüğü final geometriye yazılmaz. Son GIF final ShowLook PNG'lerden.
-5. 12 dosya ZIP değişmez: 8 RGBA, 4×2 atlas N NE E SE / S SW W NW, final GIF, manifest, dokunulmamış beşli radial kaynak. Manifestte kaynak görünüş ve yansıma eşlemesi, manuel düzeltme yöntemi, kaynak/son bbox, ortak ölçek, gerçek gövde hedefi, pivot, padding ve ölçüm sınırları bulunur. Ara JSON/HTML/debug final ZIP'e eklenmez.
+5. Güncel dört dosyalı ZIP: 4×2 RGBA atlas N NE E SE / S SW W NW, final GIF, manifest, dokunulmamış beşli radial kaynak. Tekil PNG'ler sadece ara aşamada. Manifestte kaynak görünüş ve yansıma eşlemesi, manuel düzeltme yöntemi, kaynak/son bbox, ortak ölçek, gerçek gövde hedefi, pivot, padding ve ölçüm sınırları bulunur. Ara JSON/HTML/debug final ZIP'e eklenmez.
 
 ### SC-11 Dikiş Feneri — doğrulanmış paket örneği
 
@@ -760,7 +760,7 @@ Konum adı ile oyun heading adını karıştırma; her kaynakta pruva/dümen üz
 
 ## 22. Gemiye özel parametrik Ship Builder — 2026-11-27 (güncel varsayılan)
 
-**Bu bölüm §1–4, §10, §15, §20 ve §21'deki eski proxy/ref ve prompt sırasıyla çeliştiğinde önceliklidir.** §21'in yön eşlemesi, kaynak ekstraksiyonu, simetri istisnası, çözünürlük/pivot/renk ve 12 dosyalık teslim kuralları korunur. Eski onaylı oyun paketleri değiştirilmez.
+**Bu bölüm §1–4, §10, §15, §20 ve §21'deki eski proxy/ref ve prompt sırasıyla çeliştiğinde önceliklidir.** §21'in yön eşlemesi, kaynak ekstraksiyonu, simetri istisnası, çözünürlük/pivot/renk ve §18'in güncel dört dosyalı teslim kuralları korunur. Eski onaylı oyun paketleri değiştirilmez.
 
 ### Referans üretimi ve yükleme
 
@@ -844,7 +844,7 @@ Kullanıcı tek GPT Image üretiminde renkli CD vermeden başarılı görsel eld
 4. Kaynağı kayıpsız koru. 5 bağımsız görünüşü ayır: üst-sol SE, üst-orta S, orta-sağ W, alt-sol NE, alt-orta N (her kaynakta pruvayı görerek doğrula). Aynı master koordinatları ve ortak ölçekle normalize et. Her görünüşü ayrı ayrı bbox-fit etme. Simetrik gemide yalnız N, NE, SE, S, W düzenlenir; E=W, SW=SE, NW=NE yatay yansımalarıdır.
 5. [Kanonik montaj/hizalama HTML v6](tools/sprite_manual_aligner_template.html) aç. Gemiye özel, beş PNG gömülü HTML teslim edilebilir; genel şablonda 5 yön PNG yükle. Asimetrik SC-15 ve gerçek farklı bordalı gemide 8 ayrı modu seç ve 8 kaynak yükle. Dönüş/ghost ile kontrol et, gerekliyse hizala. Beşli modda X ters işaret; Y, uniform scale ve beam aynı; warp x/dx, pin x/tx, montaj x, ok, maske ve iskele/sancak top ID'leri yansır. Üç türetilmiş yönü ayrıca düzenleme. 8 yön playback ve atlas daima korunur.
 6. Montaj sekmesinde seç/taşı varsayılan, + Ekle yalnız yeni parça için. Noktayı sürükle; Tek nokta/Tüm parça, boş alan pan, pinch zoom. Efektleri açık tutarak gerekli montajları aşağıdaki sözleşmeye göre onayla. Montaj JSON'unu son hizalama/warp sonrasında kaydet. Yeniden üretimde kaynak seti değişmediyse onaylı koordinatları içe aktar; kullanıcıya tekrar işaretletme.
-7. 8 yön dönüş, gerçek su hattı/pivot, alfa-0 padding, ölçülü ortak boyut ve canlı efekt QA. Ana atlası efektsiz çıkar. Son küçültme gerekiyorsa ana atlas ile tüm aligned koordinatlara aynı ortak dönüşümü uygula; yalnız C/1024 yeterli değilse pivot/öteleme de dahil et. 12 dosya oyun sprite ZIP sözleşmesi korunur; yeni montaj JSON'u ayrı zorunlu üretim sidecar'ıdır. Runtime tüketicisi ve yeni oyun entegrasyonunun kabulü ayrıca doğrulanacaktır.
+7. 8 yön dönüş, gerçek su hattı/pivot, alfa-0 padding, ölçülü ortak boyut ve canlı efekt QA. Ana atlası efektsiz çıkar. Son küçültme gerekiyorsa ana atlas ile tüm aligned koordinatlara aynı ortak dönüşümü uygula; yalnız C/1024 yeterli değilse pivot/öteleme de dahil et. Dört dosyalı atlas-only oyun sprite ZIP sözleşmesi geçerlidir; yeni montaj JSON'u ayrı zorunlu üretim sidecar'ıdır. Runtime tüketicisi ve yeni oyun entegrasyonunun kabulü ayrıca doğrulanacaktır.
 
 ### B. Zorunlu ve otomatik montajlar
 
@@ -909,6 +909,10 @@ Only if needed add diagnostic colored CD as reference 3, explicitly for continui
 
 [SC02_montaj_guncel.json](SC02_montaj_guncel.json) — kullanıcının son `sprite_manual_alignment (9).json` kaydından 62 montaj, 12 yön FPS, 5+3. Tüm hizalama/koordinatlar korundu; SE ve SW GUN-61 arka top olarak işaretlendi. 5 özgün kaynak 1024×1024 PNG (kullanıcının v6 SC-02 düzenleme HTML'si içinde); kaynak `127644.png` ilk üretim, §22. Bu koordinatlar eski runtime SC02 ZIP'ine doğrudan uygulanmaz. Eşleşen 5 master PNG SHA-256: N `86b1aa45f1fd9fbf0390ad3efac9d49bba2a304c5443b58fff14b80c0fe0df09`; NE `8e09fb071f2f0365a61285da1a553bc0a2b9da3f7c3834a38d889ea6081ef6fd`; SE `4a4475b7d9e59f5f353a9538944275414fb837dbbfa6e349ab0762295e834a2c`; S `661df3eb798f629371b1955524aa651fec6cf8cd376df32c442eccdc0a215735`; W `f8481a709a667999b5e3372379b6c11fff0ba2fb58c69be815ebc1ab5ac08a15`. Master PNG'ler bu commit'te ayrıca yüklenmemiştir; gömülü SC-02 HTML teslimi saklanmalıdır. Kullanıcı montajı tamamladı, tekrar işaretleme istenmez. Mobil viewport Chromium: beş PNG yükleme, 8 yön türetme, 62 kaydın kaynak/son koordinatlarının geri okunması, 12 FPS ayarı ve arka top seçim/efekt tuvali testi geçti. Final yeni oyun ZIP'i/gerçek Godot ve Android testi ayrı, henüz yapılmadı.
 
-### F. SC-02 yeni final paket — yükleme bekleniyor
+### F. SC-02 önceki 12 dosyalı final paket — GitHub yüklemesi tamamlandı
 
-Kullanıcı talebiyle eski `SC02_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip` main'den kaldırıldı (eski blob `d42df3032eb13ddc0861844f9a97dbee4a20851f`, geçmiş commit'te korunuyor). Yeni ZIP aynı dosya adıyla kullanıcı tarafından yüklenecek; beklenen Git blob `2b83b513ede95aacdb1d0342782eadcb2b28625c`, SHA-256 `b08b9f901cc6cfb0df02aa1a92a07a57c1743eb7db04c5c1efd9799d84c8b8ed`, 5.828.189 bayt. 12 standart dosya, 1024² hücre, 4096×2048 atlas, 512/512 pivot; onaylı v6 master çevirileri premultiplied bicubic ile uygulanmış, E/SW/NW birebir yatay yansımalar. Ek LUT/ShowLook/upscale yok. Kaynak pano kayıpsız, minimum alfa padding 141 px, ZIP CRC, sekiz yön/atlas piksel eşleşmesi, 8 kare GIF, 62 montaj koordinatı ve arka GUN-61 SE/SW doğrulandı. Ayrı montaj sidecar `SC02_montaj_guncel.json` repo'da zaten mevcut; aligned koordinatlar final hücreyle birebir. Gövde landmark uzunluğu bağımsız ölçülmedi; mevcut 1024 master korunuyor. Tarayıcı yeniden dışa aktarımı ortam politikası nedeniyle açılamadı; eşdeğer subpixel çeviri ve birebir yansıma ile yerel paket üretildi. Yeni ZIP gelene kadar CI stage script'i SC-02 arşivini bulamaz; yükleme ve runtime/Godot/Android testi henüz tamamlanmadı.
+Kullanıcı talebiyle eski `SC02_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip` main'den kaldırıldı (eski blob `d42df3032eb13ddc0861844f9a97dbee4a20851f`, geçmiş commit'te korunuyor). 12 dosyalı ZIP aynı adla kullanıcı tarafından yüklendi (commit 8ca923550d1ebb209047dd645f3e6b9214af8576); doğrulanmış Git blob `2b83b513ede95aacdb1d0342782eadcb2b28625c`, SHA-256 `b08b9f901cc6cfb0df02aa1a92a07a57c1743eb7db04c5c1efd9799d84c8b8ed`, 5.828.189 bayt. 12 standart dosya, 1024² hücre, 4096×2048 atlas, 512/512 pivot; onaylı v6 master çevirileri premultiplied bicubic ile uygulanmış, E/SW/NW birebir yatay yansımalar. Ek LUT/ShowLook/upscale yok. Kaynak pano kayıpsız, minimum alfa padding 141 px, ZIP CRC, sekiz yön/atlas piksel eşleşmesi, 8 kare GIF, 62 montaj koordinatı ve arka GUN-61 SE/SW doğrulandı. Ayrı montaj sidecar `SC02_montaj_guncel.json` repo'da zaten mevcut; aligned koordinatlar final hücreyle birebir. Gövde landmark uzunluğu bağımsız ölçülmedi; mevcut 1024 master korunuyor. Tarayıcı yeniden dışa aktarımı ortam politikası nedeniyle açılamadı; eşdeğer subpixel çeviri ve birebir yansıma ile yerel paket üretildi. 12 dosyalı arşivin GitHub yüklemesi doğrulandı; runtime/Godot/Android testi henüz tamamlanmadı. Güncel kompakt sürüm §24G.
+
+### G. Atlas-only-v1 — 2026-11-27
+
+Kullanıcı ayrı yön PNG'lerinin gereksiz tekrar olduğunu belirtti. SC-02 12→4 dosya olarak yeniden paketlendi: `atlas_4x2.png`, `rotation.gif`, `manifest.json`, `SC02_original_radial.png`. Boyut 5.828.189→3.657.204 bayt (%37,25 azalma). Sekiz ayrı RGBA PNG'nin tüm pikselleri atlas hücreleriyle karşılaştırıldı ve eşit bulundu; atlas, GIF, orijinal kaynak baytları değiştirilmedi. Atlas SHA-256 `db8e25d1af5e811788b474048ee13f79a05819266268a8a5f0a5a380d996b990`. CRC ve montaj sidecar SHA eşleşmesi geçti. `tools/ci/stage_ship_visual_pilot.py` mevcut atlas-first okuma dalıyla bu biçimi destekliyor (kaynak kod incelemesi); eski tekil PNG fallback korunur. Script değişikliği gerekmez. ZIP adı ve 1024 hücre/pivot/62 montaj aynı. Yeni kompakt ZIP beklenen Git blob `238fcf0e19a8cf250eea77ae1c0480d0965541d8`, SHA-256 `e9aee362239eebe6e3a666970da75680b040899bca313f224f9623cc6e80dcd6`. Mevcut geçerli 12 dosyalı ZIP, kullanıcı aynı isimle yenisini yükleyene kadar korunur. Yeni yükleme ve tam CI/Godot/Android doğrulaması bekleniyor. §18 ve §24 yeni standarttır; tarihsel 12 dosya kanıtları korunur.

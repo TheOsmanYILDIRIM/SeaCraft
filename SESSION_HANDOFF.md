@@ -70,7 +70,7 @@ PRG-05 production LAN host composition kod+gerçek süreç+save/replay düzeyind
 - Son kanonik sprite rehber commit'i: `9e149b66c787ad9b126787b3a8a81b9206f1e060`.
 - SC-07 · Akıntı Bıçağı 8-yön radial kaynak üretildi, yönler ayrıldı ve manuel hizalama kullanıcı JSON'u ile düzeltildi.
 - Kullanıcı manuel hizalama dosyası değerleri final kabul kaynağıdır; otomatik support-anchor yalnız aday/QA'dır. Final rotation görselinde pivot oturuşu kullanıcı ayarıyla doğrulanır.
-- Final teslim paketi standardı artık **12 dosya**: 8 final yön PNG + 4×2 atlas + final rotation GIF + `manifest.json` + orijinal üretim kaynağı PNG.
+- Tarihsel final teslim paketi standardı **12 dosya** (güncel dört dosyalı atlas-only standardı için üretim rehberi §18/§24G): 8 final yön PNG + 4×2 atlas + final rotation GIF + `manifest.json` + orijinal üretim kaynağı PNG.
 - Debug/extraction/normalize ara dosyaları final ZIP'e girmez.
 - Orijinal radial kaynak zorunlu arşiv öğesidir.
 - 8 yön tek kareden üretildiğinde kaynak yönlerin gerçek piksel yoğunluğu ayrıca kontrol edilir. Yetersizse açıkça **“AI upscale gerekli”** denir; ChatGPT/pipeline kendi başına AI upscale yapmaz. Kullanıcı kaliteli haricî upscaler ile ayrılmış 8 yönü yükseltir; upscale normalizasyon/ShowLook/final atlas öncesinde yapılır.
