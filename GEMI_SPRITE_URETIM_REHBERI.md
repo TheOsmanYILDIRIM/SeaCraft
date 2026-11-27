@@ -928,3 +928,9 @@ Kullanıcı ayrı yön PNG'lerinin gereksiz tekrar olduğunu belirtti. SC-02 12�
 ### I. Malzeme renkli referans zorunluluğu
 
 **Güncel kesin referans kuralı (2026-11-27):** Kullanıcıya ve GPT Image'a renksiz/clay CD verilmez. Referans 1 her zaman okunaklı, malzeme renkli gemiye özel CD (Ship Builder Malzeme CD PNG; tüm halat kategorileri açık), referans 2 orijinal SeaCraft malzeme atlasıdır. Ahşap, demir, yelken, pruva ve donanım ayrımı görünür olmalıdır. Renksiz çıktı yalnız iç teknik QA için kullanılabilir; üretim girdisi değildir. Eski renksiz varsayılanlar geçersizdir.
+
+### J. SC-05 Kör Mühür — kullanıcı montajı ve final paket
+
+Kullanıcı `127699.png` kaynağını ve `sprite_manual_alignment (10).json` hizalama/montajını onayladı. [SC05_montaj_guncel.json](SC05_montaj_guncel.json) özgün dosyayla bayt düzeyinde aynı, Git blob `e82262e94eb30fa0ea6b4cfcefcf9953b34d62be`, SHA-256 `fb1ef09e006a9f9b6dff9c60cdc78872c3f78b762c83731da72196f692cfef5b`. 104 kayıt: 48 top, 8 baş, 8 kıç, 8 flama, 16 yelken, 16 flok; 5+3 yön, 6 FPS. 1024 master ve final hücre; pivot 512/512; aligned koordinatlar final hücreye doğrudan uyumlu. v6 tarayıcı atlas dışa aktarımı ve JSON roundtrip sonrası E/SW/NW hücreleri kaynak yönlerin birebir yatay yansıması olarak yazıldı. Ek ölçek/LUT/ShowLook/upscale yok. Atlas 4096×2048, SHA-256 `aecebd651ba31f63c136e970f6ee9c3ba6570805a5f341fb8babfb118af6e3d6`, minimum alfa padding 150 px. ZIP CRC, orijinal kaynak eşitliği, sekiz GIF karesi ve montaj koordinat eşitliği doğrulandı. Gövde landmark uzunluğu bağımsız ölçülmedi; mevcut kullanıcı onaylı master korunur.
+
+Kullanıcıya verilen `SC05_FINAL_MANUAL_ALIGNED_GITHUB_UPLOAD.zip`: dört dosya, 3.973.504 bayt, Git blob `855c1f5963dbbf98d708f8706f326f053d5016df`, SHA-256 `41292683f2fdce16b0d7b23f721e0ab0b2e40bf49f46a52e93b726a0de767681`. ZIP kullanıcı yüklemesi bekleniyor. Runtime allowlist, Godot entegrasyonu ve fiziksel Android kabulü bu çalışmanın parçası değildir. Sonraki üretim SC-07.
