@@ -29,6 +29,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-02 · Kül Dikişi — Başlangıç sloop’u
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Kıyı kuryelerinin ve yeni kaptanların tekrar tekrar onardığı ekonomik sloop; onaylı kül mavisi şerit ve yelken yaması korunur. Gelecek tasarımda ufak kapatılmış ısırık izi veya değiştirilmiş borda tahtası olabilir; ağır trofe yok.
+
 **Rol ve esin:** Oyuncu başlangıcı, kurye NPC; gaff sloop. **Gövde:** L/B 4,0:1; Dar iğ gövde, alçak borda; az kalkık kama pruva, yuvarlak kısa ayna kıç. **Güverte, direk ve yelken:** 1 açık; 1 direk; kıça açılan yamuk gaff ana yelken ve dar tek flok. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; açık güvertede 2 küçük top/borda.
 
 **Ana siluet / mobil ayıraçlar:** tek yamuk yelken, ince flok, kama burun, kısa yuvarlak kıç. **Palet, yüzey ve kumaş:** ıslak koyu meşe, mat demir halkalar, kül grisi yamalı keten. **Bayrak ve faction alanı:** direk tepesinde çatal flama, kıçta mühür pedi. **Süs/baş figürü:** az; aşınmış kemik bodoslama kaması, heykel yok.
@@ -36,6 +38,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** flama, yelken tonu ve mühür. **Sabit:** tek direk/flok, kısa ayna ve açık top yerleri; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** iki direk, kutu kıç veya kapalı silah portu yok.
 
 ### SC-03 · Tuz Ambarı — Ticaret fluytu
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Tuz, erzak ve mal taşıyan ticaret teknesi; yük sürtünmesi, yenilenmiş ambar kapağı, canavar temasından sonra değiştirilmiş borda tahtaları. Avcı görünümü değil, yükün güvenliği öncelikli.
 
 **Rol ve esin:** Tüccar, kaçakçı NPC; oyuncu kargo; Hollanda fluytu. **Gövde:** L/B 3,0:1; Geniş ambar karnı, içe kapanan borda; yuvarlak baş, armut kıç. **Güverte, direk ve yelken:** 2: iş+ambar; 3 kısa direk; ilk ikisinde birer kısa enli kare, kıçta kısa latin. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; tek merkez kargo kapağı silah değildir.
 
@@ -45,6 +49,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-08 · Demir Mezar — Ağır hat gemisi
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Ağır hat gemisi; uzun çatışma ve deniz yaratığı temaslarının ardından yapısal olarak onarılmış kalın borda, eski yaralar üzerinde düzenli demir plakalar. Ölçeğine uygun fosil veya kemik parçası baş postasına gömülebilir; dev av iddiası otomatik değil.
+
 **Rol ve esin:** Ağır NPC, geç oyun oyuncu tankı; perçinli Elite varyant; iki bataryalı hat gemisi. **Gövde:** L/B 3,6:1; Derin dik geniş gövde; küt takviyeli baş, geniş düz kutu kıç. **Güverte, direk ve yelken:** 3: açık+iki batarya; 3 direk; önde/ortada ikişer kare, kıçta bir kare ve yarım gaff. **Batarya ve görünür açıklıklar:** 2 batarya; üstte 7 altta 8 düzenli dikdörtgen port/borda.
 
 **Ana siluet / mobil ayıraçlar:** çift port hattı, kutu kıç, demir burun, geniş kare arma bloğu. **Palet, yüzey ve kumaş:** kömür meşesi, çukur paslı ferforje, bronz perçin, kül gri ağır bez. **Bayrak ve faction alanı:** ana direk tepesi, düz kıç aynasında birlik mührü. **Süs/baş figürü:** orta; fosil kaburga baş postasına gömülü.
@@ -52,6 +58,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** düz plaka, şerit, flama ve mühür; Elite’te en az iki modül. **Sabit:** 7+8 port, üç direk, küt baş ve düz ayna; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** komuta fener çifti, üçüncü batarya veya çan yok.
 
 ### SC-01 · Sis İğnesi — Keşif filikası
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Limanlar arası haber taşıyan küçük filika; kaçış sırasında sürtünmüş küpeşte, değiştirilmiş dümen pimi ve simetrik küçük ahşap deniz yaratığı oyması düşünülebilir. Büyük av trofesi yok; balıkçıların uğur nesnesi ölçeğinde.
 
 **Rol ve esin:** Oyuncu keşif, liman habercisi, konvoy öncü NPC; açık lugger filikası. **Gövde:** L/B 4,4:1; Çok alçak açık çift uçlu kabuk; ince dik baş ve sivri kıç, açık dümen. **Güverte, direk ve yelken:** 1 açık taban; 1 kısa direk, eğik sırıkta tek lug yelken; flok yok. **Batarya ve görünür açıklıklar:** 0 batarya/0 port/top; görünür kürek oturağı.
 
@@ -61,6 +69,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-04 · Yarık Çene — Korsan brig’i
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Ele geçirilmiş veya el değiştirmiş korsan brig'i; farklı yaşta tamir tahtaları, onarılmış pençe yaraları, pruvasında gemi ölçeğine uygun küçük yaratık çenesi veya ahşap çene taklidi. Büyük av iddiası yok; korkutma ve batıl inanç.
+
 **Rol ve esin:** Raider NPC; oyuncu korsan yükseltmesi; brig. **Gövde:** L/B 4,1:1; Eğimli orta ince borda; kesik kama pruva; tek kıç basamağı ve kısa tırnaklı ayna. **Güverte, direk ve yelken:** 2: açık+batarya; 2 direk; önde iki kare, arkada bir kare ve ince gaff. **Batarya ve görünür açıklıklar:** 1 batarya, çatlak kapaklı 5 port/borda.
 
 **Ana siluet / mobil ayıraçlar:** iki kare arma bloğu, kama baş, tırnaklı kıç, açık basamak. **Palet, yüzey ve kumaş:** kurumlu koyu meşe, çukur demir, zeytin gri ağır bez ve tek kirli açık yama. **Bayrak ve faction alanı:** arka direk flaması, kıç aynasında çentik mühür. **Süs/baş figürü:** az; fosil çene pruvasına gömülü.
@@ -68,6 +78,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** bağlı ganimet, flama, trim ve yelken tonu. **Sabit:** 2 direk, 5 port, kama baş ve tırnaklı ayna; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** boarding tablaları, parlak kafatası veya çift batarya yok.
 
 ### SC-06 · Perçin Hattı — Eskort korveti
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Konvoyu yaratıklardan ve baskınlardan koruyan eskort; eski darbe noktalarında cıvatalı takviye, değiştirilmiş küpeşte ve düzenli onarım. Küçük nötr koruyucu oyma olabilir; gösterişli ganimet yok.
 
 **Rol ve esin:** Konvoy koruması NPC; oyuncu savunma; kısa korvet. **Gövde:** L/B 3,8:1; Tok düz omuzlu gövde, kısa yükseltilmiş baş, geniş düz ayna ve su hattı tamponu. **Güverte, direk ve yelken:** 2: açık+batarya; 2 direk; önde iki dar kare, arkada yüksek gaff ve küçük üst kare. **Batarya ve görünür açıklıklar:** 1 batarya, eş aralıklı 6 kare port/borda.
 
@@ -77,6 +89,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-11 · Dikiş Feneri — Onarım tender’ı
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Denizde hasarlı tekneleri ayakta tutan onarım tender'ı; birbirinden farklı eski ve yeni keresteler, işaretlenmiş yedek parçalar, vinç aşınması ve koruyucu tamponlar. Canavar temasından kurtarılmış malzeme işlevsel kullanılır; büyük av trofesi yok.
+
 **Rol ve esin:** Saha onarım NPC’si, oyuncu destek; tersane hoy’u ve kurtarma mavnası. **Gövde:** L/B 2,75:1; Geniş sığ omuz; yuvarlak burun; düz açık iş platformu kıç. **Güverte, direk ve yelken:** 2: iş+ambar; 2 direk; önde kare, arkada yarım kısa gaff; ortada A vinci. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; 1 açık savunma topu başta.
 
 **Ana siluet / mobil ayıraçlar:** A vinci, portsuz borda, açık kıç, enine tahta demeti. **Palet, yüzey ve kumaş:** yağlı küllü meşe, yeşillenmiş bronz makara, soluk zeytin bez ve ıslak çuval. **Bayrak ve faction alanı:** ön direk tepesi, vinç tabanında tersane damgası. **Süs/baş figürü:** az; tek kapalı boğuk amber fener, baş figürü yok.
@@ -84,6 +98,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** tamir yükü, fener, flama ve trim. **Sabit:** A vinci, portsuz borda, düz kıç ve 2 direk; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** kanca sırası, tamir halesi veya üçüncü direk yok.
 
 ### SC-14 · Dip Çanı — Lanetli raid sancak gemisi
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** İleri raid karşılaşması; çan ve organik deformasyonlar yalnız kanonik karşılaşma kimliğiyle gerekçelendirilir. Eski insan yapımı taşıyıcı ile sonradan kaynaşmış deniz kalıntıları ayırt edilir. Yeni üretim raid ihtiyacına kadar askıda.
 
 **Rol ve esin:** Çok fazlı boss, oyuncu kullanmaz; dört direkli ağır kalyon ve enkaz. **Gövde:** L/B 3,25:1; Merdiven omuzlu dev gövde; çatal çene baş; kemik kemerli yüksek kırık kıç. **Güverte, direk ve yelken:** 4: açık+iki batarya+alt enkaz; 4 direk; ilk ikisinde birer dik kare, ortada geniş kare, kıçta yarım gaff. **Batarya ve görünür açıklıklar:** 2 batarya, üstte 6 altta 7 port/borda, ayrıca baş çatalında 2 kuşatma ağzı.
 
@@ -93,6 +109,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-05 · Kör Mühür — Devriye kuteri
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Gümrük ve devriye rotasında düzenli bakım görür; eski ısırık hasarı aynı ölçüde yeni tahtalarla kapatılmış, ferforje korumalar işlevsel. Trofe yerine disiplinli işçilik; onaylı görünüm korunur.
+
 **Rol ve esin:** Faction devriye/gümrük NPC, oyuncu kontrat; silahlı cutter. **Gövde:** L/B 3,5:1; Orta genişlik ve yüksek küpeşte; küt dik baş; çentikli kısa kıç aynası. **Güverte, direk ve yelken:** 2: açık+sığ batarya; 1 yüksek direk; uzun gaff, küçük üst kare ve çift flok. **Batarya ve görünür açıklıklar:** 1 batarya, 3 iri kare port/borda.
 
 **Ana siluet / mobil ayıraçlar:** tek yüksek direk, çift flok, üç açıklık, küt baş. **Palet, yüzey ve kumaş:** tuzlu koyu meşe, ferforje, soluk navy gaff ve kirli gri floklar. **Bayrak ve faction alanı:** direk tepesi uzun flama, iki baş plakası işaret pedi. **Süs/baş figürü:** az; kör bronz vizör biçimli plaka.
@@ -100,6 +118,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** flama, mühür, borda şeridi ve yelken tonu. **Sabit:** tek direk, çift flok, 3 port ve küt pruva; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** sloop yuvarlak kıç, interceptor gagası, konvoy sehpası yok.
 
 ### SC-07 · Akıntı Bıçağı — Hızlı interceptor
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Hafif takip gemisi; avlanmak değil kaçan hedefi yakalamak için ince ve düşük dirençli gövde. Başta sürtünme ve küçük tamir izleri, kıçta yedek halat; ağır trofe ve gereksiz ağırlık yok. Küçük oyma hızlı yaratık siluetini çağrıştırabilir.
 
 **Rol ve esin:** Takip NPC’si, oyuncu hız uzmanı; Baltimore clipper/schooner. **Gövde:** L/B 5,2:1; Çok uzun ince alçak gövde; bıçak gaga pruva, dar aşağı eğimli kıç. **Güverte, direk ve yelken:** 1 açık; 2 geriye eğik direk; çift keskin üçgen yelken ve alçak tek flok. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; başta iki açık takip topu, borda topu yok.
 
@@ -109,6 +129,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-09 · Kör Havan — Uzak menzil topçu gemisi
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Uzak menzil gemisi; silah yataklarında ısı ve kullanım izi, deniz saldırısından sonra güçlendirilmiş ön küpeşte. Havan çalışma alanı boş tutulur; dekor ekipmana engel olmaz.
+
 **Rol ve esin:** Kuşatma NPC’si; oyuncu menzil uzmanı; bomb ketch. **Gövde:** L/B 3,15:1; Kısa geniş karın; yay gibi düşey omuzlu baş; basık kemer kıç. **Güverte, direk ve yelken:** 2: açık+cephanelik; 2 direk orta-kıçta; bir küçük kare ve bir alçak latin. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; baş kuyusunda 2 merkezi havan, kıçta iki açık döner savunma topu.
 
 **Ana siluet / mobil ayıraçlar:** iki iri havan ağzı, boş ön güverte, tok yay baş, kıça toplanmış arma. **Palet, yüzey ve kumaş:** ıslak karaağaç, oksitli bronz, dar füme keten. **Bayrak ve faction alanı:** mizana kısa flama, havan taşıyıcıları arası damga. **Süs/baş figürü:** az; iki döküm halka, baş figürü yok.
@@ -116,6 +138,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** flama, damga, küçük cephane aksesuarı. **Sabit:** iki havan, boş baş, kıç arma ve geniş karın; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** yan ağır batarya, uzun takip burnu, vinç yok.
 
 ### SC-10 · Kanca Ağzı — Boarding kadırgası
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Yakın baskın teknesi; kanca ve halat aşınması, değiştirilen yanaşma tahtaları ve küçük yaratık dişi gibi korkutucu nesneler. Kancalar top değildir; yürüyüş tablaları açık kalır.
 
 **Rol ve esin:** Boarder NPC, oyuncu yakın baskın; galiot/küçük kadırga. **Gövde:** L/B 4,6:1; Uzun yassı taban ve geniş omuz; kesik mahmuz pruva; yükseltilmiş dar platform kıç. **Güverte, direk ve yelken:** 1 açık; 2 kısa direk; iki farklı alçak latin, çift borda yürüyüş tablası. **Batarya ve görünür açıklıklar:** 0 batarya/0 port; başta 1 açık top; borda başına 3 kapalı kanca yuvası top değildir.
 
@@ -125,6 +149,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-12 · Kervan Kandili — Silahlı konvoy lideri
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Uzun rotalarda konvoyu yönlendiren ticari lider; önceki seferlerin onarılmış borda hasarı, korunaklı sinyal donanımı, yedek halat ve kapaklar. Uğur için küçük deniz yaratığı oyması, gerçek av trofesi zorunlu değil.
+
 **Rol ve esin:** Konvoy lideri NPC, oyuncu kontrat; silahlı ticari kalyon. **Gövde:** L/B 3,25:1; Geniş yük karnı; tek düşük baş kale; kademeli yüksek köprü kıç üzerinde açık sinyal sehpası. **Güverte, direk ve yelken:** 3: açık+batarya+ambar; 3 direk; iki geniş kare ve büyük latin mizana. **Batarya ve görünür açıklıklar:** 1 batarya, 4 port/borda; iki dar yük kapağı.
 
 **Ana siluet / mobil ayıraçlar:** sinyal sehpası, iki kapak, yüksek arka köprü, dört küçük port. **Palet, yüzey ve kumaş:** tuzlu koyu meşe, bronz çerçeve, kirli bone bez, küçük amber lamba. **Bayrak ve faction alanı:** sehpa üzerinde iki sinyal dili, kıç aynasında lonca işareti. **Süs/baş figürü:** orta; pruvasında gömülü yön taşı.
@@ -133,6 +159,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 
 ### SC-13 · Kara Mihver — Admiral komuta fırkateyni
 
+**Deniz yaşamı ve tasarım yorumu (güncel):** Bölge komuta gemisi; uzun hizmetin izleri profesyonel onarımlarla giderilmiş, düzenli donanım ve fenerler. Deniz yaratığına gönderme yapan ölçülü yapısal kabartma olabilir; resmi arma daha sonra ayrı katmanda.
+
 **Rol ve esin:** Bölge Admiral ve eskort komutanı NPC; büyük komuta fırkateyni. **Gövde:** L/B 4,25:1; Uzun belirgin dar bel; yukarı kıvrılmış mahmuz; iki kapalı fenerli çift teras kıç. **Güverte, direk ve yelken:** 3: açık+batarya+alt depo; 3 uzun direk; önde/ortada ikişer dar kare, kıçta uzun gaff ve küçük üst kare. **Batarya ve görünür açıklıklar:** 1 batarya, tek hatta 10 küçük port/borda.
 
 **Ana siluet / mobil ayıraçlar:** ikiz fener, çift teras, ince arma piramidi, tek uzun port hattı. **Palet, yüzey ve kumaş:** charcoal meşe, bronz fener kafesi, kül mavi bez ve fırtına grisi yamalar. **Bayrak ve faction alanı:** ana tepede çatal komuta flaması, terasta kalkan paneli. **Süs/baş figürü:** orta; örtülü göz kabartmalı bronz baş bloğu.
@@ -140,6 +168,8 @@ L/B, ıslak gövdenin pruva–kıç boyu / azami enidir; civadra, yelken ve dı�
 **Varyant:** komuta flaması, amblem, fener tonu ve trim. **Sabit:** ikiz fener, çift teras, 10 port, uzun üç direk; ayrıca pivot, su hattı ve silah soketleri. **Negatif:** çift batarya, organik çan, yük sehpası veya dördüncü direk yok.
 
 ### SC-15 · Solgun Omurga — Hayalet ve legendary enkaz
+
+**Deniz yaşamı ve tasarım yorumu (güncel):** Asimetrik terk edilmiş enkaz; kurtulamadığı deniz saldırısını düşündüren kırık kaburga, hasarlı kıç ve çürümüş taşıyıcılar. Gerçek doğaüstü dönüşüm bu sınıfta mümkündür; sekiz bağımsız yön, hasarı aynalama yok.
 
 **Rol ve esin:** Lanetli açık deniz NPC ve özel event; oyuncu skin’i değil; terk edilmiş barque. **Gövde:** L/B 3,9:1; İnce belde dışa açık kaburgalar; yarık dar baş; iskele ucu çökmüş yarım ayna kıç. **Güverte, direk ve yelken:** 2: çökmüş açık+yarı açık batarya; 3 direk, 2 ayakta+1 ana direk kırığı; önde parçalı kare, kıçta kesik latin. **Batarya ve görünür açıklıklar:** 1 yıkık batarya; 4 port iskeleti/borda, iskelede ikisi kapalı; 1 açık kırık top.
 
@@ -357,3 +387,11 @@ Aşağıdaki tarihsel roster sırası kapsam ve tasarım fişlerini gösterir; g
 **Güncel kesin referans kuralı (2026-11-27):** Kullanıcıya ve GPT Image'a renksiz/clay CD verilmez. Referans 1 her zaman okunaklı, malzeme renkli gemiye özel CD (Ship Builder Malzeme CD PNG; tüm halat kategorileri açık), referans 2 orijinal SeaCraft malzeme atlasıdır. Ahşap, demir, yelken, pruva ve donanım ayrımı görünür olmalıdır. Renksiz çıktı yalnız iç teknik QA için kullanılabilir; üretim girdisi değildir. Eski renksiz varsayılanlar geçersizdir.
 
 **Güncel paket sözleşmesi — seacraft-atlas-mounts-v2 (2026-11-27):** Her yeni veya yeniden yayımlanan onaylı gemi paketi atlas_4x2.png, rotation.gif, manifest.json, orijinal kaynak PNG ve mounts.json olmak üzere 5 dosya taşır. Eski dört/12 dosyalı paketler geçici geriye uyumluluk içindir; montajı olmayan gemiye sahte montaj yazılmaz. Manifest mounts.file=mounts.json, location=inside_archive, sha256, atlas_sha256, count, aligned_space, final_coordinate_transform içerir. Atlas değişirse montaj koordinatları yeniden doğrulanır ve iki hash aynı pakette güncellenir. CI stage v2 paketlerinde atlas ve JSON hash, gemi kimliği, hücre, sıra, şema, hizalama ve kayıt sayısını kontrol eder; dış sidecar okumaz. Godot efekt tüketicisi henüz uygulanmadı.
+
+## Güncel dünya tasarımı — denizden sağ çıkmış gemiler ve gelecekteki arma üretimi
+
+Kozmik korku yalnız lanetli gemi biçiminde anlatılmaz. Sıradan denizciler tehlikeli sulardan geçer, küçük yaratıkları avlayabilir, büyüklerinden kaçabilir ve hasarlarını onarır. Pençe/ısırık izleri, değişmiş tahtalar, dikişler, işlevsel takviyeler, küçük av trofeleri, ahşap yaratık tasvirleri ve batıl inanç nesneleri geminin rolü, boyutu, geçmişi ve taşıma kapasitesiyle orantılı seçilir. Bunlar her gemide zorunlu değildir. Gerçek av ile sembolik oyma ayrılır; doğrulanmamış yaratık türü veya olay dünya lore'u olarak ilan edilmez. Sıradan gemiler denize elverişli, tekrar üretilebilir sınıflardır; her gemiyi boss veya enkaza dönüştürme. Kalıcı fiziksel süs, onarım izi, geçici aksesuar ve runtime katmanı ayrı tanımlanır. Simetrik sınıflarda kalıcı ayrıntılar yansımaya uygun, gerçek asimetride sekiz yön olmalıdır.
+
+Arma üretimi ayrı gelecek aşamadır: deniz yaratıkları, kozmik korku motifleri, denizcilik batıl inançları ve faction kimlikleri özgün arma tasarımına konu olabilir. Mevcut montaj HTML v6'nın yelken UV, flama/sancak ve maske desteği kullanılır; ana sprite'a arma veya bayrak kumaşı basılmaz. Şimdilik yalnız uygun yüzey ve bağlantılar belirlenir. Eski fişlerdeki arma/flama renk ve varyant tarifleri runtime tasarım önerisidir, baked gereklilik değildir.
+
+Yeni üretimde §24L üretim rehberi geçerlidir: Builder v0.11 gerçek reçete/render ile her öğenin kesin fiziksel envanteri ve her bağımsız yönün görünür/örtülü ayrıntıları doğrulanır; port sayısı top sayısı değildir. Aynı prompt ve malzemeli CD + atlas ile üç bağımsız GPT Image üretimi yapılır. Buradaki yeni yaşam öyküleri görsel tasarım önerileridir; onaylı sprite, reçete, mekanik, silah sayısı ve dünya ölçeği kendiliğinden değiştirilmez. SC-07 ve diğer eksik erken oynanış gemileri önceliklidir.
