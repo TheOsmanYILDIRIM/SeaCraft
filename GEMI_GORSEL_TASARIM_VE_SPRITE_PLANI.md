@@ -395,3 +395,63 @@ Kozmik korku yalnız lanetli gemi biçiminde anlatılmaz. Sıradan denizciler te
 Arma üretimi ayrı gelecek aşamadır: deniz yaratıkları, kozmik korku motifleri, denizcilik batıl inançları ve faction kimlikleri özgün arma tasarımına konu olabilir. Mevcut montaj HTML v6'nın yelken UV, flama/sancak ve maske desteği kullanılır; ana sprite'a arma veya bayrak kumaşı basılmaz. Şimdilik yalnız uygun yüzey ve bağlantılar belirlenir. Eski fişlerdeki arma/flama renk ve varyant tarifleri runtime tasarım önerisidir, baked gereklilik değildir.
 
 Yeni üretimde §24L üretim rehberi geçerlidir: Builder v0.11 gerçek reçete/render ile her öğenin kesin fiziksel envanteri ve her bağımsız yönün görünür/örtülü ayrıntıları doğrulanır; port sayısı top sayısı değildir. Aynı prompt ve malzemeli CD + atlas ile üç bağımsız GPT Image üretimi yapılır. Buradaki yeni yaşam öyküleri görsel tasarım önerileridir; onaylı sprite, reçete, mekanik, silah sayısı ve dünya ölçeği kendiliğinden değiştirilmez. SC-07 ve diğer eksik erken oynanış gemileri önceliklidir.
+
+
+## Oyuncu filosu ve tersane ilerlemesi — 2026-11-27 (kanonik tasarım)
+
+Kullanıcı talebiyle 15 mevcut SC gövdesi korunarak 16 yeni oyuncu odaklı gövde (SC-16…31) eklenir; toplam 31 fiziksel sınıf. SC-02 ücretsiz başlangıçtır. SC-01 keşif filikası ve mevcut SC-03/04/05/06/07/08/09/10/11/12/13 ortak NPC/oyuncu gövdeleridir; SC-14/15 oyuncuya satılmaz. Yeni sınıflar oyuncuya özgü satış ilerlemesini zenginleştirir, ileride NPC olarak da kullanılabilir. Bu bölüm eski “15 temel gövde” sayısını günceller; eski paketlere dokunmaz.
+
+Araştırma (tarihsel, bugünkü fiyat listesi değil): [2010 tersane tablosu](https://wikiwiki.jp/seafight/%E9%80%A0%E8%88%B9%E6%89%80/%E8%88%B9) altın gemilerinde fiyat, kapasite, hız, dayanıklılık ve yelken farklılaşması; [resmî tasarımlar FAQ](https://board-en.seafight.com/threads/designs.171633/), [lig sistemi](https://board-en.seafight.com/threads/league-system.74552/) erişim kademeleri; [tasarım değiştirme](https://board-en.seafight.com/threads/changing-ships.184897/) görünüm ve ekipman ayrımı. SeaCraft isim, görünüm, para tutarı, istatistik ve ligleri kopyalamaz; eski altın gemisi çeşitliliği ve kazanılan özel tasarım fikrini kullanır.
+
+### Satış kademeleri
+
+Fiyatlar mevcut PRG-05 tek currency bakiyesinde **altın** olarak gösterilecek tasarım başlangıç değerleridir; yeni premium para, gerçek para, zorunlu PvP veya inci eklenmez. Mevcut 80 currency bounty pilotu fiyat ölçeği için geçici referanstır, ekonomi ölçümünden sonra fiyatlar yeniden kalibre edilir. Kademe 0–5 tersane erişimi tasarım seviyesidir; mevcut PRG-03 progression gate/license sistemiyle eşleştirilir, ikinci rütbe sistemi yaratılmaz. K0 ücretsiz; K1 ilk liman eğitim zinciri; K2 kıyı görevleri; K3 açık deniz rotası; K4 bölgesel kontrat; K5 ileri denizcilik lisansı. Görev ID'leri henüz runtime'da tanımlı kabul edilmez.
+
+| Kademe | Gövde | Altın | Dünya boyu | Fiziksel silah (iskele+sancak+baş+kıç) | Rol |
+|---|---|---:|---:|---|---|
+| 0 | SC-02 Kül Dikişi | 0 | mevcut | 2+2+0+0 | başlangıç |
+| 1 | SC-16 Tuz Yarası | 240 | 84 | 3+3+0+0 | **ilk satın alınacak gemi**, dengeli |
+| 1 | SC-17 İnce İz | 320 | 84 | 1+1+0+0 | hızlı keşif |
+| 1 | SC-18 Bakır Kasa | 360 | 90 | 1+1+0+0 | kargo |
+| 2 | SC-19 Kırık Diş | 680 | 102 | 4+4+0+0 | çatışma |
+| 2 | SC-20 Sessiz Kanca | 740 | 108 | 2+2+0+0 | avcı, ayrı harpun montajı |
+| 2 | SC-21 Yedek Omurga | 800 | 108 | 2+2+0+0 | dayanıklılık |
+| 3 | SC-22 Sığlık Yeli | 1450 | 120 | 4+4+0+0 | hız/menzil |
+| 3 | SC-23 Kül Kervanı | 1600 | 126 | 3+3+0+0 | ticaret |
+| 3 | SC-24 Demir Dikiş | 1800 | 126 | 6+6+0+0 | eskort |
+| 3 | SC-25 Mercan Keseri | 1900 | 132 | 4+4+0+0 | yaratık avı, ayrı harpun montajı |
+| 4 | SC-26 Fırtına Eşiği | 3600 | 150 | 8+8+0+0 | dengeli açık deniz |
+| 4 | SC-27 Ağır Halat | 3900 | 156 | 6+6+0+0 | kargo/koruma |
+| 4 | SC-28 Kara Çentik | 4200 | 156 | 9+9+0+0 | savaş |
+| 5 | SC-29 Sessiz Resif | 8200 | 180 | 10+10+0+0 | keşif/uzak rota |
+| 5 | SC-30 Gece Ocağı | 9400 | 192 | 12+12+0+0 | ağır savunma |
+| 5 | SC-31 Son Fener | 11000 | 204 | 10+10+0+0 | komuta/dengeli |
+
+Ortak eski sınıfların tersane erişimi (mevcut ölçüler ve görseller korunur): K1 SC-01 280; K2 SC-03 620, SC-05 720; K3 SC-04 1500, SC-07 1550, SC-06 1750, SC-11 1650; K4 SC-09 3700, SC-10 3800, SC-12 4000; K5 SC-08 9000, SC-13 10500. Özel silah/boarding/onarım/konvoy mekanikleri tamamlanana kadar ilgili sınıf satışa açılmaz; SC-01 silahsız keşif yan seçeneğidir. SC-16 ilk fiyatlı seçenek olarak kalır. Önceki onaylı assetlerde top miktarı görsel ve montaj kaydından doğrulanır, burada yeniden tahmin edilmez.
+
+### Yeni gövde fişleri — üretim niyeti
+
+Tüm yeni gövdeler bilateral simetrik, 5 özgün +3 yansıma; her fiziksel top dolu ve görünür montajı olan gerçek silahtır, kapalı portlar ayrıca sayılır. Aşağıdaki L/B ve arma/top sayıları yeni reçetelerin tasarım hedefidir, henüz Builder'da render edilmiş değildir. Üretimde gerçek envanter ve yön görünürlüğü §24L'ye göre ölçülür; değişiklik açık kaydedilir. Sabit onarım/trofe simetrik, kumaş ve bayrak armaları ayrı. Dünya boyları 1× E/W su hattı, fiziksel silah miktarı otomatik DPS katsayısı değildir.
+
+- SC-16 Tuz Yarası: 3,8:1 alçak güverteli sağlam kıyı cutter; 1 direk, 1 gaff, 1 üst kare, 1 flok; 6 açık güverte topu, 0 port. Kama baş, yuvarlatılmış düz kıç, koyu meşe, kirli krem bez, dar oksitli bakır trim. Önceki küçük yaratık ısırığını onaran iki kısa simetrik tahta yaması; küçük ahşap balık-çene oyması, gerçek büyük trofe yok. Tek ambar kapağı, iki halat demeti, açık dümen. Sade ama SC-02'den daha sağlam.
+- SC-17 İnce İz: 4,8:1 uzun alçak schooner, 2 eğik direk, 2 gaff, 1 flok; 2 açık top, 0 port. Ceviz, soluk gri keten, dar demir baş dudağı; eski sürtünme onarımları. Küçük kıç sandığı, dümen; ağır süs yok.
+- SC-18 Bakır Kasa: 3,0:1 geniş hoy, 1 direk, 1 geniş gaff, 1 flok; 2 açık top, 0 port. İki ambar kapağı, simetrik bağlı sandık, bakır köşe kuşakları; yük sürtünmesi ve yenilenmiş tahtalar, soluk bej kumaş.
+- SC-19 Kırık Diş: 3,9:1 küçük brig, 2 direk, 3 kare ve 1 gaff, 1 flok; 8 top, 4 dolu port/borda. Kesik pruva, tek kıç basamağı, siyah kahve ahşap, füme bez; eski pençe çizikleri ve küçük yaratık dişi çiftleri.
+- SC-20 Sessiz Kanca: 3,5:1 avcı ketch, 2 direk, 2 latin, 1 flok; 4 açık top, 0 port; bir merkezî harpun platformu ve iki simetrik makara. Islak koyu meşe, zeytin bez; küçük av kalıntısı veya ahşap taklidi, güverte işlevsel.
+- SC-21 Yedek Omurga: 3,2:1 tok cutter, 1 direk, 1 gaff, 1 üst kare, 2 flok; 4 açık top, 0 port. Çift borda güçlendirmesi, tek kapak, yedek tahta çiftleri; onarılmış ısırık, kül kahve ve gri bez.
+- SC-22 Sığlık Yeli: 4,6:1 ince schooner, 2 direk, 2 gaff, 2 flok; 8 açık top, 0 port. Uzun pruva ve dar kıç, tuzlu ceviz, kirli kemik bez; küçük pusula biçimli ahşap oyma, sürtünme takviyesi.
+- SC-23 Kül Kervanı: 3,1:1 geniş ticaret barque, 3 direk, 2 kare, 1 latin, 1 flok; 6 top, 3 dolu port/borda. İki kapak, bağlı yük çiftleri, onarılmış borda, toprak kahve ve açık gri bez.
+- SC-24 Demir Dikiş: 3,7:1 eskort korveti, 2 direk, 3 kare, 1 gaff, 1 flok; 12 top, 6 dolu port/borda. Düşük kıç köprüsü, çift ray, cıvatalı yamalar, mat demir ve füme mavi bez.
+- SC-25 Mercan Keseri: 3,6:1 geniş avcı brig, 2 direk, 3 kare, 1 gaff, 1 flok; 8 top, 4 dolu port/borda; merkezî harpun platformu, iki makara, küçük simetrik av trofeleri. Güçlendirilmiş baş, küçük kabuk kalıntıları, yıpranmış zeytin bez.
+- SC-26 Fırtına Eşiği: 4,0:1 açık deniz fırkateyni, 3 direk, 5 kare, 1 gaff, 2 flok; 16 top, 8 dolu port/borda. Kademeli kıç, kapalı güverte kapağı; eski dalga ve yaratık darbelerinden onarılmış omuz, lacivert-gri bez.
+- SC-27 Ağır Halat: 3,2:1 silahlı yük kalyonu, 3 direk, 4 kare, 1 latin, 1 flok; 12 top, 6 dolu port/borda. Büyük ikili ambar kapağı, simetrik yük ve makaralar; güçlü borda tamponları, yaşlı meşe ve kirli bej bez.
+- SC-28 Kara Çentik: 3,8:1 savaş fırkateyni, 3 direk, 5 kare, 1 gaff, 1 flok; 18 top, 9 dolu port/borda. Çentikli ama onarılmış pruva demiri, tek kıç terası, çift küçük kemik süsü, koyu gri bez; korsan kimliği değil, ağır savaş işlevi.
+- SC-29 Sessiz Resif: 4,3:1 uzun menzil araştırma fırkateyni, 3 direk, 4 kare, 1 gaff, 2 flok; 20 top, 10 dolu port/borda. İki erzak kapağı ve küçük korunaklı gözlem platformu; değişmiş borda tahtaları, gri yeşil bez; gerçek yaratık avı iddiası yok.
+- SC-30 Gece Ocağı: 3,5:1 ağır hat gemisi, 3 direk, 6 kare, 1 gaff, 2 flok; 24 top, 6+6 dolu port/borda. Çift batarya, ağır pruvalık, düz kıç, eski onarımları örten cıvatalı demir; koyu meşe, soluk kül bez, gömülü fosil parçaları.
+- SC-31 Son Fener: 3,9:1 büyük komuta gemisi, 3 direk, 5 kare, 1 gaff, 2 flok; 20 top, 10 dolu port/borda. Tek merkezî korunaklı kıç feneri, iki teras, düzenli onarım, koyu ceviz ve kirli kemik bez; yaratık biçimli nötr ahşap kabartma, arma sonra.
+
+### Ekonomi ve ilerleme sözleşmesi
+
+Farklı rol gemileri düz güç merdiveni değildir: aynı kademede savaş gövdesi dayanıklı fakat yavaş, keşif hızlı fakat düşük taşıma/ateş kapasitesi, yük gemisi büyük ambar fakat düşük çeviklik; destek/avcı ekipman alanı karşılığında batarya fedakârlığı. Kademe içi alternatifler gereksiz zorunlu satın alım değildir. İlk hedef SC-16, 80'lik bounty pilotu ölçeğinde üç brüt ödül; gerçek net gelir (cephane/tamir sonrası) ölçülmeden süre garantisi yok. Başlangıç hedefi 10–20 dakika, K2 30–60 dakika toplam; diğerleri gerçek testle ayarlanır. Mevcut ücretsiz başlangıç korunur. Satın alınmış gemiler kalıcı sahiplik listesinde tutulur; limanda değişim, ekipman uyumluluğu ve kapasite kontrolü, taşan ekipman envantere döner, kaybolmaz. Satın alma host/offline authority, aynı transaction ID ile tekrar ödeme yok; fiyat/erişim/stock güvenilir tanımdan, yetersiz bakiye veya kilitli sınıfta mutasyon yok. Kaydet/yükle sahiplik ve aktif gövdeyi aynı atomik checkpoint içinde korur. Elite özel görünüm/arma/ödül ilerlemesi gövdeden ayrı; yeni premium para şart değil, kozmetik güç vermez. Yeni tasarım ve fiyat tablosu PLAY-06 için kabul girdisidir; runtime satın alma, gerçek stat dengeleme ve yeni sprite üretimi bu belgeyle yapılmış sayılmaz.
+
+Üretim sırası: SC-16 ilk; ardından SC-17/18 (erken alternatifler), SC-19/20/21; mevcut eksik NPC SC-07 de erken oynanış ihtiyacıyla paralel önceliklidir. K3–5 görseller ilgili oynanışa yaklaşınca üretilir; raid/legendary askıda. Her üretimde malzemeli CD + atlas ve üç bağımsız deneme; ayrı görünüm/arma koleksiyonu sonraki çalışma.
