@@ -1,33 +1,82 @@
 # SeaCraft — Oynanış Öncelikli Geliştirme Planı
 
-**2026-11-24 — Kullanıcı onaylı yeni yürütme sırası.** Bu bölüm aşağıdaki tarihsel teknik görev kataloğunun yürütme sırasını ve geçiş kapılarını geçersiz kılar. Eski kod, testler, mekanik/içerik katalogları, kayıt uyumluluğu ve kanıtlar korunur; teknik olarak bitmiş altyapı oynanış kabulü anlamına gelmez.
+**2026-11-28 — Mobil/offline/LAN ilk oynanabilir sürüm ve paralel geliştirme revizyonu.** Bu üst bölüm, 2026-11-24 PLAY-01…10 seri yürütme sırasını ve tek aktif geliştirme kısıtını geçersiz kılar. PLAY kimlikleri tarihsel kanıtlarla bağlantı için korunur; mevcut kod, test, save/network sözleşmesi ve onaylanmış asset kaynakları silinmez. Bu revizyon planlamadır, yeni runtime kodu veya cihaz kabulü değildir.
 
-## Hedef: 15 dakikalık keyifli offline surface prototipi
+## 1. Ürün kapsamı ve temel eğlence
 
-Oyuncu açılıştan itibaren gemisini anlayarak sürer, yönünü bulur, bir NPC ile savaşır, ganimet alır, limana döner, onarır ve somut bir gelişim elde eder. Bunu ikinci kez yapmak ister. Her aşama önce gerçek Bootstrap sahnesinde görünür ve denenebilir olacak; katalog kapsamı için yeni soyut sistem eklenmeyecek.
+SeaFight araştırması yalnız esin/katalog kaynağıdır. SeaCraft mobil öncelikli, offline-first ve isteğe bağlı host-authoritative LAN denizcilik sandbox RPG'sidir; MMO değildir. İlk hedef: küçük fakat gerçek oynanabilir yüzey dünyasında 30–60 dakikalık tekrar edilebilir oyun; ilk 15 dakikada hareket → savaş/av → loot → liman → satın alma/onarım → yeniden açılma. Miktarlar ve süreler ilk denge hipotezidir, ölçüme göre ayarlanır. Görevler dünyayı destekler, bütün oynanışı yönetmez.
 
-| Sıra | İş | Oynanış kabulü |
+- Koru: seyir/harita, top ve zıpkın savaşı, ganimet/batık, liman/tamir, gemi alımı, NPC ticaret/av/devriye, basit görev ve LAN. NPC filosu/formasyon kapasitesini kaldırma.
+- Gelişim gemi çeşitliliği merkezli: farklı gemi gövdeleri ve stat profilleri; mevcut top, mühimmat ve basit ekipman sistemi. Her gemiye ayrı görsel modüler gövde/yelken/mürettebat üretimi veya çok katmanlı upgrade ağacı zorunlu değil.
+- Sadeleştir: M-007/008/009/010/016–019/021–026/029/030/032/033/038/055/059/060; mevcut işleyen authority korunur. Tek para birimi; az ekipman/mühimmat; açık etkiler; tehlike derecesi, zorunlu seviye/grind kapısı değil; basit ticaret, faction/itibar yalnız ilk oynanışa hizmet ettiği ölçüde. Crew, crafting, skill/rank, gem/core/castle/trophy katmanlarının hangisinin ilk ekrana gerçekten çıkacağı ilk görevde netleştirilir; hepsini tamamlamak ilk sürüm önkoşulu değildir.
+- İlk sürümden çıkar: M-020 pet/trainer, M-011 ayrı Voodoo kalkanı (hull korunur), M-034/035/036/054 PvP puanı kasma, MMO guild/lig, günlük giriş/sezon/sıralama ve canlı servis ekonomisi. LAN co-op korunur; PvP ileride isteğe bağlı olabilir. MMO guild'i çıkarmak sandbox AI filosunu çıkarmak anlamına gelmez.
+- Ertele: boarding/ele geçirme M-015, outpost hakimiyeti M-037'nin dinamik genişlemesi, PRG-06 denizaltı/torpido M-049–051, büyük boss/raid haritaları, karmaşık element/weather/action item ve paralel progression. Geçici korsan raid karşılaşması aşağıdaki dar kapsamda ilk sürümdedir.
+
+### Birbirinden bağımsız üç dünya popülasyonu
+
+| Sistem | Yaşam döngüsü ve sahiplik | İlk sürüm |
 |---|---|---|
-| PLAY-01 | Gemi hareketi, dönüş, hız, kamera ve dokunmatik kontrol | Dokunulan hedef ile ekrandaki hedef örtüşür; pan/zoom sonrası gemiye dönülebilir; rota ve durma görünür; düz, ters yön, yakın hedef ve kıyı senaryoları kontrollü; Android gerçek cihazda rahat kullanım. |
-| PLAY-02 | Deniz, gemi sprite'ları, harita | SC-02/SC-03 doğru pivot ve yön; hareket izi/köpük ve okunur deniz/kıyı; bölge geçişi ve harita anlaşılır; Android performans ölçümü. |
-| PLAY-03 | Top savaşı | Menzil/borda/reload açık; top atışı, mermi, isabet, hasar ve batış görsel/ses geri bildirimi; yanlış atışın nedeni anlaşılır; dövüş mobilde kontrol edilebilir. |
-| PLAY-04 | NPC gemileri | Canlı devriye, tehdit, takip, ateş, kaçış ve onarım; tekrar karşılaşılabilir düşmanlar; oyuncu davranışına okunur tepki. |
-| PLAY-05 | Ganimet, envanter, liman, tamir | Savaş ödülü görülebilir/alınabilir; envanter erişilebilir; liman ve tamir açık; kayıt/yükleme ilerlemeyi korur. |
-| PLAY-06 | Gemi alımı, ekipman, güçlenme | En az bir gerçek satın alma veya yükseltme, fiyat ve etkisi anlaşılır; tekrar oynama motivasyonu. |
-| PLAY-07 | Görev, ekonomi, keşif | Tek basit görev zinciri, anlamlı bölge ve ticaret; mevcut PRG sistemleri ancak gerçek oyun akışı gerektirdiğinde kullanılır. |
-| PLAY-08 | 15 dakika döngü ve denge | Baştan sona gerçek Android oynanış; hareket→savaş→loot→liman→güçlenme döngüsü en az iki kez; sıkışma/çökme/kayıp yok, oyuncu geri bildirimi ile kabul. |
-| PLAY-09 | LAN olgunlaştırma | Aynı offline döngü iki gerçek cihazda; yetki, reconnect, kayıt, drift ve dokunmatik UX; mevcut NET/PRG05 altyapısı korunur. |
-| PLAY-10 | İleri içerik | Ancak PLAY-08 ve PLAY-09 kabulünden sonra PRG-06 denizaltı/torpido, ADV boss/raid ve geniş içerik değerlendirilir. |
+| Normal NPC | Rol/archetype tabanlı yerel popülasyon: tüccar, korsan, devriye, savaş gemisi; canavar ayrı davranış profili. Mevcut NPC/monster authority, spawn, AI ve loot kuralları. | Evet: görünür devriye, tehdit, takip, ateş, kaçış, tamir, canavar avı. |
+| Raid / geçici hedef ve görev | Bağımsız encounter sahibi ve lifecycle: tetiklenme → geçici 2–4 gemilik korsan grubu (öneri, dengeyle değişir) → görev bildirimi/izleme → zafer/başarısızlık/sona erme → ödül/temizlik. Lider ve grup koordinasyonu; tekrar oluşabilir. Kalıcı oyuncu kimliği, kişisel ekonomi, bölge hakimiyeti veya sanal oyuncu gelişimi yok. | Evet: küçük açık deniz raid'i; büyük instanced raid/boss sistemi gerektirmez. |
+| Sanal oyuncu NPC (simulated player) | Ayrı, kalıcı sandbox population ve karar/gelişim sahibi. Oyuncu gibi gelir/harcama, loot, gemi satın alma, tamir, av, ticaret, ittifak, kalıcı filolar ve dinamik bölge hakimiyeti. Normal NPC'nin upgrade'i veya raid'in kalıcı sürümü değildir. | Hayır; sonraki bağımsız genişleme. |
 
-## Yürütme ve kanıt kuralları
+Üç sistem aynı ShipMotor, CombatAuthority, LootAuthority, inventory, market/transaction, stable ID, save ve host-authority servislerini tüketebilir; ancak spawn registry/kimlik kapsamı, yaşam döngüsü, karar ve progression state'i birbirine dönüştürülmez. İlk sürümde sanal oyuncu altyapısının uygulanması, placeholder sanal oyuncu veya geleceğe dönük ayrı economy engine zorunlu değil. Yeni API'ler tek bir NPC türünü varsaymamalı; mevcut AI LOD/filo altyapısı korunur. Daha sonra yakın tam simülasyon, uzak seyrek/istatistiksel olaylar, oyun kapalıyken durma yaklaşımıyla sandbox eklenir. Mevcut faction kontrolü ilk sürümde sabit veri olabilir.
 
-- **2026-11-26 cihaz geri bildirimi:** Her küçük değişiklik için kullanıcı APK indirip kurmaz. CI gerçek Godot fizik senaryoları, tüm onaylı atlasların yön panosu ve ölçülen hareket GIF/JSON replay'i zorunlu teknik inceleme yoludur. Fiziksel cihaz testi konsolide oynanış kabulünde veya cihaz-özel sorun için yapılır. Kullanıcı onayıyla güncel görseller PLAY-01 düzeltmesi içinde entegre edildi; bu, ileri mekaniklerin açılması veya cihaz kabulü anlamına gelmez.
+## 2. İlk görev — PLAY-00: sistem + içerik + UI sözleşmesini kesinleştir
 
-- **Tek aktif geliştirme: PLAY-01.** Bir sonraki aşamaya geçmeden önce mevcut aşamanın kullanıcı tarafından oynanış kabulü gerekir. Fiziksel kabul beklerken aynı aşamadaki bağımsız iyileştirmeler ve otomatik testler sürdürülür; yeni mekanik aşamasına atlanmaz.
-- Otomatik CI ve Android/Linux export teknik kapıdır; gerçek cihaz kontrolü ve kullanıcı deneyimi ayrı kapıdır. GUT sayısı kalite/oynanabilirlik ölçüsü değildir. Her checkpoint APK, exact commit, test kanıtı ve kısa cihaz senaryosu verir.
-- Mevcut FND/VS/CORE/AI/NET/PRG testleri ve save/network authority sözleşmeleri korunur. Yeni iş bu sistemleri görünür ve oynanabilir kılmaya odaklanır. PRG-05 fiziksel LAN kabulü kullanıcıya atanmış ayrı açık kayıt; PRG-06 askıda (mevcut Deep Haven pilotu ve kayıtlar korunur). ADV-01 başlamaz.
-- PLAY-01 checkpoint 1: gerçek canvas transform, gemiye dönme, DUR/hedef geri bildirimi ve yakın/ters varış kontrolü doğrulandı. Checkpoint 2: dokunulan erişilebilir hedef için mevcut `SectorNavigation` ile kıyı çevresi waypoint rotası, görünür rota çizgisi, erişilemez kıyı hedefini reddetme ve sınırlı sıkışma replan/abort doğrulandı. Kalan kapı gerçek Android cihazda touch/pinch/recenter/turn/arrival/stop/coast/rota okunurluğu ve hareket hissidir; hız/dönüş sayıları yalnız cihaz geri bildirimiyle ayarlanır.
-- Görsel/sprite üretimi ayrı lane olabilir; PLAY-02 için gerekli onaylı pilotlar kullanılır, tüm katalog beklenmez.
+**İlk yapılacak iş budur.** Önce ekranların hangi sistemlere bağlanacağını belirle; bütün backend kodunun bitmesini bekleme. README, MEKANIK_KATALOGU, ICERIK_KATALOGU, güncel kod/definition/fixture/asset ve mevcut UI panellerini karşılaştır. Her satır için mevcut/eksik/sadeleştir/askıda durumu ve gerçek kod yolu, ekran sözleşmesi, mevcut authoritative işlem, gereken ek işlem ve içerik ID'leri belirle. Hazır sistemi tekrar kodlama. Tasarım kararı ile doğrulanmış runtime durumunu ayır.
+
+Aşağıdaki ekran envanteri ilk tasarım girdisidir; nihai ekran/alan/aksiyon seçimleri PLAY-00'da sabitlenir. Sayısal fiyat, slot ve stat dengesi sonradan içerik verisiyle ayarlanır.
+
+| Ekran / panel | Gösterilecek veri | Oyuncu aksiyonu / servis |
+|---|---|---|
+| Ana menü / save | Yeni oyun, kayıt, son konum, offline/LAN | Yeni/Devam, Host/Katıl, ayarlar; Save/NET |
+| Deniz HUD | Hull, seçili hedef hull/tür, aktif top ve mühimmat, reload, menzil/borda, para, görev özeti | Hareket, dur, merkezle, hedef seç, ateş/zıpkın, gerekirse otomatik ateş, etkileşim; ShipMotor/CombatAuthority |
+| Harita | Bölge/tehlike, liman, rota, aktif olay, oyuncu konumu, sabit faction etiketi | Pan/zoom, hedef/rota, bölge geçişi; SectorGraph |
+| Liman hub | Güvenli alan, servisler, bakiye, gemi durumu | Gemi pazarı, donanım, mühimmat, ticaret, tamir, görev; mevcut NPC/market authority |
+| Gemi satın alma | Hazır gemi görseli, isim, fiyat, hull, hız, manevra, top/ekipman kapasitesi, sahiplik, karşılaştırma | Satın al, sahip olunan gemiyi seç; bakiye/liman/kapasite/aktif gemi kontrolü. Gemi değiştirme ve ekipman aktarımı kuralını kesinleştir. |
+| Gemi / donanım | Aktif gemi, top slotları/kapasite, takılı silah, menzil/reload/hasar, sade ekipman | Tak/çıkar/değiştir, stat farkı; Inventory/Loadout/StatModifierPipeline |
+| Top pazarı | Top tipi, fiyat, menzil, hasar, reload, uyum, stok | Adet, satın al; satma mevcut kurallarla; market/inventory |
+| Mühimmat / zıpkın | Tür, adet, fiyat, etkisi, uyum, takılı tür, stok | Satın al/adet, aktif tür seç; market/combat stock. Mühimmatsız durumda kilitlenmeyi önleyen başlangıç kuralı. |
+| Ticaret | Mal türü, mevcut stok, fiyat, sahip olunan adet, toplam | Al/sat, adet seç, bakiye/menzil/stock kontrolü; PRG-05 market authority |
+| Envanter / loot | Eşya kategorisi, miktar, değer, son ganimet, varsa kapasite | Ganimet al, kullan/sat/tak; tek inventory truth |
+| Tamir | Mevcut/maksimum hull, maliyet ve beklenen sonuç | Onar, yetersiz bakiye bildirimi; CombatAuthority/market |
+| Görev / raid | Aktif/hedef/tamamlanmış görev, konum, grup kalan gemi sayısı, ödül, süre varsa | Kabul/izle/teslim veya otomatik tamamlanma kuralı; QuestAuthority + bağımsız raid lifecycle |
+| LAN / duraklat / ayar | Oda, oyuncular, bağlantı, kaydın sahibi, ses ve kontrol, yeniden bağlantı durumu | Host, katıl/IP, çık, reconnect; offline pause ve checkpoint, LAN pause yerine yerel menü |
+
+PLAY-00 teslimi: ekran akış haritası (ana menü → deniz → liman → pazar/donanım/görev; geri dönüşler); mobil landscape wireframe'ler; her ekran için view-model alanları, stable ID, komut payload/sonuç/hata kodları ve authority sahibi; başlangıç gemi/top/mühimmat/mal fiyat/istatistik veri matrisi; gerekli ikon/sprite/VFX/ses listesi; mock fixture (gerçekçi boş/dolu/başarılı/başarısız durumlar) ve UI/backend entegrasyon kabulü. Satın alma ve satma atomik, tekrarlı istek idempotent; UI bakiye veya hasar gerçeği yaratmaz. Ekranlarda loading, empty, disabled, insufficient funds/stock, out-of-range, incompatible, disconnect/retry ve save error durumları tasarlanır. Gereksiz ekranlar birleştirilir; 48dp civarı dokunma hedefi, landscape safe area, küçük ekran ve fontScale 1.3, touch capture ve savaş sırasında minimal HUD. Sürükle-bırak zorunlu değil.
+
+**Çıkış kapısı:** ekran kapsamı, navigasyon, veri/komut sözleşmesi ve fixture'lar kullanıcı tasarım kabulüne hazır; UI uygulaması gerçek backend'i beklemeden başlayabilir. Eksik işlem yalnız ilgili backend iş paketine atanır. Bu görev ilk sürümün kapsamını dondurur, yeni özellik listesi büyütmez.
+
+## 3. Paralel yürütme — kritik yol ve sahiplik
+
+İlk iş PLAY-00 iken bağımsız mevcut asset envanteri/QA ve PLAY-01 hareket replay iyileştirmeleri devam edebilir; arayüz implementasyonu ilgili PLAY-00 sözleşmesi doğrulanmadan başlamaz. Sözleşme ekran grubu bazında kabul edildikçe ilgili UI işinin başlaması mümkündür; bütün grupların bitmesi beklenmez.
+
+| Paket | İş ve teslim | Bağımlılık / sahiplik |
+|---|---|---|
+| PLAY-00 / Sözleşme | Yukarıdaki sistem/ekran kapsamı, içerik veri matrisi, UI mock sözleşmeleri, kullanıcı tasarım kabulü | İlk görev; ortak API/şema için tek yazıcı |
+| PLAY-01 / Helm | Mevcut hareket hataları, dönüş/rota, input ve kamera; fizik replay | Bağımsız; ShipMotor/navigasyon/input, yalnız kendi alanı |
+| PLAY-02 / Dünya ve asset | Onaylı gemi ve canavar sprite/mount/pivot, ada/kıyı collision, deniz shader, harita ve wake; kaynak çözünürlüğü politikası, profil | Bağımsız asset hazırlığı; presentation/asset importer; UI ikon gereksinimi PLAY-00 |
+| PLAY-03 / Savaş ve VFX | Top/zıpkın, reload ve hit; onaylı demo VFX (atış, iz, isabet, hasar/batış), audio, ucuz mobil alternatif; mevcut CombatAuthority | Savaş görünümü asset ile sözleşmeye bağlı; authority alanı ayrı |
+| PLAY-04 / Dünya NPC ve mini raid | Normal NPC ve canavar gerçek gameplay, ayrı küçük korsan raid lifecycle, görev tetikleyici, filo koordinasyonu, ödül ve save/reconnect | Mevcut AI/filo/spawn; raid görev/loot sözleşmesi PLAY-00; PLAY-03 authority reuse |
+| PLAY-05/06/07 / Ekonomi ve progression | Gemi/top/mühimmat satın alma, takma/seçme, basit market/loot/tamir, görev, tek para ve kayıt; mevcut PRG API'leri | PLAY-00 sözleşmesi; economy/inventory/quest domain, yeni parallel truth yok |
+| UI / POL-01 ilk sürüm | Gerçek Godot mobil ekranları, komponentler, navigasyon, HUD, liman/pazar/donanım/görev/map/LAN; mock üzerinden erken çalıştır, adapter ile gerçek veriye bağla | PLAY-00 ilgili ekran sözleşmesi; presentation UI; domain dosyaları değiştirilmez |
+| PLAY-09 / LAN | Aynı offline komutlar, host/guest UI bağlama, raid ve market/loot/gemi değişimi parity, discovery/IP, reconnect, save/drift | NET/PRG mevcut temel; sözleşme sabitlenince erken başlar; birleşik doğrulama gameplay hazır olunca |
+| PLAY-08 / Entegrasyon ve test | Tek production sahnesi, bütün UI ve gameplay bağlama, gerçek 15/30–60 dk döngü, otomatik oyuncular, video ve cihaz testi | Bütün ilk sürüm paketleri; tek entegrasyon sahibi; ileri içerik beklenmez |
+| PLAY-10 / İleri sandbox | Ayrı kalıcı simulated-player population, filo ekonomisi/hakimiyet, daha geniş içerik; denizaltı/büyük raid ayrıca değerlendirilir | PLAY-08/09 kabulü sonrası; ilk sürüm için geliştirme yok |
+
+**Dalga 1:** PLAY-00 + PLAY-01 + PLAY-02 asset hazırlığı. **Dalga 2:** PLAY-00 ekran gruplarının kabulüyle UI, PLAY-03, PLAY-04, PLAY-05/06/07, LAN adapter ve kalan görseller paralel. Her lane mevcut kodu yeniden kullanır. **Dalga 3:** PLAY-08/09 bütünleşik APK, tam test, hataları düzelt/yeniden test. Ayrı sohbetler açılması gerekiyorsa bu iş paketleri brif olarak kullanılır; bu belge sohbetlerin açıldığı ya da çalıştığı anlamına gelmez.
+
+Yalnız gerçek bağımlılık durdurur. Her lane güncel main HEAD, kendi dosya/sınırları ve ilgili sözleşme sürümünü kontrol eder; ortak Bootstrap, project.godot, registry/manifest, save ve network şemasının tek entegrasyon yazıcısı vardır. Başkalarının aynı dosyasını paralel değiştirme; gerekirse çakışmayan adapter/presenter ve testler üzerinden çalış. Sözleşme değişikliği önce sahip tarafından onaylanıp kayıt edilir; ilgili UI/backend yeniden doğrulanır. Mevcut main-only sınırı korunur, yeni dal/PR politikası oluşturulmaz. Kanıt ve bağımlılıklar mevcut kanonik görev/SESSION_HANDOFF/GOREV_RAPORU kayıtlarına işlenir; mükerrer görev veya rapor sistemi yok.
+
+## 4. İlk sürüm teslim kapısı
+
+- Hazır SC01/02/03/04/06/08 ve M01/M02 paketleri 2026-11-26 checkpoint'te stage edildi. Canavarlar görsel önizleme; gerçek spawn/AI henüz kabul edilmedi. Güncel onaylı gemi/canavar/ada/VFX envanteri repo kaynaklarından doğrulanır; eksik yükleme veya lisans ayrı iş, tüm sanat kataloğu beklenmez. Onaylı sprite çözünürlük standardı üretim rehberinden alınır. Mevcut normal map/baked lighting/efekt deneylerinden yalnız onaylı, mobilde ölçülmüş ucuz seçenek; onaylanmamış demo production kabulü sayılmaz. Godot hazır çözüm/extension araştırmasından sadece ihtiyaç olan ve lisans+uyumluluk+export kontrolü geçen bileşen kullanılır.
+- Başlangıç içeriği önerisi: 6+ hazır gemi, 2+ canavar, 3 bölge, 2 liman, 5–8 kısa görev/kontrat, tekrar edilebilir mini raid, offline + 2 fiziksel cihaz LAN; 1–4 oyuncu ölçek hedefi testle kesinleşir. Hazır içerik yeterliyse yeni asset üretimi kritik yol değildir.
+- Otomatik oyuncu senaryoları gerçek production sahnesinde: açılış → seyir → top/zıpkın avı → ganimet → pazar → gemi/top/mühimmat satın al → ekipman/onarım → raid → ödül → save/reload; başarısızlık ve tekrar işlemleri, ölüm/respawn, yanlış hedef/menzil, stok/bakiye, iki oyuncu aynı hedef/loot, reconnect/late join ve host save. Yeni özellikler için normal/raid popülasyon ayrımı, raid cleanup/reward tekliği ve LAN parity. Ekonomi uzun simülasyonda gelir/masraf/softlock, hasar/kaçış/AI çeşitliliği ve oyuncunun ilk yükseltmeye erişimi ölçülür.
+- Görsel kanıt: gerçek Godot frame capture veya replay video, gemi dönüş/pivot/heading, savaş efektleri, hasar/batış, canavar, UI küçük ekran okunurluğu; düşük FPS örnekleri ve ayrı gerçek cihaz performans kanıtı. Android düşük/orta donanımda frame pacing, CPU/GPU, bellek, termal, dokunmatik, pause/resume; hedef 60 FPS, 30 FPS fallback. İki fiziksel cihaz LAN oturumunda drift ve bağlantı testi; gerçek cihaz testi yoksa not_run.
+- Mevcut FND/VS/CORE/AI/NET/PRG regresyonlarını koru; exact SHA CI, export, artifact readback. Unit test sayısı eğlence kanıtı değildir. Her küçük değişiklikte kullanıcıya APK kurdurma; konsolide APK ile 15 dakikalık ilk döngü ve 30–60 dakikalık gerçek oyun kabulü. PLAY-01 hareket hissi ve Android performansı halen not_run; PRG-05 fiziksel LAN kapısı açık; PRG-06 pilot askıda. Teknik geçmiş SESSION_HANDOFF ve GOREV_RAPORU'nda korunur.
+- İlk sürüm tamamlanmadan ileri sanal oyuncu NPC, dinamik bölge savaşı veya denizaltı geliştirmesi açılmaz. İlk sürümde yalnız küçük geçici raid vardır, ADV büyük raid framework'ünün tamamlanması önkoşul değildir.
 
 ### Ada üretim standardı — 2026-11-26 (kullanıcı kararı, bağımsız görsel lane)
 
