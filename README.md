@@ -1,6 +1,6 @@
 # SeaCraft
 
-**Güncel geliştirme sırası:** `GELISTIRME_GOREV_PLANI.md` PLAY-01…10; önce 15 dakikalık surface oynanış. PRG-06 pilotu korunmuş fakat ileri içerik askıda. CI teknik kabul, cihaz oynanış kabulü ayrıdır.
+**Güncel geliştirme sırası:** [GELISTIRME_GOREV_PLANI.md](GELISTIRME_GOREV_PLANI.md) — önce PLAY-00 sistem/içerik/UI sözleşmesi; bağımsız helm ve asset işleri paralel, ardından UI + savaş + NPC/mini raid + ekonomi + LAN. İlk hedef 30–60 dakikalık surface oynanış; normal NPC, geçici raid ve ileri sanal oyuncu NPC ayrı sistemlerdir. Sanal oyuncu sandbox ve PRG-06 ileri içerik askıda. CI teknik kabul, cihaz oynanış kabulü ayrıdır.
 
 **Güncel gemi hazırlama:** [Beş yönlü montaj/hizalama HTML v6](tools/sprite_manual_aligner_template.html) · üretim rehberi §24 (iki referans, dinamik arma, canlı efekt QA; beş dosyalı atlas+montaj ZIP; mounts.json paket içinde).
 
