@@ -2,6 +2,13 @@
 
 ## Güncel durum
 
+### 2026-11-28 — PLAY-00 v1.1 tasarım ve etkileşimli prototip teslimi
+
+- Plan commit `2b538e3fe2b3508567205b6bbc1ce927956a490f`: önceki mock gemi fiyatları/başlangıç seçimi, kanonik 31 gövde satış kataloğu ile uzlaştırıldı. SC02 Kül Dikişi ücretsiz, SC16 Tuz Yarası ilk ücretli hedef 240 altın; SC01 silahsız keşif. SC16 asset henüz onaylı runtime değil; mock satış production erişimi anlamına gelmez. Fiziksel top montajı ve tek borda kapasitesi ayrı; bilinmeyen mount sayıları tahmin edilmedi. Tasarım statları ve ürün fiyatları örnek.
+- Sohbet artefaktı `SeaCraft_PLAY00_UI.html` (SHA256 `5581354a185822eaf19aa90e703dc3c71cc95aa01d19bd2ee9407ebc355a2bba`), `SeaCraft_PLAY00_mock_data.json`, `verify_play00.py`: yerel Chromium Playwright 18 senaryo başarılı (gemi alımı/aktivasyon/duplicate, bakiye/stock, top takma/çıkarma, ticaret, tamir, zıpkın/loot, normal görev/raid tek ödül/expiry, bağlantı, kayıt hatası ve 16 ekran × 4 viewport; JS hatası ve yatay overflow yok). HTML prototipi gerçek Godot UI/authority/LAN değildir; bu dosyalar sohbet teslimidir, repoya yüklenmiş sayılmaz. Düşük landscape ekran dikey kaydırma kullanır; gerçek görsel asset ve UI teması henüz yok.
+- PLAY-00 sözleşme ve tasarım prototipi hazır. Kullanıcının devam etme yetkilendirmesiyle UI mock/presentation ve bağımsız asset/helm işleri açılabilir; final renk, denge, satın alma/onarım davranışı ve canlı Godot entegrasyonu ayrı kabul. İleri simulated-player, dinamik hakimiyet, PRG06 askıda. Avenox mevcut PLAY01 rev5 korundu; DirectSync tam snapshot/motor writeback kanıtı olmadığı için Beyin güncellemesi yapılmadı. Fiziksel Android/LAN not_run.
+
+
 ### 2026-11-28 — PLAY-00 UI-first plan ve tasarım sözleşmesi
 
 - Kanonik yeni yürütme sırası `GELISTIRME_GOREV_PLANI.md`: önce PLAY-00 sistem/içerik/UI sözleşmesi, bağımsız PLAY-01 helm ve asset işleri paralel; ilgili ekran grubu kabulünden sonra UI/backend lane'leri açılır. Önceki tek aktif PLAY-01 / sonraki aşamaya geçmeme kuralı tarihsel; cihaz kabulü yine ayrı ve açık.
