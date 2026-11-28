@@ -2,6 +2,13 @@
 
 ## Güncel durum
 
+### 2026-11-28 — PLAY-00 UI-first plan ve tasarım sözleşmesi
+
+- Kanonik yeni yürütme sırası `GELISTIRME_GOREV_PLANI.md`: önce PLAY-00 sistem/içerik/UI sözleşmesi, bağımsız PLAY-01 helm ve asset işleri paralel; ilgili ekran grubu kabulünden sonra UI/backend lane'leri açılır. Önceki tek aktif PLAY-01 / sonraki aşamaya geçmeme kuralı tarihsel; cihaz kabulü yine ayrı ve açık.
+- PLAY-00 tasarım v1 commit `c7c9c7c854c8659f5131283fda6adcb72967bb83`: gerçek kod envanteri, ekran akışı ve mobil wireframe, adapter payload/snapshot/error sözleşmeleri, 6 gemi/3 top/cephane/ticaret mock matrisi, F01–F19 durumları, ayrı normal NPC/mini raid/gelecek sanal oyuncu sistemleri ve sahiplik. **Tasarım hazır; kullanıcı kabulü bekliyor.** Rakamlar ve yeni işlem adları öneridir; runtime veya fixture kodu yazılmadı.
+- Gemi purchase/activate, gerçek batarya adetleri, çok ürünlü pazar, port repair ve ayrı raid lifecycle eksik; mevcut authority tekrar yazılmaz. UI görsel onayı ve gerçek Android/LAN kabulü henüz not_run. PRG-06/sanal oyuncu sandbox askıda. Avenox PLAY-01 revision 5 okundu; PLAY-00 Beyin kaydı DirectSync snapshot doğrulaması yapılmadığından yazılmadı.
+
+
 ## PLAY-01 — cihaz geri bildirimi düzeltmesi (2026-11-26)
 
 - Kullanıcı gerçek cihazda ara noktalarda durma, alt sınırda geri dönememe ve sprite/heading uyumsuzluğu bildirdi; her küçük düzeltmede APK kurup yeniden test etmek istemiyor. Güncel onaylı SC01/02/03/04/06/08 ve M01/M02 paketleri allowlist ile stage edildi, eski SC07 karşılaştırma prototipi kaldırıldı. SC01 varsayılan oyuncu, SC04 NPC, altı gemi geçici görsel test seçicisinde; LAN gemi/monster proxy görselleri bağlandı. M01/M02 mevcut territory anchor'larında etiketli görsel önizleme; yeni authoritative monster spawn/AI yok. SC01 ve SC04'ün kaynak yön etiketleri pruva/dümene göre 180° ters olduğu gerçek 8 yön QA panosunda görüldü; runtime atlasları 4 hücre kaydırıldı, kaynak ZIP'ler korunur. SC02/06/08 1024px master hücreleri korunur; cihaz bellek/perf ayrıca ölçülecek.
