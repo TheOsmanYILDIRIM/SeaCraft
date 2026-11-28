@@ -44,7 +44,7 @@ Aşağıdaki ekran envanteri ilk tasarım girdisidir; nihai ekran/alan/aksiyon s
 | Görev / raid | Aktif/hedef/tamamlanmış görev, konum, grup kalan gemi sayısı, ödül, süre varsa | Kabul/izle/teslim veya otomatik tamamlanma kuralı; QuestAuthority + bağımsız raid lifecycle |
 | LAN / duraklat / ayar | Oda, oyuncular, bağlantı, kaydın sahibi, ses ve kontrol, yeniden bağlantı durumu | Host, katıl/IP, çık, reconnect; offline pause ve checkpoint, LAN pause yerine yerel menü |
 
-PLAY-00 teslimi: ekran akış haritası (ana menü → deniz → liman → pazar/donanım/görev; geri dönüşler); mobil landscape wireframe'ler; her ekran için view-model alanları, stable ID, komut payload/sonuç/hata kodları ve authority sahibi; başlangıç gemi/top/mühimmat/mal fiyat/istatistik veri matrisi; gerekli ikon/sprite/VFX/ses listesi; mock fixture (gerçekçi boş/dolu/başarılı/başarısız durumlar) ve UI/backend entegrasyon kabulü. Satın alma ve satma atomik, tekrarlı istek idempotent; UI bakiye veya hasar gerçeği yaratmaz. Ekranlarda loading, empty, disabled, insufficient funds/stock, out-of-range, incompatible, disconnect/retry ve save error durumları tasarlanır. Gereksiz ekranlar birleştirilir; 48dp civarı dokunma hedefi, landscape safe area, küçük ekran ve fontScale 1.3, touch capture ve savaş sırasında minimal HUD. Sürükle-bırak zorunlu değil.
+PLAY-00 teslimi: ekran akış haritası (ana menü → deniz → liman → pazar/donanım/görev; geri dönüşler); mobil landscape wireframe'ler; her ekran için view-model alanları, stable ID, komut payload/sonuç/hata kodları ve authority sahibi; başlangıç gemi/top/mühimmat/mal fiyat/istatistik veri matrisi (kanonik SC02 ücretsiz, SC16 ilk ücretli hedef); gerekli ikon/sprite/VFX/ses listesi; mock fixture (gerçekçi boş/dolu/başarılı/başarısız durumlar) ve UI/backend entegrasyon kabulü. Satın alma ve satma atomik, tekrarlı istek idempotent; UI bakiye veya hasar gerçeği yaratmaz. Ekranlarda loading, empty, disabled, insufficient funds/stock, out-of-range, incompatible, disconnect/retry ve save error durumları tasarlanır. Gereksiz ekranlar birleştirilir; 48dp civarı dokunma hedefi, landscape safe area, küçük ekran ve fontScale 1.3, touch capture ve savaş sırasında minimal HUD. Sürükle-bırak zorunlu değil.
 
 **Çıkış kapısı:** ekran kapsamı, navigasyon, veri/komut sözleşmesi ve fixture'lar kullanıcı tasarım kabulüne hazır; UI uygulaması gerçek backend'i beklemeden başlayabilir. Eksik işlem yalnız ilgili backend iş paketine atanır. Bu görev ilk sürümün kapsamını dondurur, yeni özellik listesi büyütmez.
 
@@ -54,8 +54,8 @@ PLAY-00 teslimi: ekran akış haritası (ana menü → deniz → liman → pazar
 
 #### A. Ürün kararları ve ekran hiyerarşisi
 
-- Oyuncu bir aktif gemiyi kontrol eder. Satın aldığı gemiler tersanede saklanan sahiplik listesine eklenir; limanda diğer gemiye geçebilir. İlk sürümde aynı gemi türünden bir tane; gemi satışı/filo yönetimi yok. Gemi çeşitliliği esas, ayrı gövde/yelken/crew görsel montajı yok. Gemi değiştirme sırasında eski hull durumu ve gemi donanımı saklanır; yeni satın alınan gemi tam hull. Mühimmat ve ticaret malları oyuncu envanterinde ortak; donanım gemiye bağlı; geçişte mükerrer item yaratılmaz. Hasarlı gemiyi değiştirerek bedava iyileştirme yok.
-- Top donanımı: her geminin top kapasitesi ve bir top bataryası tipi; aynı tipten takılı top adedi kapasiteye kadar. Tek reload, tek hedef, tek salvo; tek tek top mikro yönetimi yok. Limanda tak/çıkar; hasar = authoritative batarya hesabı, tek gülle hasarı ve salvo önizlemesi ayrı etiketlenir. Tek tip batarya kuralı ilk sürüm tercihi; karışık top dizilimi sonraya. Mevcut silah/slot kodu bunu henüz sağlamıyor. İlk sürümde ek olarak zıpkın ve en fazla bir basit pasif donanım; crew, pet, gem, core, castle, trophy, skill ekranları gizli. Çalışan kayıtlar/mekanikler silinmez.
+- Oyuncu bir aktif gemiyi kontrol eder. Satın aldığı gemiler tersanede saklanan sahiplik listesine eklenir; limanda diğer gemiye geçebilir. İlk sürümde aynı gemi türünden bir tane; gemi satışı/filo yönetimi yok. SC02 ücretsiz başlangıç, SC16 ilk ücretli hedef; SC01 silahsız keşif alternatifi. Gemi çeşitliliği esas, ayrı gövde/yelken/crew görsel montajı yok. Gemi değiştirme sırasında eski hull durumu ve gemi donanımı saklanır; yeni satın alınan gemi tam hull. Mühimmat ve ticaret malları oyuncu envanterinde ortak; donanım gemiye bağlı; geçişte mükerrer item yaratılmaz. Hasarlı gemiyi değiştirerek bedava iyileştirme yok.
+- Top donanımı: her geminin fiziksel mount sayısından ayrıştırılmış etkin borda kapasitesi ve bir top bataryası tipi; aynı tipten takılı top adedi etkin kapasiteye kadar. Tek reload, tek hedef, tek salvo; tek tek top mikro yönetimi yok. Limanda tak/çıkar; hasar = authoritative batarya hesabı, tek gülle hasarı ve salvo önizlemesi ayrı etiketlenir. Tek tip batarya kuralı ilk sürüm tercihi; karışık top dizilimi sonraya. Mevcut silah/slot kodu bunu henüz sağlamıyor. İlk sürümde ek olarak zıpkın ve en fazla bir basit pasif donanım; crew, pet, gem, core, castle, trophy, skill ekranları gizli. Çalışan kayıtlar/mekanikler silinmez.
 - Mühimmat: normal gülle + pahalı güçlendirilmiş gülle, zıpkın stoğu ayrı. Ücretsiz/düşük etkili acil normal atış veya limanda ücretsiz asgari stok önerisi; **ilk tercih limanda yalnız minimum 10 normal gülle ve 5 zıpkına tamamlayan başlangıç yardımını** uygulamaktır. Ticari değeri/loot exploit yaratmayacak kural authority'de doğrulanır (yardım stoğu satılamaz veya ayrı izlenir). Normal ve güçlendirilmiş mühimmat seçimi savaşta yapılabilir; cooldown sıfırlanmaz. İlk sürümde element matrisi menüsü yok.
 - Tek para: altın; loot malzemesi para değildir. Liman pazarında alış/satış fiyatı, stok, miktar ve toplam; sabit temel fiyat + mevcut PRG05 fiyat hesaplaması. Mal taşıma için sade adet/kapasite; zorunlu ağırlık hesaplama menüsü yok. Üretim/skill ağaçları sonraya.
 - Batma: gemi sahipliği ve donanım kaybolmaz; güvenli limanda düşük hull ile tekrar doğuş, kurtarma/temel tamir ile tekrar savaşa girebilir. İlk tercih ganimetin yalnız batıştan beri bankalanmamış ticaret malı kısmını kaybetmek değil, **sabit sınırlı tamir maliyeti ve son sefer ganimetinin korunması**; para yetersizse asgari ücretsiz tamir. Bu seçim ilk testte ayarlanır. Offline pause simülasyonu durdurur; LAN menü simülasyonu durdurmaz.
@@ -127,7 +127,7 @@ UI tüm state'i detached snapshot üzerinden okur. UI/backend paralel işlerinde
 | Session | mode:string offline/host/guest, connection:string, owner_id:string, paused:bool, save_state:string, revision:int |
 | Player | entity_id:string, active_ship_id:string, ship_def_id:string, hull:float, max_hull:float, speed:float world units/s, balance:int, sector_id:string, in_port:bool, port_id:string/null |
 | Combat | target_id:string/null, target_class:string/null, hull/max_hull:float, distance:float, can_fire:bool, reason:string, reload_remaining_s:float, reload_total_s:float, ammo_id:string, ammo_qty:int, harpoon_qty:int, can_harpoon:bool |
-| Ship catalog row | ship_def_id:string, name:string, visual_id:string, price:int, hull:float, speed:float, turn_deg_s:float, cannon_capacity:int, owned:bool, active:bool, available:bool, reason:string |
+| Ship catalog row | ship_def_id:string, name:string, visual_id:string, price:int, hull:float, speed:float, turn_deg_s:float, cannon_capacity:int/null, physical_cannon_count:int/null, owned:bool, active:bool, available:bool, reason:string |
 | Owned ship row | ship_instance_id:string, ship_def_id:string, hull:float, max_hull:float, cannon_item_id:string/null, cannon_count:int, equipment_ids:array[string] |
 | Product row | market_id:string, port_id:string, item_id:string, category:string cannon/ammo/harpoon/cargo/equipment, name:string, icon_id:string, stock:int, owned_qty:int, buy:int, sell:int/null, available:bool, reason:string, stat_preview:object |
 | Inventory row | item_id:string, name:string, category:string, qty:int, equipped_qty:int, icon_id:string, sell_value:int/null |
@@ -155,42 +155,49 @@ Intent envelope for UI: operation:string, request_id:string, payload:object. Ada
 
 Error presentation: insufficient_stock_or_funds → “Altın veya stok yetersiz”; market_full_or_overflow → “Pazarın alım kapasitesi dolu”; inventory_rejected/equip_rejected → “Kapasite veya donanım uyumsuz”; hostile_market → “Bu liman ticarete kapalı”; transaction_conflict → “İşlem çakıştı, yenile”; transaction_ledger_full → “İşlem kaydı dolu, tekrar denemeden önce kaydı kontrol et”; invalid_npc_interaction → “Görev verenin menziline gir”; quest_not_completable → “Hedefleri tamamla”. NEW UI normalized reasons: out_of_range, combat_locked, insufficient_funds, already_owned, incompatible, insufficient_stock, disconnected, save_failed. Adapter açıkça eşler; bilinmeyen hata “İşlem tamamlanmadı” + teknik log; accepted=false asla başarı toast'u değil. Boş/loading/reconnect/disabled durumları mock'ta ayrı fixture.
 
-#### E. İlk içerik matrisi ve mock fixture
+#### E. İlk içerik matrisi ve mock fixture (v1.1, kanonik gemi kataloğu ile uzlaştırılmış)
+
+**Kaynak önceliği:** GEMI_GORSEL_TASARIM_VE_SPRITE_PLANI.md, "Satış kademeleri" ve "Ekonomi ve ilerleme sözleşmesi" (blob e1ec32450b9fb8e95917b2943c4c3fc8501e912c). SC-02 ücretsiz başlangıç, SC-01 silahsız keşif filikası; ilk ücretli hedef SC-16 Tuz Yarası (240 altın). Önceki mock'taki SC01 başlangıç, uydurma düşük gemi fiyatları ve fiziksel kapasite tahminleri geçersizdir. Kanonik 31 gövde kataloğu korunur; satışa açılacak gemi yalnız runtime asset, montaj, stat ve mechanics doğrulandığında açılır. Kademe/erişim mevcut tasarım girdisi; ilk sürümde zorunlu grind yok, PLAY-06 erişim politikasını sadeleştirebilir ancak kullanıcı onaylı katalog silinmez. SC16 asset hazır değilse ilk testte hazır SC03 gibi bir gövde için test-only indirimli fixture kullanılabilir, production fiyat/erişim değiştirilmez.
 
 Gerçek pilot (koddan): ship.foundation_player hull 100, ship.vs02_practice hull 75; tek placeholder hareket profili speed 180, turn 72 deg/s. weapon.vs01_practice_cannon base_damage 25, 35–360 range, reload 1.25 s; round scale 1.0, ember 1.15 + scorched; harpoon.core02_debug 18 damage, 320 range, reload 1.25 s; monster.core02_practice hull 120; bounty 80. Bunlar denge hedefi değildir.
 
-Aşağıdaki `draft.*` kimlikler UI mock içindir; production kaydı değildir. İsimler geçici etiket, mevcut gemi görsel rehberindeki özgün isimler finalde kullanılır.
+| UI katalog gemisi / görsel ID | Altın (kanonik) | Rol | Fixture erişimi |
+|---|---:|---|---|
+| SC02 Kül Dikişi | 0 | Başlangıç sloop | Aktif / sahip |
+| SC16 Tuz Yarası | 240 | Dengeli cutter | Asset bekliyor; sadece mock satın alma |
+| SC01 Sis İğnesi | 280 | Silahsız keşif | Hazır görünüm; savaş topu yok |
+| SC17 İnce İz | 320 | Hızlı keşif | Asset bekliyor |
+| SC18 Bakır Kasa | 360 | Kargo | Asset bekliyor |
+| SC03 Tuz Ambarı | 620 | Ticaret fluytu | Hazır görünüm; silah montajı doğrulanmalı |
+| SC04 Yarık Çene | 1500 | Korsan brig | Hazır görünüm |
+| SC11 | 1650 | Katalog rolü | Kaynak mevcut; runtime kabulü ayrı |
+| SC06 Perçin Hattı | 1750 | Eskort korvet | Hazır görünüm |
+| SC08 Demir Mezar | 9000 | Ağır hat | Hazır görünüm |
 
-| Mock gemi / visual | Altın | Hull | Hız | Dönüş °/s | Top kapasitesi |
-|---|---:|---:|---:|---:|---:|
-| draft.ship.sc01 / SC01 (başlangıç) | 0 | 100 | 180 | 72 | 2 |
-| draft.ship.sc02 / SC02 | 300 | 130 | 185 | 68 | 3 |
-| draft.ship.sc03 / SC03 | 420 | 180 | 145 | 52 | 3 |
-| draft.ship.sc04 / SC04 | 550 | 160 | 200 | 76 | 4 |
-| draft.ship.sc06 / SC06 | 850 | 230 | 165 | 52 | 5 |
-| draft.ship.sc08 / SC08 | 1300 | 320 | 125 | 40 | 6 |
+Kalan 21 gövde mevcut tasarım kataloğundan okunur; ilk UI mock'unda görünmesi gerekmez. Stat fixture önerisi SC02 hull 100, speed 180, turn 72; SC16 hull 135, speed 185, turn 66; SC01 hull 65, speed 205, turn 90; SC03 hull 180, speed 145, turn 52; SC04 hull 160, speed 200, turn 76; SC06 hull 230, speed 165, turn 52; SC08 hull 320, speed 125, turn 40. Statlar kesin denge değildir. **Top kapasitesi fiziksel kaynakla doğrulanır:** SC02 kanonik 2+2, SC16 tasarım 3+3, SC01 0; SC03/04/06/08/11 için gerçek mount metadata ve yön socket eşlemesi gerekir; UI unknown durumda “Doğrulanıyor” gösterir. Fiziksel top sayısı ile etkin salvo kapasitesi ayrı alan; 2+2 fiziksel = tek bordada en çok 2, otomatik 4x DPS değil. Aynı top tipi/adet önerisi yalnız batarya veri modeli, görünür top montajı silinmez veya yeniden icat edilmez.
 
 | Mock ürün | Alış / satış altın | Etki |
 |---|---:|---|
 | draft.cannon.light | 35 / 17 | 10 damage/top, 300 range, 1.4s |
 | draft.cannon.standard | 85 / 42 | 16 damage/top, 360 range, 1.8s |
 | draft.cannon.heavy | 160 / 80 | 26 damage/top, 390 range, 2.5s |
-| item.core_round | 1 / 0 | normal gülle |
+| item.core_round | 1 / satış yok | normal gülle |
 | item.core_ember | 4 / 2 | güçlendirilmiş gülle |
 | item.core02_harpoon | 2 / 1 | zıpkın stoğu |
 | item.vs03_salvage_scrap | 8 / 4 | loot/ticaret |
 | draft.cargo.supplies | 15 / 8 | ticaret malı |
 | draft.cargo.spice | 30 / 18 | ticaret malı |
 
-Rakamlar yalnız mock: gerçek PRG05 quote min sell=1 olduğundan mock normal gülle satış 0 = “satış yok”, yeni ürün kuralı gerekir. Maliyet hesapları authority quote üzerinden; UI toplam = quote×adet yalnız tahmin, final actual result gösterilir. Top başına mühimmat tüketimi, salvo hasarı ve reload dengesini PLAY-03 doğrular. Örnek başlangıç 120 altın + 40 normal gülle + 15 zıpkın; ilk kazanılabilir SC02 300 altın. Mini raid önerisi toplam 150 altın, iki normal kontrat 60–80, monster 20–40. Solo/iki oyuncu katkı ve ekonomi testinden sonra rakamlar kesinleşir; loot ve kontrat toplamı ilk gemi alımını gereksiz grind'a dönüştürmemeli.
+Gerçek PRG05 quote min sell=1; normal gülle satış yasağı ve ücretsiz yardım stoğu için ayrı ürün politikası gerekli. UI toplamı quote×adet yalnız tahmin, final actual result gösterilir. Top başına tüketim, salvo hasarı ve reload PLAY-03'te doğrulanır. Örnek başlangıç 120 altın + 40 normal gülle + 15 zıpkın; hedef SC16 240 altın; kanonik üç 80'lik bounty brüt örneği korunur. Mini raid toplam 150 altın yalnız mock; kontrat ve monster reward testle ayarlanır.
 
-**Fixture set (UI lane için elle oluşturulabilir deterministic veri):**
-- F01 deniz: player SC01 hull 72/100, gold 120, sector.foundation; enemy ship hull 40/75, 180 distance, can_fire=true, reload 0.4/1.4, round 40, harpoon 15; F02 yanlış hedef monster, can_fire=false, can_harpoon=true; F03 out_of_range ve sıfır stok.
-- F04 tersane: SC01 owned/active, diğerleri yukarıdaki matris; gold 120 → SC02 disabled; F05 gold 400 → SC02 enabled; accepted sonrası gold 100, SC02 owned not active; activate sonrası SC01 hull 72 saklı, SC02 hull 130. Retry aynı request_id: aynı sonuç, bakiye tekrar düşmez.
-- F06 mağaza: port safe_haven, market mock round stock 80, owned 40, buy 1, sell null; 20 adet alım → gold 100, stock 60, owned 60; F07 quantity 81 → reject; F08 out-of-range → panel kapanır; F09 disconnect → pending, reconnect aynı ID.
-- F10 donanım: SC01 capacity 2, light count 2, envanter standard 1; standard count 3 reject; count 1 success. Preview eski/yeni salvo ve cooldown; unused light iade.
-- F11 tamir: SC01 hull 72/100, quote 28 (mock 1 altın/hull), gold 120; accepted → 100/100, gold 92. F12 gold 0: acil minimum hull yardımı yalnız ihtiyaç halinde; tamir bedava full hull değildir.
-- F13 normal quest available/active/completable/completed; kill progress 0/2→2/2, turn-in sonucu bir kez; F14 raid active total 3 remaining 2, reward 150; remaining 0 → complete, 150 toplam raid ödülü yalnız bir event. F15 raid expired, reward 0, marker temizlenir. F16 empty inventory/journal, F17 loading, F18 save_failed, F19 guest read-only/reconnect.
+**F01–F19 fixture set (mock; gerçek save/authority değil):**
+- F01 SC02 hull 72/100, gold 120, sector.foundation; enemy ship hull 40/75, distance 180, can_fire=true, reload 0.4/1.4, round 40, harpoon 15. F02 monster yanlış top hedefi, harpoon uygun. F03 out_of_range/zero stock.
+- F04 tersane SC02 owned/active, gold 120, SC16 disabled. F05 gold 400, SC16 mock enabled; satın al → gold 160, SC16 owned not active; activate → SC02 hull 72 saklı, SC16 hull 135. Aynı request ID/payload retry → aynı sonuç.
+- F06 port, normal round stock 80, owned 40, buy 1, sell null; 20 al → gold 100, stock 60, owned 60. F07 quantity 81 → reject; F08 out-of-range → panel kapanır; F09 disconnect → pending/reconnect same ID.
+- F10 SC02 etkin borda capacity 2, light count 2, envanter standard 1; standard count 3 reject; count 1 success; unused light iade. Fiziksel kapasite/tek borda ayrımı korunur.
+- F11 SC02 hull 72/100, repair 28, gold 120 → hull 100/gold 92. F12 gold 0 acil minimum kurtarma.
+- F13 normal quest lifecycle ve tek reward. F14 raid total 3 remaining 2, reward 150; complete once. F15 expired → 0 reward, marker cleanup. F16 empty; F17 loading; F18 save_failed; F19 guest reconnect.
+- UI fixture'larında kullanıcı oyuncu taklidi ile normal NPC ve raid gösterilir; kalıcı simulated-player popülasyonu yok.
 
 #### F. Dünya/raid ve görevlerin ilk oynanış içeriği
 
