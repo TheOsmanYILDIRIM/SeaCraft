@@ -48,6 +48,164 @@ PLAY-00 teslimi: ekran akış haritası (ana menü → deniz → liman → pazar
 
 **Çıkış kapısı:** ekran kapsamı, navigasyon, veri/komut sözleşmesi ve fixture'lar kullanıcı tasarım kabulüne hazır; UI uygulaması gerçek backend'i beklemeden başlayabilir. Eksik işlem yalnız ilgili backend iş paketine atanır. Bu görev ilk sürümün kapsamını dondurur, yeni özellik listesi büyütmez.
 
+### PLAY-00 teslimi — UI/işlem sözleşmesi v1, 2026-11-28
+
+**Durum: tasarım hazır, kullanıcı kabulü bekliyor.** Kaynak incelemesi main `a2a3cb2d82a2b290459bd90fec146173f1535bd8` üzerinde yapıldı. Aşağıdaki kararlar ilk prototip için önerilen bağlayıcı tasarım adaylarıdır; fiyat/stat rakamları denge verisidir, çalışan kod değildir. Yeni runtime implementasyonu/test yapılmadı.
+
+#### A. Ürün kararları ve ekran hiyerarşisi
+
+- Oyuncu bir aktif gemiyi kontrol eder. Satın aldığı gemiler tersanede saklanan sahiplik listesine eklenir; limanda diğer gemiye geçebilir. İlk sürümde aynı gemi türünden bir tane; gemi satışı/filo yönetimi yok. Gemi çeşitliliği esas, ayrı gövde/yelken/crew görsel montajı yok. Gemi değiştirme sırasında eski hull durumu ve gemi donanımı saklanır; yeni satın alınan gemi tam hull. Mühimmat ve ticaret malları oyuncu envanterinde ortak; donanım gemiye bağlı; geçişte mükerrer item yaratılmaz. Hasarlı gemiyi değiştirerek bedava iyileştirme yok.
+- Top donanımı: her geminin top kapasitesi ve bir top bataryası tipi; aynı tipten takılı top adedi kapasiteye kadar. Tek reload, tek hedef, tek salvo; tek tek top mikro yönetimi yok. Limanda tak/çıkar; hasar = authoritative batarya hesabı, tek gülle hasarı ve salvo önizlemesi ayrı etiketlenir. Tek tip batarya kuralı ilk sürüm tercihi; karışık top dizilimi sonraya. Mevcut silah/slot kodu bunu henüz sağlamıyor. İlk sürümde ek olarak zıpkın ve en fazla bir basit pasif donanım; crew, pet, gem, core, castle, trophy, skill ekranları gizli. Çalışan kayıtlar/mekanikler silinmez.
+- Mühimmat: normal gülle + pahalı güçlendirilmiş gülle, zıpkın stoğu ayrı. Ücretsiz/düşük etkili acil normal atış veya limanda ücretsiz asgari stok önerisi; **ilk tercih limanda yalnız minimum 10 normal gülle ve 5 zıpkına tamamlayan başlangıç yardımını** uygulamaktır. Ticari değeri/loot exploit yaratmayacak kural authority'de doğrulanır (yardım stoğu satılamaz veya ayrı izlenir). Normal ve güçlendirilmiş mühimmat seçimi savaşta yapılabilir; cooldown sıfırlanmaz. İlk sürümde element matrisi menüsü yok.
+- Tek para: altın; loot malzemesi para değildir. Liman pazarında alış/satış fiyatı, stok, miktar ve toplam; sabit temel fiyat + mevcut PRG05 fiyat hesaplaması. Mal taşıma için sade adet/kapasite; zorunlu ağırlık hesaplama menüsü yok. Üretim/skill ağaçları sonraya.
+- Batma: gemi sahipliği ve donanım kaybolmaz; güvenli limanda düşük hull ile tekrar doğuş, kurtarma/temel tamir ile tekrar savaşa girebilir. İlk tercih ganimetin yalnız batıştan beri bankalanmamış ticaret malı kısmını kaybetmek değil, **sabit sınırlı tamir maliyeti ve son sefer ganimetinin korunması**; para yetersizse asgari ücretsiz tamir. Bu seçim ilk testte ayarlanır. Offline pause simülasyonu durdurur; LAN menü simülasyonu durdurmaz.
+- Normal NPC ve geçici raid birbirinden ayrı; sanal oyuncu NPC, kalıcı filo ve dinamik bölge sahibi UI'sı hiç yapılmaz. İlk mini raid: açık deniz olay bildirimi, haritada konum, 2–4 üye, ödül, sonlanma. Otomatik görev oluşumu ve katkı gösterimi, normal liman görevinden ayrı sekme. Raid'in kendisi tek encounter sahibi; görev görünümü ayrı authority sonucu tüketir, ikinci loot üretmez.
+
+**Navigasyon:** Ana menü → kayıt/yeni oyun → deniz HUD. HUD'dan Harita, Envanter, Görevler, Duraklat. Liman menziline girince Liman düğmesi → Tersane / Donanım / Cephane / Ticaret / Tamir / Kontratlar. Bu ekranlar aynı liman modal kabuğunda sekmeler; ayrı ana menü sayfaları değil. Harita ve journal denizde erişilir. Gemi satın alımı ve ekipman yalnız limanda; savaşta yalnız hedef, hareket, silah ve mühimmat. LAN ekranı ana menü ve duraklat menüsünde aynı bileşen. Geri düğmesi önce modalı, sonra pause'u kapatır; Android sistem geri düğmesi aynı yolu izler.
+
+#### B. Mobil wireframe sözleşmesi (1280×720 logical landscape)
+
+Safe rect içindeki oranlar başlangıç yerleşimidir; fontScale 1.3 ve küçük ekranlarda yatay taşma yok. 48 logical birim minimum hedef, gerektiğinde gerçek dp ile doğrula. Tema: koyu denizci/eskimiş metal, kontrollü altın, okunur metin ve ikon; dekorasyon dokunma alanını küçültmez. Önce düşük detay prototip, sonra ortak art direction. Renk tek başına state anlatmaz.
+
+```text
+DENİZ HUD
+┌ Hull / aktif gemi ─────────────────── Bölge / harita / menü ┐
+│ görev / raid bildirimi                                    │
+│                                                           │
+│                 OYUN DÜNYASI                              │
+│                 seçili hedef halkası                      │
+│                                                           │
+│ dur / merkezle       hedef hull + menzil      top / zıpkın  │
+│ çanta / görev          seçili mühimmat      ateş + reload  │
+└─────────────────── safe area ─────────────────────────────┘
+
+LİMAN (bütün mağazalar için tek kabuk)
+┌ geri | liman adı | altın | gemi hull ──────────── kapat ┐
+│ Tersane | Donanım | Cephane | Ticaret | Tamir | Kontrat  │
+│ ┌ Liste / grid (scroll) ┐ ┌ Seçilen ürün/gemi ───────┐ │
+│ │ görsel, ad, fiyat     │ │ görsel + statlar         │ │
+│ │ sahip / stok         │ │ mevcut → yeni farkı      │ │
+│ │ …                    │ │ adet − [1] + / toplam    │ │
+│ └──────────────────────┘ │ [SATIN AL] [SAT/TAK]      │ │
+│                          └ feedback / hata ──────────┘ │
+└───────────────────────────────────────────────────────┘
+
+HARİTA / GÖREV / ENVANTER
+┌ geri | ekran başlığı ─────────────────────── kapat ┐
+│ harita veya filtre/listesi │ detay / hedef / ödül   │
+│                            │ [İZLE / ROTA / KULLAN]  │
+└────────────────────────────────────────────────────┘
+```
+
+HUD üzerinde sol üstte oyuncu hull, üst sağda menü/minimap; alt sağda en büyük Ateş düğmesi, yanındaki zıpkın hedef uygunsa etkin. Top/zıpkın seçili hedefe göre bağlamsal tek ana butonda birleştirilebilir; yanlış hedef seçilince neden göster. Reload progress ve sayı; ateş sonucu kısa toast/floating number, ekranı kaplayan popup yok. Hedef halkası boyut/zoom uyumlu, UI paneli tap'i world input'a geçirmez. HUD küçük gemi üzerinde kocaman metin etiketleri bırakmaz. Harita: mevcut sektör zoom/pan, komşu sektör grafiği, liman ve raid marker; rota düğmesi gerçek navigation isteği, teleport değil. Envanter 3 filtre: donanım, cephane, ticaret/loot; satma yalnız limanda. Görev journal: normal kontratlar + dinamik raid; seçilen tek tracked objective HUD'da, haritada konum. Tersane karşılaştırması aynı stat birimleri, fark ve satın alma maliyeti; satır seçmek satın almaz. Pahalı gemi alımı ve gemi değiştirme tek onay dialogu; sık kullanılan cephane/loot işlemleri için her defasında modal onay yok.
+
+#### C. Koddan doğrulanmış sistem/işlem envanteri
+
+| Alan | Gerçek kaynak ve mevcut sözleşme | İlk sürüm boşluğu / sorumlu |
+|---|---|---|
+| Gemi | src/data/definitions/ship_definition.gd: display_name, visual_profile_id, faction_id, weapon_ids, base_hull_hp; iki kayıt ship.foundation_player / ship.vs02_practice. src/data/movement/ship_placeholder_profile.tres tek hareket profili. | PLAY-05/06: altı gerçek hull definition + hareket profile ref + fiyat/kapasite/ownership/aktif gemi; güvenli gemi değişimi, save/LAN. Görsel test seçicisi satın alma sistemi değildir. |
+| Top | WeaponDefinition: base_damage, range_meters, min_range_meters, reload_seconds, accuracy, crit, broadside, penetration. weapon.vs01_practice_cannon tek pilot. | PLAY-03 + PLAY-06: üç top profili, item→weapon ref, batarya kapasitesi ve adet etkisi, combat/motor rebind; UI salt read-model. |
+| Mühimmat | ammo.core_round → item.core_round; ammo.core_ember → item.core_ember. CombatAuthority.register_ammo/mount_ammo/transact select_ammo. HarpoonProfile ayrı. | PLAY-03/06: çok ürünlü fiyat/stok, aktif stok HUD, boş stok kurtarma, zıpkın pazarı. |
+| Ticaret | InventoryState.execute_transaction(actor, transaction_id, operation, payload); Prg05EconomyState.quote(owner, market) → item, stock, buy, sell, disposition. OP economy_market_buy/sell payload tam olarak market_id, quantity. Sonuç accepted, reason, operation, quantity, unit_price, balance, stock. | PLAY-05: mevcut Bootstrap sadece market.haven.salvage ve anchor.haven_center/128 radius kabul ediyor. Çok ürünlü liman kataloğu ve per-product/port access guard; LAN aynı kontrol. Fiyat/değer UI tarafından yazılmaz. |
+| Donanım / çanta | InventoryState quantities_snapshot/equipment_snapshot/stat_value; inventory_equip {slot,item_id}; inventory_unequip {slot}; inventory_transfer {source_container,target_container,item_id,quantity}. ProgressionPanel sinyalleri var. | PLAY-06: gemi-instance bazlı sahiplik ve batarya item adetleri mevcut slot sistemine bağlanmalı. UI'da ileri progression gizli, eski save korunur. |
+| Savaş/onarım | CombatAuthority.fire/harpoon/transact; hull_damaged, ship_sunk, monster_defeated, wreck_destroyed; intent(kind,id); result accepted, success, reason, sequence_id, amount. repair_hull mevcut item/tick onarımı; Bootstrap 20 hull/180 tick pilot. | PLAY-03/05: limanda altın karşılığı tamir ve batma/kurtarma atomik iş akışı; HUD snapshot/animasyon ve sound. Mevcut saha repair ile ikinci hull truth kurulmaz. |
+| Ganimet | LootAuthority ve WorldObjectAuthority; mevcut gemi sunk → drop/claim, chest/wreck; tek inventory. | PLAY-04/05: gerçek canavar spawn/loot, bütünleşik pickup, tekrar spawn/claim, coin grant idempotent. |
+| Görev | Prg04QuestState + InventoryState quest_journal_snapshot. quest_accept / quest_turn_in payload quest_id,npc_id; journal row status,title,description,objectives (current/required/target_id), reward_preview, remaining_ticks. QuestJournalPanel mevcut. Bootstrap bounty.foundation.practice (80 altın) ve convoy bridge. | PLAY-04/07: production journal, gerçek kontratlar, geçici raid objective/ödül adaptörü, altın ödülü tek ledger. Statik NPC turn-in işlemi raid auto-claim ile karıştırılmaz. |
+| NPC/raid | FleetCoordinator register_fleet, formation_commands, mark_member_status, snapshot; AI role profiles trader/escort/raider, WorldSpawnDirector, CombatAuthority. | PLAY-04: normal NPC population, geçici encounter ayrı lifecycle; filo koordinatörü shared service. Simulated player yok. |
+| Harita/liman | sector.foundation → sector.outer_reach → sector.safe_haven; Deep Haven askıda. SectorGraph, SectorMapOverlay; Ashen Haven safe_zone ve liman market anchor. | PLAY-02/05: birinci liman tamamla, ikinci liman gerekiyorsa aynı surface graph üzerinde authored anchor; Deep Haven'i açma. |
+| Görsel | src/presentation/ship/visual_pilot.gd, pilot_atlases, pilot_water.gdshader, Bootstrap; SC01/02/03/04/06/08 ve M01/M02 stage kanıtı. | PLAY-02/03: atlas→gerçek definition, mount, gerçek spawn, deniz/ada/efekt, üretim standardı. |
+| LAN/save | ProductionLanHost, SessionHost/Client, HostTransactionLedger, lan_guest.gd, SaveService; market pilot ve guest currency mevcut. | PLAY-09: yeni gemi, batarya, raid, quest ve liman işlemlerini authenticated actor + host snapshot ile genişlet; reconnect ve migration. |
+
+**Önemli:** src/presentation/bootstrap.tscn hâlâ test temelli BoatMarker/InputBlocker ile kuruluyor. Güncel Bootstrap market panelini runtime ekliyor; gerçek ana menü/tersane veya tüm progression ekranları bağlanmış sayılmaz. Görev panellerinin varlığı production ekranı anlamına gelmez. Ticaret ledger üst sınırı mevcut 128 transaction; uzun testte kapasite davranışı ve güvenli evict/replay politikası incelenmeli, tekrar ödül güvenliği gevşetilmemeli.
+
+#### D. UI adapter sözleşmesi v1 (önerilen presentation DTO, mevcut wire protocol değil)
+
+UI tüm state'i detached snapshot üzerinden okur. UI/backend paralel işlerinde bir ortak adapter kullanılır; payload alan isimleri aşağıdaki mock sözleşmede sabit. Gerçek mevcut komutları dönüştüren adapter backend doğrulamasını atlamaz. Stable ID biçimi, nullable ve sayısal birimler korunur; price/hull/cooldown gibi alanların sahibi domain.
+
+| Snapshot grubu | Alanlar (type) |
+|---|---|
+| Session | mode:string offline/host/guest, connection:string, owner_id:string, paused:bool, save_state:string, revision:int |
+| Player | entity_id:string, active_ship_id:string, ship_def_id:string, hull:float, max_hull:float, speed:float world units/s, balance:int, sector_id:string, in_port:bool, port_id:string/null |
+| Combat | target_id:string/null, target_class:string/null, hull/max_hull:float, distance:float, can_fire:bool, reason:string, reload_remaining_s:float, reload_total_s:float, ammo_id:string, ammo_qty:int, harpoon_qty:int, can_harpoon:bool |
+| Ship catalog row | ship_def_id:string, name:string, visual_id:string, price:int, hull:float, speed:float, turn_deg_s:float, cannon_capacity:int, owned:bool, active:bool, available:bool, reason:string |
+| Owned ship row | ship_instance_id:string, ship_def_id:string, hull:float, max_hull:float, cannon_item_id:string/null, cannon_count:int, equipment_ids:array[string] |
+| Product row | market_id:string, port_id:string, item_id:string, category:string cannon/ammo/harpoon/cargo/equipment, name:string, icon_id:string, stock:int, owned_qty:int, buy:int, sell:int/null, available:bool, reason:string, stat_preview:object |
+| Inventory row | item_id:string, name:string, category:string, qty:int, equipped_qty:int, icon_id:string, sell_value:int/null |
+| Port | port_id:string, name:string, sector_id:string, in_range:bool, services:array[string], repair_quote:int, repairable_hull:float |
+| Quest row | quest_id:string, status:string, title:string, description:string, objectives:array, reward_preview:object, sector_ids:array[string], remaining_ticks:int (-1 no timer); raid_id:string/null for adapter-only raid view |
+| Raid row | raid_id:string, sector_id:string, position:{x:float,y:float}, status:string announced/active/completed/expired, total:int, remaining:int, reward_gold:int, expires_tick:int/null, tracked:bool |
+| Map | sector_id:string, nodes:array, gates:array, port_markers:array, raid_markers:array, player_position:{x:float,y:float}, route:array |
+
+Intent envelope for UI: operation:string, request_id:string, payload:object. Adapter resolves actor from local owner or authenticated LAN session; no actor/faction/balance/price supplied by UI. Response: request_id, accepted:bool, reason:string, operation:string, snapshot_revision:int; optional detached result, refreshed snapshot. Combat result success differs from accepted (accepted miss is valid). Pending mutation disables same action until response; timeout retry with identical ID/payload; different user intent fresh ID. UI ignores stale snapshots. Existing protocol stays unchanged until adapter lane verifies mapping.
+
+| UI operation | Payload | Status |
+|---|---|---|
+| economy_market_buy / economy_market_sell | {market_id,quantity} | Existing, port+market access adapter generalized |
+| inventory_equip / inventory_unequip | {slot,item_id} / {slot} | Existing, ship-specific binding needs extension |
+| ship_purchase | {port_id,ship_def_id} | NEW proposed; atomic debit + ownership + persistence, not automatic activate |
+| ship_activate | {port_id,ship_instance_id} | NEW; in port, not combat, transfer active hull/profile/battery safely |
+| battery_set | {port_id,ship_instance_id,cannon_item_id,count} | NEW; all-or-nothing inventory/equip, no duplicate |
+| select_ammo / fire_weapon / fire_harpoon | {ammo_id} / {target_id} / {target_id} | adapter maps to CombatAuthority existing command format, not new authority |
+| port_repair | {port_id,ship_instance_id} | NEW; full available repair quote, recheck current funds/hull, atomic debit and hull |
+| quest_accept / quest_turn_in | {quest_id,npc_id} | Existing |
+| raid_track / quest_track | {raid_id} / {quest_id} | Presentation only; reward never client |
+| raid_reward | no client reward command | Authority auto settlement once on eligible completion; contribution shared co-op rule below |
+| loot_claim / navigate / stop / map_gate | {drop_id} / {x,y} / {} / {gate_id} | Adapter to existing gameplay paths |
+| save / host / join / reconnect | existing save/network adapter | no duplicate save truth |
+
+Error presentation: insufficient_stock_or_funds → “Altın veya stok yetersiz”; market_full_or_overflow → “Pazarın alım kapasitesi dolu”; inventory_rejected/equip_rejected → “Kapasite veya donanım uyumsuz”; hostile_market → “Bu liman ticarete kapalı”; transaction_conflict → “İşlem çakıştı, yenile”; transaction_ledger_full → “İşlem kaydı dolu, tekrar denemeden önce kaydı kontrol et”; invalid_npc_interaction → “Görev verenin menziline gir”; quest_not_completable → “Hedefleri tamamla”. NEW UI normalized reasons: out_of_range, combat_locked, insufficient_funds, already_owned, incompatible, insufficient_stock, disconnected, save_failed. Adapter açıkça eşler; bilinmeyen hata “İşlem tamamlanmadı” + teknik log; accepted=false asla başarı toast'u değil. Boş/loading/reconnect/disabled durumları mock'ta ayrı fixture.
+
+#### E. İlk içerik matrisi ve mock fixture
+
+Gerçek pilot (koddan): ship.foundation_player hull 100, ship.vs02_practice hull 75; tek placeholder hareket profili speed 180, turn 72 deg/s. weapon.vs01_practice_cannon base_damage 25, 35–360 range, reload 1.25 s; round scale 1.0, ember 1.15 + scorched; harpoon.core02_debug 18 damage, 320 range, reload 1.25 s; monster.core02_practice hull 120; bounty 80. Bunlar denge hedefi değildir.
+
+Aşağıdaki `draft.*` kimlikler UI mock içindir; production kaydı değildir. İsimler geçici etiket, mevcut gemi görsel rehberindeki özgün isimler finalde kullanılır.
+
+| Mock gemi / visual | Altın | Hull | Hız | Dönüş °/s | Top kapasitesi |
+|---|---:|---:|---:|---:|---:|
+| draft.ship.sc01 / SC01 (başlangıç) | 0 | 100 | 180 | 72 | 2 |
+| draft.ship.sc02 / SC02 | 300 | 130 | 185 | 68 | 3 |
+| draft.ship.sc03 / SC03 | 420 | 180 | 145 | 52 | 3 |
+| draft.ship.sc04 / SC04 | 550 | 160 | 200 | 76 | 4 |
+| draft.ship.sc06 / SC06 | 850 | 230 | 165 | 52 | 5 |
+| draft.ship.sc08 / SC08 | 1300 | 320 | 125 | 40 | 6 |
+
+| Mock ürün | Alış / satış altın | Etki |
+|---|---:|---|
+| draft.cannon.light | 35 / 17 | 10 damage/top, 300 range, 1.4s |
+| draft.cannon.standard | 85 / 42 | 16 damage/top, 360 range, 1.8s |
+| draft.cannon.heavy | 160 / 80 | 26 damage/top, 390 range, 2.5s |
+| item.core_round | 1 / 0 | normal gülle |
+| item.core_ember | 4 / 2 | güçlendirilmiş gülle |
+| item.core02_harpoon | 2 / 1 | zıpkın stoğu |
+| item.vs03_salvage_scrap | 8 / 4 | loot/ticaret |
+| draft.cargo.supplies | 15 / 8 | ticaret malı |
+| draft.cargo.spice | 30 / 18 | ticaret malı |
+
+Rakamlar yalnız mock: gerçek PRG05 quote min sell=1 olduğundan mock normal gülle satış 0 = “satış yok”, yeni ürün kuralı gerekir. Maliyet hesapları authority quote üzerinden; UI toplam = quote×adet yalnız tahmin, final actual result gösterilir. Top başına mühimmat tüketimi, salvo hasarı ve reload dengesini PLAY-03 doğrular. Örnek başlangıç 120 altın + 40 normal gülle + 15 zıpkın; ilk kazanılabilir SC02 300 altın. Mini raid önerisi toplam 150 altın, iki normal kontrat 60–80, monster 20–40. Solo/iki oyuncu katkı ve ekonomi testinden sonra rakamlar kesinleşir; loot ve kontrat toplamı ilk gemi alımını gereksiz grind'a dönüştürmemeli.
+
+**Fixture set (UI lane için elle oluşturulabilir deterministic veri):**
+- F01 deniz: player SC01 hull 72/100, gold 120, sector.foundation; enemy ship hull 40/75, 180 distance, can_fire=true, reload 0.4/1.4, round 40, harpoon 15; F02 yanlış hedef monster, can_fire=false, can_harpoon=true; F03 out_of_range ve sıfır stok.
+- F04 tersane: SC01 owned/active, diğerleri yukarıdaki matris; gold 120 → SC02 disabled; F05 gold 400 → SC02 enabled; accepted sonrası gold 100, SC02 owned not active; activate sonrası SC01 hull 72 saklı, SC02 hull 130. Retry aynı request_id: aynı sonuç, bakiye tekrar düşmez.
+- F06 mağaza: port safe_haven, market mock round stock 80, owned 40, buy 1, sell null; 20 adet alım → gold 100, stock 60, owned 60; F07 quantity 81 → reject; F08 out-of-range → panel kapanır; F09 disconnect → pending, reconnect aynı ID.
+- F10 donanım: SC01 capacity 2, light count 2, envanter standard 1; standard count 3 reject; count 1 success. Preview eski/yeni salvo ve cooldown; unused light iade.
+- F11 tamir: SC01 hull 72/100, quote 28 (mock 1 altın/hull), gold 120; accepted → 100/100, gold 92. F12 gold 0: acil minimum hull yardımı yalnız ihtiyaç halinde; tamir bedava full hull değildir.
+- F13 normal quest available/active/completable/completed; kill progress 0/2→2/2, turn-in sonucu bir kez; F14 raid active total 3 remaining 2, reward 150; remaining 0 → complete, 150 toplam raid ödülü yalnız bir event. F15 raid expired, reward 0, marker temizlenir. F16 empty inventory/journal, F17 loading, F18 save_failed, F19 guest read-only/reconnect.
+
+#### F. Dünya/raid ve görevlerin ilk oynanış içeriği
+
+Önerilen ilk akış: başlangıç güvenli limanı → 1 kısa seyir/loot kontratı → korsan savaş kontratı → canavar avı → ilk tamir/cephane/ticaret → yeni gemi satın alma → mini raid bildirimi. Serbest seyir her zaman mümkün; kontratlar tutorial kılavuzu, zorunlu seviye kilidi değil. İlk üretim üç surface sektör ve iki liman hedefi; ikinci liman henüz hazır değil, birinci limanla akış test edilebilir. Yeni canavar tanımı M01/M02 görseline göre territory/charge veya circle/flee basit profil; normal NPC popülasyonu tüccar/raider/escort. Raid trigger, eligibility, timeout ve cleanup normal population cap'ten bağımsız encounter cap ile çalışır. İlk öneri aynı aktif bölgede tek raid; güvenli alan dışı spawn, erişilebilir su. Ödül toplamı host tarafından katkı sahibi oyunculara dağıtılır (solo tamamı; co-op eşit katkı için eşit, kalan yuvarlama stable owner sırası; minimum anlamlı katkı eşiği testle belirlenir), yeniden bağlanma duplicate ödeme yapmaz. Normal loot ve raid bonusu açıkça ayrı kalem. Raid sonlanırsa canlı üyeler ve görev marker'ı temizlenir, kayıt/yükleme aynı encounter ID ile devam eder. Kalıcı sandbox oyuncu ekonomisi yok.
+
+#### G. UI/uygulama paralel teslim sırası ve kontrol
+
+UI sahibi: yalnız presentation ekranı, ortak theme ve mock adapter; domain, save, network dosyası değişmez. Ekonomi sahibi: ship ownership, gemi/top/cephane market ve tamir; mevcut InventoryState/Prg05 üzerinden. Savaş sahibi: top bataryası, target, ammo, VFX event. NPC/raid sahibi: spawn/lifecycle, existing FleetCoordinator, quest/loot adapter. Asset sahibi: altı gemi + iki canavar + ada/deniz, görsel ve collider; UI için ikon/thumbnail export. LAN sahibi: authenticated commands/read-model parity. Bootstrap composition, registry, save migration ve shared adapter tek entegrasyon sahibi; diğer paketler çakışmasız bileşen geliştirir.
+
+UI lane önce F01–F19 ile çalışır; hiçbir fiyat/stat hardcode production kabulü değildir. Her ekran contract mock ve gerçek adapter smoke, keyboard/back/touch, resize, safe-area, empty/error/pending, no input leakage; Godot frame capture 1280×720 ve dar viewport. UI art tasarımının kullanıcı görsel onayı ayrı. Backend lane valid/reject/atomic/retry/save/load/host-guest testleri, gerçek üretim sahnesi; birleşik kabulden önce fixture adapter kaldırılır veya debug-only kalır. İlk kullanıcı tasarım onayı alınmadan fiyatlar, gemi kapasitesi, ücretsiz kurtarma ve HUD kontrol tercihleri final kabul sayılmaz.
+
+**Asset listesi UI:** onaylı SC01/02/03/04/06/08 atlaslarından thumbnail, M01/M02 target portrait, top (3), mühimmat (2), zıpkın, loot/salvage ve mal (2), altın, tamir, map/port/raid/quest, hedef/hull/reload, bağlantı/ayar ve geri ikonları; buton/sekme/panel ortak theme. Ses: top, impact, batış, zıpkın, pickup, UI kabul/hata; yalnız lisans doğrulanmış veya özgün. HUD animasyonları basit; gereksiz çoklu katman/shader yok. UI ikonlarının ilk mock'u placeholder olabilir. Asset üretimi yeni gemi çeşitliliği için bekletilmez.
+
+**PLAY-00 tasarım kontrolü:** ekran akışları, mevcut vs yeni işlemler, mock içerik, üç dünya popülasyonunun ayrımı, paralel sahiplik ve hata durumları bu bölümde kayıtlı. Kullanıcı kabulü ve gerçek fixture/UI kodu henüz yok. PLAY-01 bağımsız sürdürülür; PLAY-02 envanter/QA bağımsız; UI ve domain implementasyonları ilgili sözleşme kabulü sonrası başlatılır.
+
 ## 3. Paralel yürütme — kritik yol ve sahiplik
 
 İlk iş PLAY-00 iken bağımsız mevcut asset envanteri/QA ve PLAY-01 hareket replay iyileştirmeleri devam edebilir; arayüz implementasyonu ilgili PLAY-00 sözleşmesi doğrulanmadan başlamaz. Sözleşme ekran grubu bazında kabul edildikçe ilgili UI işinin başlaması mümkündür; bütün grupların bitmesi beklenmez.
